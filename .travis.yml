@@ -1,0 +1,9 @@
+language: python
+python:
+  - "3.5"
+git:
+  depth: 3
+install: "pip install -r requirements.txt"
+script:
+  - "pep8 pokerserver && python setup.py lint --lint-rcfile setup.cfg"
+  - "python setup.py nosetests"
