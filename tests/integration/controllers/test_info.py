@@ -3,7 +3,7 @@ from http import HTTPStatus
 from unittest.mock import Mock
 
 from nose.tools import assert_equals
-from tornado.testing import AsyncHTTPTestCase, gen_test
+from tornado.testing import AsyncHTTPTestCase
 from tornado.web import Application
 
 from pokerserver.controllers import HANDLERS
