@@ -14,7 +14,7 @@ class IntegrationTestCase(AsyncTestCase):
 
     @classmethod
     def setUpClass(cls):
-        # It would be simpler and fatser to use an in-memory database.
+        # It would be simpler and faster to use an in-memory database.
         # However, I couldn't figure out how to do this with aioodbc.
         _, cls._db_path = tempfile.mkstemp()
 
