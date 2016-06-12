@@ -16,7 +16,11 @@ setup(
     license="GPLv3",
     url="https://github.com/MartinAltmayer/pokerserver",
     entry_points={
-        'console_scripts': ['pokerserver=pokerserver.applications.server:main']
+        'console_scripts': [
+            'pokerserver=pokerserver.applications.server:main',
+            'createpokerdb=pokerserver.applications.create_database:main'
+
+        ]
     },
     install_requires=requirements,
     test_suite = 'nose.collector'

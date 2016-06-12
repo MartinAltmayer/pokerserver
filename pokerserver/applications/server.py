@@ -27,6 +27,7 @@ def main():
     parser.add_argument('--ip', default='127.0.0.1', type=str, help='IP address to bind to.')
     parser.add_argument('--port', default=5555, type=int, help='Port to liston on.')
     parser.add_argument('--free-tables', default=10, type=int, help='Number of tables that are kept ready in advance.')
+    parser.add_argument('--db', default='poker.db', type=str, help='Path to SQLite database file.')
     parser.add_argument('--start-balance', default=40, type=int, help='The buy in for each client.')
     parser.add_argument('--min-player-count', default=4, type=int, help='Minimum number of players to start a game.')
     parser.add_argument('--max-player-count', default=8, type=int, help='Maximum number of players per table.')
