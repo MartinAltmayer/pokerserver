@@ -1,12 +1,47 @@
 # Pokerserver for our Python Workshop at TNG Technology Consulting
 
-## Installation
+## Requirements
+
+The server has several external dependencies for database access and message queuing:
+
+- unixodbc (used by aioodbc via pyodbc).
+- sqliteodbc (SQLite3 driver).
+- rabbitmq.
+
+### Installation of Dependencies Under Max OS X
+
+    brew update
+    brew install unixodbc sqliteodbc rabbitmq
+
+Add the SQLite3 driver to `~/odbcinst.ini`:
+
+    [SQLite3]
+    Description=SQLite3 ODBC Driver
+    Driver=/usr/local/lib/libsqlite3odbc.so
+    Setup=/usr/local/lib/libsqlite3odbc.so
+    Threading=2
+    
+More information with respect to the correct configuration of the odbc drivers can be found at 
+<http://www.ch-werner.de/sqliteodbc/html/index.htm>.
+
+## PIP Package Installation
 
     python setup.py install
     
 ## Running the server
 
-Simply call
+Ensure that the RabbitMQ server is running. On Mac OS X, you can start it via
+
+    /usr/local/sbin/rabbitmq-server
+    
+The location of the server executable is valid for the Homebrew-based install on Mac OS X and may differ for other 
+operating systems.
+
+On Debian Linux the RabbitMQ is installed as a service an can be started using
+
+    service rabbitmq-server start
+
+Then simply call the pokerserver script that was generated during package installation:
     
     pokerserver
     
