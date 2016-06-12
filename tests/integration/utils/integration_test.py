@@ -20,7 +20,7 @@ class IntegrationTestCase(AsyncTestCase):
 
     @classmethod
     def tearDownClass(cls):
-        if cls._db_path is not None:
+        if cls._db_path is not None and os.path.exists(cls._db_path):
             os.remove(cls._db_path)
 
     def setUp(self):
