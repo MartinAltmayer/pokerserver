@@ -23,5 +23,5 @@ setup(
         ]
     },
     install_requires=requirements,
-    test_suite = 'nose.collector'
+    test_suite='nose.collector'
 )

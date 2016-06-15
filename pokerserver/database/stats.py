@@ -1,11 +1,9 @@
-import textwrap
-
 from pokerserver.database.database import Database
 
 
 class StatsTable:
     NAME = 'stats'
-    CREATE_QUERY = textwrap.dedent("""
+    CREATE_QUERY = """
         CREATE TABLE stats (
             player_name VARCHAR,
             matches INT,
@@ -13,7 +11,7 @@ class StatsTable:
             gain INT,
             PRIMARY KEY (player_name)
         )
-    """)
+    """
 
     @classmethod
     async def get_stats(cls):

@@ -1,4 +1,5 @@
-from .statstable import StatsTable
+from .stats import StatsTable
+from .tables import TablesTable
 from .database import Database
 
-TABLES = [StatsTable]
+TABLES = [TablesTable, StatsTable]

@@ -1,6 +1,6 @@
 from tornado.testing import gen_test
 
-from pokerserver.database.statstable import StatsTable
+from pokerserver.database.stats import StatsTable
 from tests.integration.utils.integration_test import IntegrationTestCase
 
 
