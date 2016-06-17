@@ -37,7 +37,6 @@ class Database:
             await self._pool.wait_closed()
             Database._instance = None
         except Exception as exc:
-            print(exc)
             raise DbException('Closing database pool failed') from exc
 
     @property

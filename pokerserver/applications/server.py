@@ -1,20 +1,27 @@
 from argparse import ArgumentParser
+import asyncio
 import logging
 from logging.config import dictConfig
 import os
 import sys
 
 from tornado.ioloop import IOLoop
+from tornado.platform.asyncio import AsyncIOMainLoop
 from tornado.web import Application
 
 from pokerserver.configuration import LOGGING
 from pokerserver.controllers import HANDLERS
+from pokerserver.database import Database
 
 LOG = logging.getLogger(__name__)
 
 
 def make_app(args):
     return Application(HANDLERS, autoreload=True, args=args)
+
+
+async def setup(args):
+    await Database.connect(args.db)
 
 
 def main():
@@ -39,6 +46,8 @@ def main():
     args = parser.parse_args()
 
     LOG.debug('Starting server...')
+    AsyncIOMainLoop().install()
+    asyncio.get_event_loop().run_until_complete(setup(args))
     app = make_app(args)
     LOG.debug('Listening on %s:%s...', args.ip, args.port)
     app.listen(address=args.ip, port=args.port)

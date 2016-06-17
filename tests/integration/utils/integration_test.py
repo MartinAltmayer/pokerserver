@@ -2,7 +2,7 @@ import os
 import tempfile
 
 from tornado.platform.asyncio import AsyncIOLoop
-from tornado.testing import AsyncTestCase
+from tornado.testing import AsyncTestCase, AsyncHTTPTestCase
 
 from pokerserver.database import Database
 
@@ -48,3 +48,8 @@ class IntegrationTestCase(AsyncTestCase):
     async def connect_database(self):
         self.db = await Database.connect(self._db_path, loop=self.get_asyncio_loop())
         return self.db
+
+
+class IntegrationHttpTestCase(IntegrationTestCase, AsyncHTTPTestCase):
+    async def fetch_async(self, path):
+        return await self.http_client.fetch(self.get_url(path))

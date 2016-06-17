@@ -8,5 +8,13 @@ class Table:
         self.players = players
 
     @classmethod
-    def load_all(cls):
-        return [Table(**data) for data in TablesTable.load_all()]
+    async def load_all(cls):
+        tables = await TablesTable.load_all()
+        return [Table(**data) for data in tables]
+
+    def to_dict(self):
+        return {
+            'name': self.name,
+            'max_player_count': self.max_player_count,
+            'players': self.players
+        }

@@ -17,8 +17,8 @@ class TestStatsTable(IntegrationTestCase):
         self.assertEqual(('Round Table', 30, 'Arthur,Percival'), row)
 
     @gen_test
-    async def test_get_tables(self):
+    async def test_load_all(self):
         for table in self.TABLES:
             await TablesTable.create_table(**table)
-        actual_tables = await TablesTable.get_tables()
+        actual_tables = await TablesTable.load_all()
         self.assertListEqual(self.TABLES, actual_tables)

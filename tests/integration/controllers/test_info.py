@@ -3,13 +3,15 @@ from http import HTTPStatus
 from unittest.mock import Mock
 
 from nose.tools import assert_equals
-from tornado.testing import AsyncHTTPTestCase
 from tornado.web import Application
 
 from pokerserver.controllers import HANDLERS
+from tests.integration.utils.integration_test import IntegrationHttpTestCase
 
 
-class TestInfoController(AsyncHTTPTestCase):
+class TestInfoController(IntegrationHttpTestCase):
+    SETUP_DB_CONNECTION = False
+
     def get_app(self):
         return Application(HANDLERS, args=Mock())
 

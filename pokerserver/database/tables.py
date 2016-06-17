@@ -13,7 +13,7 @@ class TablesTable:
     """
 
     @classmethod
-    async def get_tables(cls):
+    async def load_all(cls):
         table_data = []
         db = Database.instance()
         async with db.execute("""
