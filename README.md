@@ -22,7 +22,7 @@ Add the SQLite3 driver to `~/odbcinst.ini`:
     Threading=2
     
 More information with respect to the correct configuration of the odbc drivers can be found at 
-<http://www.ch-werner.de/sqliteodbc/html/index.htm>.
+<http://www.ch-werner.de/sqliteodbc/html/index.html>.
 
 ## PIP Package Installation
 
