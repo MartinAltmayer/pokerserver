@@ -1,8 +1,7 @@
 from nose.tools import nottest
 from tornado.testing import gen_test
 
-from pokerserver.database import Database, TABLES
-from pokerserver.database.database import DbException
+from pokerserver.database import Database, RELATIONS, DbException
 from tests.integration.utils.integration_test import IntegrationTestCase
 
 
@@ -98,5 +97,5 @@ class TestDatabase(IntegrationTestCase):
     async def test_create_tables(self):
         db = await self.connect_database()
         await db.create_tables()
-        for table_class in TABLES:
+        for table_class in RELATIONS:
             self.assertTrue(await self.check_table_exists(db, table_class.NAME))

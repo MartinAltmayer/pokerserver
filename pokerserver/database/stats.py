@@ -1,7 +1,7 @@
 from pokerserver.database.database import Database
 
 
-class StatsTable:
+class StatsRelation:
     NAME = 'stats'
     CREATE_QUERY = """
         CREATE TABLE stats (

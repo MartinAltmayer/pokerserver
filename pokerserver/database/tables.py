@@ -1,13 +1,13 @@
 from pokerserver.database.database import Database
 
 
-class TablesTable:
+class TablesRelation:
     NAME = 'tables'
     CREATE_QUERY = """
         CREATE TABLE tables (
             id INTEGER PRIMARY KEY,
-            name VARCHAR UNIQUE,
-            max_player_count INT,
+            name VARCHAR UNIQUE NOT NULL,
+            max_player_count INT NOT NULL,
             players VARCHAR
         )
     """

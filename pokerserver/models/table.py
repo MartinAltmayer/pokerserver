@@ -1,4 +1,4 @@
-from pokerserver.database.tables import TablesTable
+from pokerserver.database.tables import TablesRelation
 
 
 class Table:
@@ -9,7 +9,7 @@ class Table:
 
     @classmethod
     async def load_all(cls):
-        tables = await TablesTable.load_all()
+        tables = await TablesRelation.load_all()
         return [Table(**data) for data in tables]
 
     def to_dict(self):

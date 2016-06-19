@@ -47,8 +47,8 @@ class Database:
         await self.execute(table_class.CREATE_QUERY)
 
     async def create_tables(self):
-        from ..database import TABLES
-        for table_class in TABLES:
+        from ..database import RELATIONS
+        for table_class in RELATIONS:
             await self.create_table(table_class)
 
     def execute(self, query, *args):

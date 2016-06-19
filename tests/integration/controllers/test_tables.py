@@ -6,7 +6,7 @@ from tornado.testing import gen_test
 from tornado.web import Application
 
 from pokerserver.controllers import HANDLERS
-from pokerserver.database.tables import TablesTable
+from pokerserver.database import TablesRelation
 from tests.integration.utils.integration_test import IntegrationHttpTestCase
 
 
@@ -15,8 +15,8 @@ class TestTablesController(IntegrationHttpTestCase):
         return Application(HANDLERS, args=Mock())
 
     async def create_tables(self):
-        await TablesTable.create_table('table1', 9, ['frodo', 'pippin'])
-        await TablesTable.create_table('table2', 15, ['gandlf', 'bilbo'])
+        await TablesRelation.create_table('table1', 9, ['frodo', 'pippin'])
+        await TablesRelation.create_table('table2', 15, ['gandlf', 'bilbo'])
 
     @gen_test
     async def test_tables_response(self):

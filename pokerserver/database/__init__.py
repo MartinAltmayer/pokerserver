@@ -1,5 +1,6 @@
-from .stats import StatsTable
-from .tables import TablesTable
-from .database import Database
+from .database import Database, DbException
+from .stats import StatsRelation
+from .tables import TablesRelation
+from .uuids import UUIDsRelation
 
-TABLES = [TablesTable, StatsTable]
+RELATIONS = [TablesRelation, StatsRelation, UUIDsRelation]
