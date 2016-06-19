@@ -3,7 +3,8 @@ from setuptools import setup, find_packages
 from pokerserver.version import NAME, VERSION
 
 requirements = [
-    'tornado>=4.3'
+    'tornado>=4.3',
+    'aioodbc==0.0.2'
 ]
 
 setup(
