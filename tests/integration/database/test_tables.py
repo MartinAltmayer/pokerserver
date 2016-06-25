@@ -7,7 +7,8 @@ from tests.integration.utils.integration_test import IntegrationTestCase
 class TestStatsRelation(IntegrationTestCase):
     TABLES = [
         {'name': 'table1', 'max_player_count': 9, 'players': ['frodo', 'pippin']},
-        {'name': 'table2', 'max_player_count': 15, 'players': ['gandalf', 'bilbo']}
+        {'name': 'table2', 'max_player_count': 15, 'players': ['gandalf', 'bilbo']},
+        {'name': 'empty table', 'max_player_count': 2, 'players': []}
     ]
 
     @gen_test

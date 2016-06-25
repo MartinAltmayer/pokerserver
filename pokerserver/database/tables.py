@@ -23,7 +23,7 @@ class TablesRelation:
                 """) as cursor:
             async for row in cursor:
                 name, max_player_count, players = row
-                players = players.split(',')
+                players = [name.strip() for name in players.split(',') if len(name.strip()) > 0]
                 table_data.append({
                     'name': name,
                     'max_player_count': max_player_count,
