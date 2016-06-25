@@ -2,7 +2,7 @@ from pokerserver.database import PlayersRelation
 
 
 class Player:
-    def __init__(self, table_id, position, name, balance, cards, bet):
+    def __init__(self, table_id, position, name, balance, cards, bet):  # pylint: disable=too-many-arguments
         self.table_id = table_id
         self.position = position
         self.name = name

@@ -7,7 +7,7 @@ from tests.integration.utils.integration_test import IntegrationTestCase
 class TestTablesRelation(IntegrationTestCase):
     TABLES = [
         {
-            'id': 1,
+            'table_id': 1,
             'name': 'table1',
             'max_player_count': 9,
             'remaining_deck': 'so many cards',
@@ -22,7 +22,7 @@ class TestTablesRelation(IntegrationTestCase):
             'big_blind_player': 'd',
             'is_closed': False
         }, {
-            'id': 2,
+            'table_id': 2,
             'name': 'table2',
             'max_player_count': 15,
             'remaining_deck': 'so many cards',
@@ -37,7 +37,7 @@ class TestTablesRelation(IntegrationTestCase):
             'big_blind_player': 'h',
             'is_closed': False
         }, {
-            'id': 3,
+            'table_id': 3,
             'name': 'empty table',
             'max_player_count': 2,
             'remaining_deck': 'so many cards',
@@ -56,14 +56,14 @@ class TestTablesRelation(IntegrationTestCase):
 
     @gen_test
     async def test_create_table(self):
-        await TablesRelation.create_table(42, 'Round Table', 30, "so many cards", 12, 24, "turn", 1000, "", "Arthur",
-                                          "Percival", "Tristan", "Lancelot", False)
+        await TablesRelation.create_table(42, 'Game of Thrones', 30, "so many cards", 12, 24, "turn", 1000, "",
+                                          "Eddard", "John", "Arya", "Bran", False)
         tables = await TablesRelation.load_all()
         self.assertEqual(
             tables,
             [{
-                'id': 42,
-                'name': 'Round Table',
+                'table_id': 42,
+                'name': 'Game of Thrones',
                 'max_player_count': 30,
                 'remaining_deck': 'so many cards',
                 'small_blind': 12,
@@ -71,10 +71,10 @@ class TestTablesRelation(IntegrationTestCase):
                 'open_cards': 'turn',
                 'main_pot': 1000,
                 'side_pots': '',
-                'current_player': 'Arthur',
-                'dealer': 'Percival',
-                'small_blind_player': 'Tristan',
-                'big_blind_player': 'Lancelot',
+                'current_player': 'Eddard',
+                'dealer': 'John',
+                'small_blind_player': 'Arya',
+                'big_blind_player': 'Bran',
                 'is_closed': False
             }]
         )

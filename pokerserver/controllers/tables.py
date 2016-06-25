@@ -12,8 +12,8 @@ class TablesController(RequestHandler):
         self.write({'tables': table_data})
 
     @classmethod
-    async def ensure_free_tables(cls, number, max_player_count):
+    async def ensure_free_tables(cls, number, max_player_count, small_blind, big_blind):
         tables = await Table.load_all()
         free_tables = len([table for table in tables if table.is_free()])
         if free_tables < number:
-            await Table.create_tables(number - free_tables, max_player_count)
+            await Table.create_tables(number - free_tables, max_player_count, small_blind, big_blind)

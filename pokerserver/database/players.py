@@ -58,6 +58,6 @@ class PlayersRelation:
         return player_data
 
     @classmethod
-    async def add_player(cls, table_id, position, name, balance, cards, bet):
+    async def add_player(cls, table_id, position, name, balance, cards, bet):  # pylint: disable=too-many-arguments
         db = Database.instance()
         await db.execute(cls.INSERT_QUERY, table_id, position, name, balance, cards, bet)

@@ -7,7 +7,7 @@ class TablesRelation:
     NAME = 'tables'
 
     FIELDS = [
-        'id',
+        'table_id',
         'name',
         'max_player_count',
         'remaining_deck',
@@ -25,7 +25,7 @@ class TablesRelation:
 
     CREATE_QUERY = """
         CREATE TABLE tables (
-            id INT PRIMARY KEY,
+            table_id INT PRIMARY KEY,
             name VARCHAR UNIQUE NOT NULL,
             max_player_count INT NOT NULL,
             remaining_deck VARCHAR NOT NULL,
@@ -52,7 +52,7 @@ class TablesRelation:
     LOAD_ALL_QUERY = """
         SELECT {}
         FROM tables
-        ORDER BY id
+        ORDER BY table_id
     """.format(','.join(FIELDS))
 
     LOAD_BY_NAME_QUERY = """
@@ -63,14 +63,11 @@ class TablesRelation:
 
     @classmethod
     async def load_all(cls):
-        try:
-            table_data = []
-            db = Database.instance()
-            async with db.execute(cls.LOAD_ALL_QUERY) as cursor:
-                async for row in cursor:
-                    table_data.append(cls.TABLES_RELATION_ROW(*row)._asdict())
-        except Exception as e:
-            pass
+        table_data = []
+        db = Database.instance()
+        async with db.execute(cls.LOAD_ALL_QUERY) as cursor:
+            async for row in cursor:
+                table_data.append(cls.TABLES_RELATION_ROW(*row)._asdict())
         return table_data
 
     @classmethod
@@ -81,11 +78,12 @@ class TablesRelation:
             info_row = cls.TABLES_RELATION_ROW(*row)._asdict()
             return info_row
 
+    # pylint: disable=too-many-arguments, too-many-locals
     @classmethod
-    async def create_table(cls, id, name, max_player_count, remaining_deck, small_blind, big_blind, open_cards,
+    async def create_table(cls, table_id, name, max_player_count, remaining_deck, small_blind, big_blind, open_cards,
                            main_pot, side_pots, current_player, dealer, small_blind_player, big_blind_player,
                            is_closed):
         db = Database.instance()
-        await db.execute(cls.INSERT_QUERY, id, name, max_player_count, remaining_deck, small_blind, big_blind,
+        await db.execute(cls.INSERT_QUERY, table_id, name, max_player_count, remaining_deck, small_blind, big_blind,
                          open_cards, main_pot, side_pots, current_player, dealer, small_blind_player, big_blind_player,
                          is_closed)

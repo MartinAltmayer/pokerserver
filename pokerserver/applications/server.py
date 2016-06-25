@@ -23,7 +23,7 @@ def make_app(args):
 
 async def setup(args):
     await Database.connect(args.db)
-    await TablesController.ensure_free_tables(args.free_tables, args.max_player_count)
+    await TablesController.ensure_free_tables(args.free_tables, args.max_player_count, args.small_blind, args.big_blind)
 
 
 async def teardown():

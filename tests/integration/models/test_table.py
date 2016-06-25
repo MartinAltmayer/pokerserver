@@ -13,6 +13,8 @@ class TestTable(AsyncTestCase):
     @gen_test
     async def test_create_tables(self, create_table, load_all_tables, load_player_by_table_id):
         max_player_count = 2
+        small_blind = 13
+        big_blind = 14
         players = ['Percival', 'Tristan', 'Lancelot', 'Arthur']
         existing_table_names = ['Table 1', 'Table 3', 'SomeName']
         existing_players = [
@@ -29,9 +31,9 @@ class TestTable(AsyncTestCase):
         ]
         existing_tables = [
             {
-                'id': table_id,
+                'table_id': table_id,
                 'name': name,
-                'max_player_count': 30,
+                'max_player_count': 10,
                 'remaining_deck': 'so many cards',
                 'small_blind': 12,
                 'big_blind': 24,
@@ -49,8 +51,8 @@ class TestTable(AsyncTestCase):
         load_player_by_table_id.side_effect = return_done_future(existing_players)
         load_all_tables.side_effect = return_done_future(existing_tables)
 
-        await Table.create_tables(2, max_player_count)
+        await Table.create_tables(2, max_player_count, small_blind, big_blind)
         create_table.assert_has_calls([
-            call('Table 2', max_player_count, []),
-            call('Table 4', max_player_count, [])
+            call(3, 'Table 2', max_player_count, '', small_blind, big_blind, '', 0, '', None, None, None, None, False),
+            call(4, 'Table 4', max_player_count, '', small_blind, big_blind, '', 0, '', None, None, None, None, False)
         ])
