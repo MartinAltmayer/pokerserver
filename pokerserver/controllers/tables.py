@@ -1,6 +1,6 @@
 from tornado.web import RequestHandler
 
-from pokerserver.models.table import Table
+from pokerserver.models import Table
 
 
 class TablesController(RequestHandler):
@@ -8,7 +8,7 @@ class TablesController(RequestHandler):
 
     async def get(self):
         tables = await Table.load_all()
-        table_data = [table.to_dict() for table in tables]
+        table_data = [table.to_dict_for_info() for table in tables]
         self.write({'tables': table_data})
 
     @classmethod

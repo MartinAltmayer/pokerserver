@@ -105,4 +105,4 @@ class _ExecuteContextManager:
                     await cursor.execute(self._query, *self._args)
                     await cursor.commit()
         except Exception as exc:
-            raise DbException('Executing query failed: {}'.format(self._query)) from exc
+            raise DbException('Executing query failed. Exception: {}. Query: {}'.format(exc, self._query)) from exc

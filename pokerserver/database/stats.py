@@ -1,4 +1,4 @@
-from pokerserver.database.database import Database
+from pokerserver.database import Database
 
 
 class StatsRelation:
@@ -12,6 +12,13 @@ class StatsRelation:
             PRIMARY KEY (player_name)
         )
     """
+
+    INCREMENT_STATS_QUERY = """
+        UPDATE stats
+        SET matches = matches + ?, buy_in = buy_in + ?, gain = gain + ?
+        WHERE player_name = ?
+    """
+
 
     @classmethod
     async def get_stats(cls):
@@ -28,8 +35,4 @@ class StatsRelation:
     @classmethod
     async def increment_stats(cls, player_name, matches, buy_in, gain):
         db = Database.instance()
-        await db.execute("""
-            UPDATE stats
-            SET matches = matches + ?, buy_in = buy_in + ?, gain = gain + ?
-            WHERE player_name = ?
-            """, matches, buy_in, gain, player_name)
+        await db.execute(cls.INCREMENT_STATS_QUERY, matches, buy_in, gain, player_name)

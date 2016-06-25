@@ -1,8 +1,10 @@
 from .info import InfoController
+from .table import TableController
 from .tables import TablesController
 
 _CONTROLLERS = [
     InfoController,
+    TableController,
     TablesController
 ]
 

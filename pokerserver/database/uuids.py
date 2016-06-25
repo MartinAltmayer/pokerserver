@@ -1,6 +1,6 @@
 from uuid import UUID
 
-from pokerserver.database.database import Database
+from pokerserver.database import Database
 
 
 class UUIDsRelation:
