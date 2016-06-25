@@ -37,6 +37,6 @@ class TablesRelation:
         players = ','.join(players)
         db = Database.instance()
         await db.execute(
-            'INSERT INTO tables (name, max_player_count, players) VALUES (?,?,?)',
+            'INSERT INTO tables (name, max_player_count, players) VALUES (?, ?, ?)',
             name, max_player_count, players
         )

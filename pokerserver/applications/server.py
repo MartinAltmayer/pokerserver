@@ -11,6 +11,7 @@ from tornado.web import Application
 
 from pokerserver.configuration import LOGGING
 from pokerserver.controllers import HANDLERS
+from pokerserver.controllers.tables import TablesController
 from pokerserver.database import Database
 
 LOG = logging.getLogger(__name__)
@@ -22,6 +23,11 @@ def make_app(args):
 
 async def setup(args):
     await Database.connect(args.db)
+    await TablesController.ensure_free_tables(args.free_tables, args.max_player_count)
+
+
+async def teardown():
+    await Database.instance().close()
 
 
 def main():
@@ -52,7 +58,10 @@ def main():
     app = make_app(args)
     LOG.debug('Listening on %s:%s...', args.ip, args.port)
     app.listen(address=args.ip, port=args.port)
-    IOLoop.current().start()
+    try:
+        IOLoop.current().start()
+    finally:
+        asyncio.get_event_loop().run_until_complete(teardown())
     LOG.debug('Shut down.')
 
 

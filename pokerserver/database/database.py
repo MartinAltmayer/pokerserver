@@ -77,6 +77,7 @@ class _ExecuteContextManager:
             self._conn = await self._pool.acquire()
             self._cursor = await self._conn.cursor()
             await self._cursor.execute(self._query, *self._args)
+            await self._cursor.commit()
             return self._cursor
         except Exception as exc:
             error = 'Executing query failed: {}'.format(self._query)
@@ -101,7 +102,6 @@ class _ExecuteContextManager:
         try:
             async with self._pool.acquire() as connection:
                 async with connection.cursor() as cursor:
-
                     await cursor.execute(self._query, *self._args)
                     await cursor.commit()
         except Exception as exc:

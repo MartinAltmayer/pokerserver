@@ -1,6 +1,7 @@
 import os
 import tempfile
 
+from asyncio.futures import Future
 from tornado.platform.asyncio import AsyncIOLoop
 from tornado.testing import AsyncTestCase, AsyncHTTPTestCase
 
@@ -53,3 +54,12 @@ class IntegrationTestCase(AsyncTestCase):
 class IntegrationHttpTestCase(IntegrationTestCase, AsyncHTTPTestCase):
     async def fetch_async(self, path):
         return await self.http_client.fetch(self.get_url(path))
+
+
+def return_done_future(result=None):
+    def future_creator(*args, **kwargs):
+        future = Future()
+        future.set_result(result)
+        return future
+
+    return future_creator
