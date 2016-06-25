@@ -57,7 +57,7 @@ class IntegrationHttpTestCase(IntegrationTestCase, AsyncHTTPTestCase):
 
 
 def return_done_future(result=None):
-    def future_creator(*args, **kwargs):
+    def future_creator(*args, **kwargs):  # pylint: disable=unused-argument
         future = Future()
         future.set_result(result)
         return future
