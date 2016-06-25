@@ -19,7 +19,6 @@ class StatsRelation:
         WHERE player_name = ?
     """
 
-
     @classmethod
     async def get_stats(cls):
         stats = {}

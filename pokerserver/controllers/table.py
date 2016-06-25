@@ -2,6 +2,7 @@ from tornado.web import RequestHandler
 
 from pokerserver.models import Table
 
+
 class TableController(RequestHandler):
     route = r'/table/(name)'
 
