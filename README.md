@@ -1,5 +1,6 @@
 # Pokerserver for our Python Workshop at TNG Technology Consulting
 
+[![Build Status](https://travis-ci.org/MartinAltmayer/pokerserver.png)](https://travis-ci.org/MartinAltmayer/pokerserver)
 ## Requirements
 
 The server has several external dependencies for database access and message queuing:
