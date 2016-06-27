@@ -31,7 +31,7 @@ class Database:
         try:
             db._pool = await aioodbc.create_pool(
                 dsn=dsn, loop=loop, minsize=cls.POOL_SIZE, maxsize=cls.POOL_SIZE)
-        except Exception as exc:
+        except Exception as exc:  # pylint: disable=broad-except
             raise DbException('Creating database pool failed') from exc
         return db
 
@@ -40,7 +40,7 @@ class Database:
             self._pool.close()
             await self._pool.wait_closed()
             Database._instance = None
-        except Exception as exc:
+        except Exception as exc:  # pylint: disable=broad-except
             raise DbException('Closing database pool failed') from exc
 
     @property
@@ -83,7 +83,7 @@ class _ExecuteContextManager:
             await self._cursor.execute(self._query, *self._args)
             await self._cursor.commit()
             return self._cursor
-        except Exception as exc:
+        except Exception as exc:  # pylint: disable=broad-except
             await self._clear()
             self._handle_query_exception(exc)
 
@@ -108,12 +108,12 @@ class _ExecuteContextManager:
                     async with connection.cursor() as cursor:
                         await cursor.execute(self._query, *self._args)
                         await cursor.commit()
-                except Exception:
+                except Exception:  # pylint: disable=broad-except
                     # aioodbc deadlocks if we do not close the connection (the cursor is already closed)
                     # We must close the connection before releasing it, otherwise it is added to the pool again.
                     await connection.close()
                     raise
-        except Exception as exc:
+        except Exception as exc:  # pylint: disable=broad-except
             self._handle_query_exception(exc)
 
     def _handle_query_exception(self, exc):

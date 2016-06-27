@@ -1,9 +1,6 @@
 from collections import namedtuple
 
-import pyodbc
-
 from pokerserver.database import Database
-from pokerserver.database.database import DuplicateKeyError
 
 
 class PlayersRelation:

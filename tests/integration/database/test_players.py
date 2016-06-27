@@ -1,7 +1,6 @@
 from tornado.testing import gen_test
 
 from pokerserver.database import PlayersRelation
-from pokerserver.database.database import DuplicateKeyError
 from tests.integration.utils.integration_test import IntegrationTestCase
 
 
