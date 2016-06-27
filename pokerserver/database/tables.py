@@ -73,10 +73,12 @@ class TablesRelation:
     @classmethod
     async def load_table_by_name(cls, name):
         db = Database.instance()
-        async with db.execute(cls.LOAD_BY_NAME_QUERY, name) as cursor:
-            row = await cursor.fetchone()
+        row = await db.find_row(cls.LOAD_BY_NAME_QUERY, name)
+        if row is not None:
             info_row = cls.TABLES_RELATION_ROW(*row)._asdict()
             return info_row
+        else:
+            return None
 
     # pylint: disable=too-many-arguments, too-many-locals
     @classmethod

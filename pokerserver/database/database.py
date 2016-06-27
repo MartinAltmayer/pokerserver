@@ -6,6 +6,10 @@ class DbException(Exception):
     pass
 
 
+class DuplicateKeyError(DbException):
+    pass
+
+
 class Database:
     POOL_SIZE = 4
 
@@ -80,9 +84,8 @@ class _ExecuteContextManager:
             await self._cursor.commit()
             return self._cursor
         except Exception as exc:
-            error = 'Executing query failed: {}'.format(self._query)
             await self._clear()
-            raise DbException(error) from exc
+            self._handle_query_exception(exc)
 
     async def _clear(self):
         if not self._cursor.closed:
@@ -101,8 +104,21 @@ class _ExecuteContextManager:
     async def _coroutine(self):
         try:
             async with self._pool.acquire() as connection:
-                async with connection.cursor() as cursor:
-                    await cursor.execute(self._query, *self._args)
-                    await cursor.commit()
+                try:
+                    async with connection.cursor() as cursor:
+                        await cursor.execute(self._query, *self._args)
+                        await cursor.commit()
+                except Exception:
+                    # aioodbc deadlocks if we do not close the connection (the cursor is already closed)
+                    # We must close the connection before releasing it, otherwise it is added to the pool again.
+                    await connection.close()
+                    raise
         except Exception as exc:
-            raise DbException('Executing query failed. Exception: {}. Query: {}'.format(exc, self._query)) from exc
+            self._handle_query_exception(exc)
+
+    def _handle_query_exception(self, exc):
+        if 'UNIQUE' in str(exc):  # I could not find a proper way for this check
+            raise DuplicateKeyError('Query: {}'.format(self._query)) from exc
+        else:
+            raise DbException('Executing query failed. Exception: {}. Query: {}'
+                              .format(exc, self._query)) from exc

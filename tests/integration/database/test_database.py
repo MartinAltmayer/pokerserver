@@ -2,6 +2,7 @@ from nose.tools import nottest
 from tornado.testing import gen_test
 
 from pokerserver.database import Database, RELATIONS, DbException
+from pokerserver.database.database import DuplicateKeyError
 from tests.integration.utils.integration_test import IntegrationTestCase
 
 
@@ -99,3 +100,19 @@ class TestDatabase(IntegrationTestCase):
         await db.create_tables()
         for table_class in RELATIONS:
             self.assertTrue(await self.check_table_exists(db, table_class.NAME))
+
+    @gen_test
+    async def test_insert_with_duplicate(self):
+        db = await self.connect_database()
+        await db.execute("""
+            CREATE TABLE test (
+                id INTEGER PRIMARY KEY,
+                name UNIQUE
+            )""")
+        await db.execute("INSERT INTO test (id, name) VALUES (1, 'luke')")
+
+        with self.assertRaises(DuplicateKeyError):
+            await db.execute("INSERT INTO test (id, name) VALUES (1, 'leia')")
+
+        with self.assertRaises(DuplicateKeyError):
+            await db.execute("INSERT INTO test (id, name) VALUES (2, 'luke')")

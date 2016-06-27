@@ -1,6 +1,9 @@
 from collections import namedtuple
 
+import pyodbc
+
 from pokerserver.database import Database
+from pokerserver.database.database import DuplicateKeyError
 
 
 class PlayersRelation:
@@ -10,13 +13,14 @@ class PlayersRelation:
 
     CREATE_QUERY = """
         CREATE TABLE players (
-            table_id INTEGER NOT NULL,
-            position VARCHAR NOT NULL,
+            table_id INT NOT NULL,
+            position INT NOT NULL,
             name VARCHAR NOT NULL,
             balance INT NOT NULL,
             cards VARCHAR NOT NULL,
             bet int NOT NULL,
-            PRIMARY KEY (table_id, position)
+            PRIMARY KEY (table_id, position),
+            UNIQUE (name)
         )
     """
 
@@ -26,6 +30,12 @@ class PlayersRelation:
         INSERT INTO players ({})
         VALUES ({})
     """.format(','.join(FIELDS), ','.join(['?'] * len(FIELDS)))
+
+    LOAD_BY_NAME_QUERY = """
+        SELECT {}
+        FROM players
+        WHERE name = ?
+    """.format(','.join(FIELDS))
 
     LOAD_ALL_QUERY = """
         SELECT {}
@@ -47,6 +57,14 @@ class PlayersRelation:
             async for row in cursor:
                 player_data.append(cls.PLAYERS_RELATION_ROW(*row)._asdict())
         return player_data
+
+    @classmethod
+    async def load_by_name(cls, name):
+        row = await Database.instance().find_row(cls.LOAD_BY_NAME_QUERY, name)
+        if row is not None:
+            return cls.PLAYERS_RELATION_ROW(*row)._asdict()
+        else:
+            return None
 
     @classmethod
     async def load_by_table_id(cls, table_id):
