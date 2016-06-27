@@ -19,6 +19,15 @@ class TestUUIDsRelation(IntegrationTestCase):
         self.assertEqual((str(uuid), 'lancelot'), row)
 
     @gen_test
+    async def test_load_by_uuid(self):
+        uuid = uuid4()
+        await UUIDsRelation.add_uuid(uuid, 'robin')
+
+        data = await UUIDsRelation.load_by_uuid(uuid)
+        self.assertEqual({'uuid': str(uuid), 'player_name': 'robin'}, data)
+
+
+    @gen_test
     async def test_load_all(self):
         for uuid, player_name in self.PLAYERS.items():
             await UUIDsRelation.add_uuid(uuid, player_name)

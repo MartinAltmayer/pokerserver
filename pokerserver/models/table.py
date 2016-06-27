@@ -3,6 +3,10 @@ from pokerserver.database import TablesRelation
 from .player import Player
 
 
+class TableNotFoundError(Exception):
+    pass
+
+
 # pylint: disable=too-many-instance-attributes
 class Table:
     # pylint: disable=too-many-arguments, too-many-locals
@@ -38,6 +42,9 @@ class Table:
     @classmethod
     async def load_by_name(cls, name):
         table_data = await TablesRelation.load_table_by_name(name)
+        if table_data is None:
+            raise TableNotFoundError()
+
         players = await Player.load_by_table_id(table_data['table_id'])
         return cls(**table_data, players=players)
 
@@ -99,7 +106,7 @@ class Table:
         found_ids = []
         i = 1
         while len(found_names) < number:
-            name = 'Table {}'.format(i)
+            name = 'Table{}'.format(i)
             if name not in used_names:
                 found_names.append(name)
             i += 1
