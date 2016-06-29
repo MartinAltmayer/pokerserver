@@ -121,7 +121,7 @@ class _ExecuteContextManager:
 
     def _handle_query_exception(self, exc):
         LOG.error("Executing query failed: %s %s", exc, self._query)
-        if 'UNIQUE' in str(exc):  # I could not find a proper way for this check
+        if 'unique' in str(exc).lower():  # I could not find a proper way for this check
             raise DuplicateKeyError('Query: {}'.format(self._query)) from exc
         else:
             raise DbException('Executing query failed. Exception: {}. Query: {}'
