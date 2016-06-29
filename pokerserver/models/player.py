@@ -1,5 +1,6 @@
 from pokerserver.database import PlayersRelation
 
+
 class PlayerNotFoundError(Exception):
     pass
 
@@ -27,7 +28,7 @@ class Player:
     async def load_by_name(cls, name):
         player = await PlayersRelation.load_by_name(name)
         if player is not None:
-            return player
+            return Player(**player)
         else:
             raise PlayerNotFoundError()
 
@@ -36,8 +37,8 @@ class Player:
         return await PlayersRelation.load_by_name(name)
 
     @classmethod
-    async def add_player(cls, table, name, position, balance, cards, bet):
-        await PlayersRelation.add_player(table.table_id, name, position, balance, cards, bet)
+    async def add_player(cls, table, position, name, balance, cards, bet):  # pylint: disable=too-many-arguments
+        await PlayersRelation.add_player(table.table_id, position, name, balance, cards, bet)
 
     @classmethod
     async def load_by_table_id(cls, table_id):

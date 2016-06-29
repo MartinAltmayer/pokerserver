@@ -1,10 +1,13 @@
 import os
 import tempfile
-
+from unittest.mock import Mock
 from asyncio.futures import Future
+
 from tornado.platform.asyncio import AsyncIOLoop
 from tornado.testing import AsyncTestCase, AsyncHTTPTestCase
+from tornado.web import Application
 
+from pokerserver.controllers import HANDLERS
 from pokerserver.database import Database
 
 
@@ -52,6 +55,13 @@ class IntegrationTestCase(AsyncTestCase):
 
 
 class IntegrationHttpTestCase(IntegrationTestCase, AsyncHTTPTestCase):
+    def setUp(self):
+        self.args = Mock()
+        super().setUp()
+
+    def get_app(self):
+        return Application(HANDLERS, args=self.args)
+
     async def fetch_async(self, path):
         return await self.http_client.fetch(self.get_url(path))
 

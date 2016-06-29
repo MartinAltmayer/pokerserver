@@ -69,9 +69,6 @@ class Table:
                 False
             )
 
-    def is_free(self):
-        return len(self.players) < self.max_player_count
-
     def to_dict(self, player):
         result = {
             'players': [player.to_dict() for player in self.players],
@@ -97,6 +94,25 @@ class Table:
             'players': [player.name for player in self.players]
         }
 
+    def is_free(self):
+        return len(self.players) < self.max_player_count
+
+    def is_position_valid(self, position):
+        return 1 <= position <= self.max_player_count
+
+    def is_position_free(self, position):
+        return self.is_position_valid(position) and self.get_player_at(position) is None
+
+    def get_player_at(self, position):
+        for player in self.players:
+            if player.position == position:
+                return player
+        else:
+            return None
+
+    def is_player_at_table(self, player_name):
+        return any(player.name == player_name for player in self.players)
+
     @classmethod
     async def _get_unused_table_names_and_ids(cls, number):
         tables = await cls.load_all()
@@ -118,3 +134,18 @@ class Table:
             test_id += 1
 
         return zip(found_ids, found_names)
+
+    async def join(self, player_name, position, start_balance):
+        if self.is_closed:
+            raise ValueError('Table is closed')
+        if not self.is_position_valid(position):
+            raise ValueError('Invalid position')
+        if not self.is_position_free(position):
+            raise ValueError('Position occupied')
+        if self.is_player_at_table(player_name):
+            raise ValueError('Player has already joined')
+
+        await Player.add_player(self, position, player_name, start_balance, '', 0)
+
+        player = await Player.load_by_name(player_name)
+        self.players.append(player)

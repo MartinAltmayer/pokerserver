@@ -29,11 +29,11 @@ class BaseController(RequestHandler):
 
         self.player_name = uuid_data['player_name']
         self.player = await Player.load_if_exists(self.player_name)
-        LOG.info("Authenticated:", self.player_name, self.player)
+        LOG.info("Authenticated %s", self.player_name)
 
     def _get_uuid(self):
         try:
-            return UUID(self.get_query_argument('uuid'))  # TODO: should not be included in url
+            return UUID(self.get_query_argument('uuid'))
         except MissingArgumentError:
             raise HTTPError(HTTPStatus.UNAUTHORIZED)
         except ValueError:
