@@ -1,6 +1,6 @@
 import asyncio
-import aioodbc
 import logging
+import aioodbc
 
 LOG = logging.getLogger(__name__)
 
