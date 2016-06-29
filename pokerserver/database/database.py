@@ -1,5 +1,8 @@
 import asyncio
 import aioodbc
+import logging
+
+LOG = logging.getLogger(__name__)
 
 
 class DbException(Exception):
@@ -117,6 +120,7 @@ class _ExecuteContextManager:
             self._handle_query_exception(exc)
 
     def _handle_query_exception(self, exc):
+        LOG.error("Executing query failed: %s %s", exc, self._query)
         if 'UNIQUE' in str(exc):  # I could not find a proper way for this check
             raise DuplicateKeyError('Query: {}'.format(self._query)) from exc
         else:
