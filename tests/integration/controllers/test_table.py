@@ -21,34 +21,36 @@ class TestJoinController(IntegrationHttpTestCase):
         actual_players = {player.position: player.name for player in table.players}
         self.assertEqual(expected_players, actual_players)
 
+    @patch('pokerserver.controllers.base.BaseController.load_match')
     @gen_test
-    async def test_join(self):
+    async def test_join(self, load_mock):
         await self.async_setup()
-        with patch('pokerserver.models.table.Table.load_by_name') as load_mock:
-            table_mock = Mock(players=[])
-            table_mock.join.side_effect = return_done_future()
-            load_mock.side_effect = return_done_future(table_mock)
+        match_mock = Mock()
+        match_mock.table.players = []
+        match_mock.join.side_effect = return_done_future()
+        load_mock.side_effect = return_done_future(match_mock)
 
-            response = await self.fetch_async('/table/{}/join?position=1&uuid={}'.format(self.table_name, self.uuid))
+        response = await self.fetch_async('/table/{}/join?position=1&uuid={}'.format(self.table_name, self.uuid))
 
-            self.assertEqual(response.code, HTTPStatus.OK.value)
-            load_mock.assert_called_once_with(self.table_name)
-            table_mock.join.assert_called_once_with(self.player_name, 1, self.args.start_balance)
+        self.assertEqual(response.code, HTTPStatus.OK.value)
+        load_mock.assert_called_once_with(self.table_name)
+        match_mock.join.assert_called_once_with(self.player_name, 1, self.args.start_balance)
 
+    @patch('pokerserver.controllers.base.BaseController.load_match')
     @gen_test
-    async def test_join_and_start(self):
+    async def test_join_and_start(self, load_mock):
         await self.async_setup()
         self.args.min_player_count = 2
-        with patch('pokerserver.models.table.Table.load_by_name') as load_mock:
-            table_mock = Mock(players=['some player', 'another player'])
-            table_mock.join.side_effect = return_done_future()
-            table_mock.start.side_effect = return_done_future()
-            load_mock.side_effect = return_done_future(table_mock)
+        match_mock = Mock()
+        match_mock.table.players = ['some player', 'another player']
+        match_mock.join.side_effect = return_done_future()
+        match_mock.start.side_effect = return_done_future()
+        load_mock.side_effect = return_done_future(match_mock)
 
-            response = await self.fetch_async(
-                '/table/{}/join?position=1&uuid={}'.format(self.table_name, self.uuid))
+        response = await self.fetch_async(
+            '/table/{}/join?position=1&uuid={}'.format(self.table_name, self.uuid))
 
-            self.assertEqual(response.code, HTTPStatus.OK.value)
-            load_mock.assert_called_once_with(self.table_name)
-            table_mock.join.assert_called_once_with(self.player_name, 1, self.args.start_balance)
-            table_mock.start.assert_called_once_with()
+        self.assertEqual(response.code, HTTPStatus.OK.value)
+        load_mock.assert_called_once_with(self.table_name)
+        match_mock.join.assert_called_once_with(self.player_name, 1, self.args.start_balance)
+        match_mock.start.assert_called_once_with()

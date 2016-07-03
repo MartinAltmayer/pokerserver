@@ -4,12 +4,16 @@ from pokerserver.database import Database
 from pokerserver.database.utils import from_card_list, make_card_list, make_int_list, from_int_list
 
 
+TableConfig = namedtuple('TableConfig', 'min_player_count max_player_count small_blind big_blind')
+
+
 class TablesRelation:
     NAME = 'tables'
 
     FIELDS = [
         'table_id',
         'name',
+        'min_player_count',
         'max_player_count',
         'remaining_deck',
         'small_blind',
@@ -28,6 +32,7 @@ class TablesRelation:
         CREATE TABLE tables (
             table_id INT PRIMARY KEY,
             name VARCHAR UNIQUE NOT NULL,
+            min_player_count INT NOT NULL,
             max_player_count INT NOT NULL,
             remaining_deck VARCHAR NOT NULL,
             small_blind INT NOT NULL,
@@ -95,6 +100,10 @@ class TablesRelation:
     @classmethod
     def _from_db(cls, row):
         data = cls.TABLES_RELATION_ROW(*row)._asdict()
+        data['config'] = TableConfig(
+            data['min_player_count'], data['max_player_count'], data['small_blind'], data['big_blind'])
+        for key in 'min_player_count', 'max_player_count', 'small_blind', 'big_blind':
+            del data[key]
         data['remaining_deck'] = from_card_list(data['remaining_deck'])
         data['open_cards'] = from_card_list(data['open_cards'])
         data['side_pots'] = from_int_list(data['side_pots'])
@@ -102,16 +111,17 @@ class TablesRelation:
 
     # pylint: disable=too-many-arguments, too-many-locals
     @classmethod
-    async def create_table(cls, table_id, name, max_player_count, remaining_deck, small_blind, big_blind, open_cards,
-                           main_pot, side_pots, current_player, dealer, small_blind_player, big_blind_player,
-                           is_closed):
+    async def create_table(cls, table_id, name, config, remaining_deck, open_cards, main_pot, side_pots,
+                           current_player, dealer, small_blind_player, big_blind_player, is_closed):
         db = Database.instance()
         remaining_deck = make_card_list(remaining_deck)
         open_cards = make_card_list(open_cards)
         side_pots = make_int_list(side_pots)
-        await db.execute(cls.INSERT_QUERY, table_id, name, max_player_count, remaining_deck, small_blind, big_blind,
-                         open_cards, main_pot, side_pots, current_player, dealer, small_blind_player, big_blind_player,
-                         is_closed)
+        await db.execute(
+            cls.INSERT_QUERY, table_id, name, config.min_player_count, config.max_player_count, remaining_deck,
+            config.small_blind, config.big_blind, open_cards, main_pot, side_pots, current_player, dealer,
+            small_blind_player, big_blind_player, is_closed
+        )
 
     @classmethod
     async def set_special_players(cls, table_id, dealer, small_blind_player, big_blind_player, current_player):

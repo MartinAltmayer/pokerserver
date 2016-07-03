@@ -2,7 +2,7 @@ from http import HTTPStatus
 from tornado.web import HTTPError, MissingArgumentError
 
 from pokerserver.controllers.base import BaseController, authenticated
-from pokerserver.models import Table, TableNotFoundError
+from pokerserver.models import Table
 
 TABLE_NAME_PATTERN = "([^/]+)"
 
@@ -22,14 +22,14 @@ class JoinController(BaseController):
     @authenticated
     async def get(self, table_name):  # pylint: disable=arguments-differ
         position = self._get_position()
-        table = await self._get_table(table_name)
+        match = await self.load_match(table_name)
         try:
-            await table.join(self.player_name, position, self.settings['args'].start_balance)
+            await match.join(self.player_name, position, self.settings['args'].start_balance)
         except ValueError as error:
             raise HTTPError(HTTPStatus.BAD_REQUEST, str(error))
 
-        if len(table.players) == self.settings['args'].min_player_count:
-            await table.start()
+        if len(match.table.players) == self.settings['args'].min_player_count:
+            await match.start()
 
     def _get_position(self):
         try:
@@ -38,9 +38,3 @@ class JoinController(BaseController):
             raise HTTPError(HTTPStatus.BAD_REQUEST, 'Missing parameter: "position"')
         except ValueError:
             raise HTTPError(HTTPStatus.BAD_REQUEST, 'Invalid position')
-
-    async def _get_table(self, table_name):
-        try:
-            return await Table.load_by_name(table_name)
-        except TableNotFoundError:
-            raise HTTPError(HTTPStatus.NOT_FOUND, 'Table not found')

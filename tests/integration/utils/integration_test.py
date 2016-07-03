@@ -10,7 +10,7 @@ from tornado.web import Application
 from pokerserver.controllers import HANDLERS
 from pokerserver.database import Database
 from pokerserver.database.players import PlayersRelation
-from pokerserver.database.tables import TablesRelation
+from pokerserver.database.tables import TablesRelation, TableConfig
 from pokerserver.models.table import Table
 
 
@@ -78,16 +78,17 @@ def return_done_future(result=None):
     return future_creator
 
 
-async def create_table(table_id=1, name='Table', max_player_count=10, small_blind=1, big_blind=2, remaining_deck=None,
-                       open_cards=None, main_pot=0, side_pots=None, current_player=None, dealer=None,
-                       small_blind_player=None, big_blind_player=None, is_closed=False, players=None,
+async def create_table(table_id=1, name='Table', min_player_count=2, max_player_count=10, small_blind=1, big_blind=2,
+                       remaining_deck=None, open_cards=None, main_pot=0, side_pots=None, current_player=None,
+                       dealer=None, small_blind_player=None, big_blind_player=None, is_closed=False, players=None,
                        initial_balance=0):
     # pylint: disable=too-many-locals, too-many-arguments
     remaining_deck = remaining_deck or []
     open_cards = open_cards or []
     side_pots = side_pots or []
+    config = TableConfig(min_player_count, max_player_count, small_blind, big_blind)
     await TablesRelation.create_table(
-        table_id=table_id, name=name, max_player_count=max_player_count, small_blind=small_blind, big_blind=big_blind,
+        table_id=table_id, name=name, config=config,
         remaining_deck=remaining_deck, open_cards=open_cards, main_pot=main_pot, side_pots=side_pots,
         current_player=current_player, dealer=dealer, small_blind_player=small_blind_player,
         big_blind_player=big_blind_player, is_closed=is_closed

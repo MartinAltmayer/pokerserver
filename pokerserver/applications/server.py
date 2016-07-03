@@ -13,6 +13,7 @@ from pokerserver.configuration import LOGGING
 from pokerserver.controllers import HANDLERS
 from pokerserver.controllers.tables import TablesController
 from pokerserver.database import Database
+from pokerserver.database.tables import TableConfig
 
 LOG = logging.getLogger(__name__)
 
@@ -23,7 +24,8 @@ def make_app(args):
 
 async def setup(args):
     await Database.connect(args.db)
-    await TablesController.ensure_free_tables(args.free_tables, args.max_player_count, args.small_blind, args.big_blind)
+    await TablesController.ensure_free_tables(args.free_tables, TableConfig(
+        args.min_player_count, args.max_player_count, args.small_blind, args.big_blind))
 
 
 async def teardown():

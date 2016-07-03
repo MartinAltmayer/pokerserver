@@ -7,7 +7,9 @@ import logging
 from tornado.web import RequestHandler, MissingArgumentError, HTTPError
 
 from pokerserver.database.uuids import UUIDsRelation
+from pokerserver.models.match import Match
 from pokerserver.models.player import Player
+from pokerserver.models.table import Table, TableNotFoundError
 
 LOG = logging.getLogger(__name__)
 
@@ -38,6 +40,14 @@ class BaseController(RequestHandler):
             raise HTTPError(HTTPStatus.UNAUTHORIZED)
         except ValueError:
             raise HTTPError(HTTPStatus.BAD_REQUEST, 'Invalid uuid')
+
+    @classmethod
+    async def load_match(cls, table_name):
+        try:
+            table = await Table.load_by_name(table_name)
+        except TableNotFoundError:
+            raise HTTPError(HTTPStatus.NOT_FOUND, 'Table not found')
+        return Match(table)
 
 
 def authenticated(method):

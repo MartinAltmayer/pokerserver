@@ -1,6 +1,7 @@
 from tornado.testing import gen_test
 
 from pokerserver.database import TablesRelation
+from pokerserver.database.tables import TableConfig
 from tests.integration.utils.integration_test import IntegrationTestCase
 
 
@@ -9,10 +10,8 @@ class TestTablesRelation(IntegrationTestCase):
         {
             'table_id': 1,
             'name': 'table1',
-            'max_player_count': 9,
+            'config': TableConfig(4, 9, 12, 24),
             'remaining_deck': ['2s', 'Jc', '4h'],
-            'small_blind': 12,
-            'big_blind': 24,
             'open_cards': [],
             'main_pot': 1000,
             'side_pots': [],
@@ -24,10 +23,8 @@ class TestTablesRelation(IntegrationTestCase):
         }, {
             'table_id': 2,
             'name': 'table2',
-            'max_player_count': 15,
+            'config': TableConfig(4, 9, 12, 24),
             'remaining_deck': ['2s', 'Jc', '4h'],
-            'small_blind': 12,
-            'big_blind': 24,
             'open_cards': [],
             'main_pot': 1000,
             'side_pots': [],
@@ -39,10 +36,8 @@ class TestTablesRelation(IntegrationTestCase):
         }, {
             'table_id': 3,
             'name': 'empty table',
-            'max_player_count': 2,
+            'config': TableConfig(4, 9, 12, 24),
             'remaining_deck': ['2s', 'Jc', '4h'],
-            'small_blind': 12,
-            'big_blind': 24,
             'open_cards': [],
             'main_pot': 1000,
             'side_pots': [],
@@ -56,7 +51,8 @@ class TestTablesRelation(IntegrationTestCase):
 
     @gen_test
     async def test_create_table(self):
-        await TablesRelation.create_table(42, 'Game of Thrones', 30, ['2s', 'Jc', '4h'], 12, 24, [], 1000, [],
+        config = TableConfig(4, 30, 12, 24)
+        await TablesRelation.create_table(42, 'Game of Thrones', config, ['2s', 'Jc', '4h'], [], 1000, [],
                                           "Eddard", "John", "Arya", "Bran", False)
         tables = await TablesRelation.load_all()
         self.assertEqual(
@@ -64,10 +60,8 @@ class TestTablesRelation(IntegrationTestCase):
             [{
                 'table_id': 42,
                 'name': 'Game of Thrones',
-                'max_player_count': 30,
+                'config': config,
                 'remaining_deck': ['2s', 'Jc', '4h'],
-                'small_blind': 12,
-                'big_blind': 24,
                 'open_cards': [],
                 'main_pot': 1000,
                 'side_pots': [],
