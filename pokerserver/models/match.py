@@ -23,6 +23,9 @@ class Match:
         player = await Player.load_by_name(player_name)
         self.table.players.append(player)
 
+        if len(self.table.players) == self.table.config.min_player_count:
+            await self.start()
+
     async def start(self):
         await self.table.set_special_players(dealer=random.choice(self.table.players))
         await self.start_hand()

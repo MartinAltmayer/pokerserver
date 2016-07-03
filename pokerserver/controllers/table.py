@@ -28,9 +28,6 @@ class JoinController(BaseController):
         except ValueError as error:
             raise HTTPError(HTTPStatus.BAD_REQUEST, str(error))
 
-        if len(match.table.players) == self.settings['args'].min_player_count:
-            await match.start()
-
     def _get_position(self):
         try:
             return int(self.get_query_argument('position'))

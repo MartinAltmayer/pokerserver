@@ -1,4 +1,4 @@
-from unittest.mock import patch
+from unittest.mock import patch, Mock
 from tornado.testing import gen_test
 
 from pokerserver.database.database import Database
@@ -7,7 +7,7 @@ from pokerserver.models.card import get_all_cards
 from pokerserver.models.match import Match
 from pokerserver.models.player import Player
 from pokerserver.models.table import Table
-from tests.integration.utils.integration_test import IntegrationTestCase, create_table
+from tests.integration.utils.integration_test import IntegrationTestCase, create_table, return_done_future
 
 
 class TestJoin(IntegrationTestCase):
@@ -73,6 +73,15 @@ class TestJoin(IntegrationTestCase):
         with self.assertRaises(ValueError):
             await self.match.join(self.player_name, 2, 0)
         await self.check_players({1: self.player_name})
+
+    @gen_test
+    async def test_join_and_start(self):
+        await self.async_setup()
+        self.match.start = Mock(side_effect=return_done_future())
+        await self.match.join(self.player_name, 1, 0)
+        self.match.start.assert_not_called()
+        await self.match.join(self.player_name + ' II.', 2, 0)
+        self.match.start.assert_called_once_with()
 
 
 class TestStartRound(IntegrationTestCase):

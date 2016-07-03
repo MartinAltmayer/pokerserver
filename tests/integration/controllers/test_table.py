@@ -35,22 +35,3 @@ class TestJoinController(IntegrationHttpTestCase):
         self.assertEqual(response.code, HTTPStatus.OK.value)
         load_mock.assert_called_once_with(self.table_name)
         match_mock.join.assert_called_once_with(self.player_name, 1, self.args.start_balance)
-
-    @patch('pokerserver.controllers.base.BaseController.load_match')
-    @gen_test
-    async def test_join_and_start(self, load_mock):
-        await self.async_setup()
-        self.args.min_player_count = 2
-        match_mock = Mock()
-        match_mock.table.players = ['some player', 'another player']
-        match_mock.join.side_effect = return_done_future()
-        match_mock.start.side_effect = return_done_future()
-        load_mock.side_effect = return_done_future(match_mock)
-
-        response = await self.fetch_async(
-            '/table/{}/join?position=1&uuid={}'.format(self.table_name, self.uuid))
-
-        self.assertEqual(response.code, HTTPStatus.OK.value)
-        load_mock.assert_called_once_with(self.table_name)
-        match_mock.join.assert_called_once_with(self.player_name, 1, self.args.start_balance)
-        match_mock.start.assert_called_once_with()
