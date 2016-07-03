@@ -9,6 +9,9 @@ from tornado.web import Application
 
 from pokerserver.controllers import HANDLERS
 from pokerserver.database import Database
+from pokerserver.database.players import PlayersRelation
+from pokerserver.database.tables import TablesRelation
+from pokerserver.models.table import Table
 
 
 class IntegrationTestCase(AsyncTestCase):
@@ -73,3 +76,23 @@ def return_done_future(result=None):
         return future
 
     return future_creator
+
+
+async def create_table(table_id=1, name='Table', max_player_count=10, small_blind=1, big_blind=2, remaining_deck=None,
+                       open_cards=None, main_pot=0, side_pots=None, current_player=None, dealer=None,
+                       small_blind_player=None, big_blind_player=None, is_closed=False, players=None,
+                       initial_balance=0):
+    # pylint: disable=too-many-locals, too-many-arguments
+    remaining_deck = remaining_deck or []
+    open_cards = open_cards or []
+    side_pots = side_pots or []
+    await TablesRelation.create_table(
+        table_id=table_id, name=name, max_player_count=max_player_count, small_blind=small_blind, big_blind=big_blind,
+        remaining_deck=remaining_deck, open_cards=open_cards, main_pot=main_pot, side_pots=side_pots,
+        current_player=current_player, dealer=dealer, small_blind_player=small_blind_player,
+        big_blind_player=big_blind_player, is_closed=is_closed
+    )
+    if players is not None:
+        for position, player_name in players.items():
+            await PlayersRelation.add_player(table_id, position, player_name, initial_balance, [], 0)
+    return await Table.load_by_name(name)

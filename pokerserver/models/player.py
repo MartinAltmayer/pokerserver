@@ -48,3 +48,16 @@ class Player:
     @classmethod
     def is_valid_name(cls, name):
         return name.isalpha()
+
+    async def pay(self, amount):
+        await self.set_balance(self.balance - amount)
+
+    async def set_balance(self, balance):
+        assert balance >= 0
+        await PlayersRelation.set_balance(self.name, balance)
+        self.balance = balance
+
+    async def set_cards(self, cards):
+        assert len(cards) <= 2
+        await PlayersRelation.set_cards(self.name, cards)
+        self.cards = cards
