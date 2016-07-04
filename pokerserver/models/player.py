@@ -14,13 +14,13 @@ class Player:
         self.cards = cards
         self.bet = bet
 
-    def to_dict(self):
+    def to_dict(self, show_cards=False):
         return {
             'table_id': self.table_id,
             'position': self.position,
             'name': self.name,
             'balance': self.balance,
-            'cards': self.cards,
+            'cards': self.cards if show_cards else [],
             'bet': self.bet
         }
 

@@ -116,9 +116,15 @@ class TestStartRound(IntegrationTestCase):
     @patch('random.shuffle')
     @gen_test
     async def test_distribute_cards(self, shuffle_mock):
+        table_id = 1
         cards = get_all_cards()
         shuffle_mock.return_value = reversed(cards)
-        table = await create_table(players={1: 'a', 2: 'b', 5: 'c'})
+        players = [
+            Player(table_id, 1, 'a', 0, [], 0),
+            Player(table_id, 2, 'b', 0, [], 0),
+            Player(table_id, 5, 'c', 0, [], 0)
+        ]
+        table = await create_table(table_id=table_id, players=players)
         match = Match(table)
 
         await match.distribute_cards()
@@ -132,7 +138,14 @@ class TestStartRound(IntegrationTestCase):
     @patch('random.choice')
     @gen_test
     async def test_start(self, choice_mock):
-        table = await create_table(players={1: 'a', 2: 'b', 3: 'c'}, initial_balance=10)
+        table_id = 1
+        players = [
+            Player(table_id, 1, 'a', 10, [], 0),
+            Player(table_id, 2, 'b', 10, [], 0),
+            Player(table_id, 3, 'c', 10, [], 0)
+        ]
+
+        table = await create_table(table_id=table_id, players=players)
         match = Match(table)
         choice_mock.return_value = table.get_player_at(2)
 

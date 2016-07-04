@@ -65,9 +65,9 @@ class Table:
                 is_closed=False
             )
 
-    def to_dict(self, player):
+    def to_dict(self, player_name):
         result = {
-            'players': [player.to_dict() for player in self.players],
+            'players': [player.to_dict(show_cards=player_name == player.name) for player in self.players],
             'smallBlind': self.config.small_blind,
             'bigBlind': self.config.big_blind,
             'openCards': self.open_cards,
@@ -77,9 +77,6 @@ class Table:
             'dealer': self.dealer,
             'isClosed': self.is_closed
         }
-
-        if player is not None:
-            pass
 
         return result
 

@@ -11,9 +11,8 @@ class TableController(BaseController):
     route = '/table/' + TABLE_NAME_PATTERN
 
     async def get(self, name):  # pylint: disable=arguments-differ
-        player = None
         table = await Table.load_by_name(name)
-        self.write(table.to_dict(player))
+        self.write(table.to_dict(self.player_name))
 
 
 class JoinController(BaseController):

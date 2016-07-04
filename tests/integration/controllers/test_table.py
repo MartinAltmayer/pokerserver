@@ -6,19 +6,28 @@ from uuid import uuid4
 from tornado.testing import gen_test
 
 from pokerserver.database.uuids import UUIDsRelation
-from pokerserver.models.table import Table
+from pokerserver.models import Table, Player
 from tests.integration.utils.integration_test import IntegrationHttpTestCase, return_done_future, create_table
 
 
 class TestTableController(IntegrationHttpTestCase):
     async def async_setup(self):
-        table = await create_table(players={1: 'a', 2: 'b', 5: 'c'})
+        self.table_id = 1
+        self.uuid = uuid4()
+        self.player_name = 'c'
+        await UUIDsRelation.add_uuid(self.uuid, self.player_name)
+        players = [
+            Player(self.table_id, 1, 'a', 0, ['Ah', 'Ac'], 0),
+            Player(self.table_id, 2, 'b', 0, ['Kh', 'Kc'], 0),
+            Player(self.table_id, 5, 'c', 0, ['Qh', 'Qc'], 0)
+        ]
+        table = await create_table(table_id=self.table_id, players=players)
         self.table_name = table.name
 
     @gen_test
     async def test_get(self):
         await self.async_setup()
-        response = await self.fetch_async('/table/{}'.format(self.table_name))
+        response = await self.fetch_async('/table/{}?uuid={}'.format(self.table_name, self.uuid))
         self.assertEqual(response.code, HTTPStatus.OK.value)
         table = loads(response.body.decode())
         self.assertEqual(table, {
@@ -45,7 +54,7 @@ class TestTableController(IntegrationHttpTestCase):
             }, {
                 'table_id': 1,
                 'balance': 0,
-                'cards': [],
+                'cards': ['Qh', 'Qc'],
                 'name': 'c',
                 'bet': 0,
                 'position': 5

@@ -20,18 +20,19 @@ class BaseController(RequestHandler):
         self.player_name = None
         self.player = None
 
+    async def prepare(self):
+        await self.authenticate()
+
     def is_authenticated(self):
         return self.player_name is not None
 
     async def authenticate(self):
         uuid = self._get_uuid()
         uuid_data = await UUIDsRelation.load_by_uuid(uuid)
-        if uuid_data is None:
-            raise HTTPError(HTTPStatus.UNAUTHORIZED)
-
-        self.player_name = uuid_data['player_name']
-        self.player = await Player.load_if_exists(self.player_name)
-        LOG.info("Authenticated %s", self.player_name)
+        if uuid_data is not None:
+            self.player_name = uuid_data['player_name']
+            self.player = await Player.load_if_exists(self.player_name)
+            LOG.info("Authenticated %s", self.player_name)
 
     def _get_uuid(self):
         try:
@@ -53,7 +54,8 @@ class BaseController(RequestHandler):
 def authenticated(method):
     @functools.wraps(method)
     async def wrapper(controller, *args):
-        await controller.authenticate()
+        if controller.player_name is None:
+            raise HTTPError(HTTPStatus.UNAUTHORIZED)
         if asyncio.iscoroutinefunction(method):
             await method(controller, *args)
         else:
