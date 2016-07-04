@@ -66,6 +66,7 @@ class Table:
             )
 
     def to_dict(self, player_name):
+        player_names = {player.name for player in self.players}
         result = {
             'players': [player.to_dict(show_cards=player_name == player.name) for player in self.players],
             'smallBlind': self.config.small_blind,
@@ -75,7 +76,8 @@ class Table:
             'sidePots': self.side_pots,
             'currentPlayer': self.current_player,
             'dealer': self.dealer,
-            'isClosed': self.is_closed
+            'isClosed': self.is_closed,
+            'canJoin': player_name not in player_names
         }
 
         return result
