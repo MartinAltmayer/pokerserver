@@ -1,11 +1,58 @@
-from uuid import uuid4
-from unittest.mock import patch, Mock
 from http import HTTPStatus
+from json import loads
+from unittest.mock import patch, Mock
+from uuid import uuid4
+
 from tornado.testing import gen_test
 
 from pokerserver.database.uuids import UUIDsRelation
 from pokerserver.models.table import Table
 from tests.integration.utils.integration_test import IntegrationHttpTestCase, return_done_future, create_table
+
+
+class TestTableController(IntegrationHttpTestCase):
+    async def async_setup(self):
+        table = await create_table(players={1: 'a', 2: 'b', 5: 'c'})
+        self.table_name = table.name
+
+    @gen_test
+    async def test_get(self):
+        await self.async_setup()
+        response = await self.fetch_async('/table/{}'.format(self.table_name))
+        self.assertEqual(response.code, HTTPStatus.OK.value)
+        table = loads(response.body.decode())
+        self.assertEqual(table, {
+            'bigBlind': 2,
+            'currentPlayer': None,
+            'dealer': None,
+            'isClosed': False,
+            'mainPot': 0,
+            'openCards': [],
+            'players': [{
+                'table_id': 1,
+                'balance': 0,
+                'cards': [],
+                'name': 'a',
+                'bet': 0,
+                'position': 1
+            }, {
+                'table_id': 1,
+                'balance': 0,
+                'cards': [],
+                'name': 'b',
+                'bet': 0,
+                'position': 2
+            }, {
+                'table_id': 1,
+                'balance': 0,
+                'cards': [],
+                'name': 'c',
+                'bet': 0,
+                'position': 5
+            }],
+            'sidePots': [],
+            'smallBlind': 1
+        })
 
 
 class TestJoinController(IntegrationHttpTestCase):
