@@ -65,14 +65,18 @@ class IntegrationHttpTestCase(IntegrationTestCase, AsyncHTTPTestCase):
     def get_app(self):
         return Application(HANDLERS, args=self.args)
 
-    async def fetch_async(self, path):
-        return await self.http_client.fetch(self.get_url(path))
+    async def fetch_async(self, path, **kwargs):
+        result = await self.http_client.fetch(self.get_url(path), **kwargs)
+        return result
 
 
-def return_done_future(result=None):
+def return_done_future(result=None, exception=None):
     def future_creator(*args, **kwargs):  # pylint: disable=unused-argument
         future = Future()
-        future.set_result(result)
+        if exception is not None:
+            future.set_exception(exception)
+        else:
+            future.set_result(result)
         return future
 
     return future_creator

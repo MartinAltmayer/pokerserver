@@ -1,5 +1,7 @@
 from pokerserver.database import PlayersRelation
 
+PLAYER_NAME_PATTERN = "[A-Za-z0-9]{3,}"
+
 
 class PlayerNotFoundError(Exception):
     pass

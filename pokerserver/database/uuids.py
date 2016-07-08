@@ -15,7 +15,7 @@ class UUIDsRelation:
     CREATE_QUERY = """
         CREATE TABLE uuids (
             uuid VARCHAR PRIMARY KEY,
-            player_name VARCHAR NOT NULL
+            player_name VARCHAR NOT NULL UNIQUE
         )
     """
 

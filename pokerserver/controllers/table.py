@@ -1,7 +1,7 @@
 from http import HTTPStatus
-from tornado.web import HTTPError, MissingArgumentError
+from tornado.web import MissingArgumentError
 
-from pokerserver.controllers.base import BaseController, authenticated
+from pokerserver.controllers.base import BaseController, authenticated, HTTPError
 from pokerserver.models import Table
 
 TABLE_NAME_PATTERN = "([^/]+)"
