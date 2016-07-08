@@ -3,6 +3,9 @@ from tornado.testing import gen_test
 
 from pokerserver.database import Database, RELATIONS, DbException
 from pokerserver.database.database import DuplicateKeyError
+from pokerserver.database.players import PlayersRelation
+from pokerserver.database.tables import TablesRelation
+from pokerserver.database.uuids import UUIDsRelation
 from tests.integration.utils.integration_test import IntegrationTestCase
 
 
@@ -100,6 +103,20 @@ class TestDatabase(IntegrationTestCase):
         await db.create_tables()
         for table_class in RELATIONS:
             self.assertTrue(await self.check_table_exists(db, table_class.NAME))
+
+    @gen_test
+    async def test_clear_tables(self):
+        db = await self.connect_database()
+        await db.create_tables()
+        await db.execute(PlayersRelation.INSERT_QUERY, [1] * len(PlayersRelation.FIELDS))
+        await db.execute(TablesRelation.INSERT_QUERY, [1] * len(TablesRelation.FIELDS))
+        await db.execute(UUIDsRelation.INSERT_QUERY, [1] * len(UUIDsRelation.FIELDS))
+
+        await db.clear_tables(exclude=['uuids'])
+
+        self.assertEqual(0, await db.find_one('SELECT COUNT(*) FROM players'))
+        self.assertEqual(0, await db.find_one('SELECT COUNT(*) FROM tables'))
+        self.assertEqual(1, await db.find_one('SELECT COUNT(*) FROM uuids'))
 
     @gen_test
     async def test_insert_with_duplicate(self):

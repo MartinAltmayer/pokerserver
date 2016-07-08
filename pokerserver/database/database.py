@@ -58,6 +58,12 @@ class Database:
         for table_class in RELATIONS:
             await self.create_table(table_class)
 
+    async def clear_tables(self, exclude=tuple()):
+        from ..database import RELATIONS
+        for table_class in RELATIONS:
+            if table_class.NAME not in exclude:
+                await self.execute('DELETE FROM {}'.format(table_class.NAME))
+
     def execute(self, query, *args):
         return _ExecuteContextManager(self._pool, query, *args)
 

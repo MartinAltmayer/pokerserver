@@ -19,8 +19,8 @@ setup(
     entry_points={
         'console_scripts': [
             'pokerserver=pokerserver.applications.server:main',
-            'createpokerdb=pokerserver.applications.create_database:main'
-
+            'createpokerdb=pokerserver.applications.create_database:main',
+            'clearpokerdb=pokerserver.applications.clear_database:main'
         ]
     },
     install_requires=requirements,

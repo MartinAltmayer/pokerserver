@@ -21,6 +21,8 @@ class UUIDsRelation:
 
     LOAD_BY_UUID_QUERY = "SELECT uuid, player_name FROM uuids WHERE uuid = ?"
 
+    INSERT_QUERY = "INSERT INTO uuids (uuid, player_name) VALUES (?,?)"
+
     @classmethod
     async def load_by_uuid(cls, uuid):
         data = await Database.instance().find_row(cls.LOAD_BY_UUID_QUERY, str(uuid))
@@ -46,4 +48,4 @@ class UUIDsRelation:
     @classmethod
     async def add_uuid(cls, uuid, player_name):
         db = Database.instance()
-        await db.execute('INSERT INTO uuids (uuid, player_name) VALUES (?,?)', str(uuid), player_name)
+        await db.execute(cls.INSERT_QUERY, str(uuid), player_name)
