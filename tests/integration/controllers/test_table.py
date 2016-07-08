@@ -7,6 +7,7 @@ from tornado.testing import gen_test
 
 from pokerserver.database.uuids import UUIDsRelation
 from pokerserver.models import Table, Player
+from pokerserver.models.match import PositionOccupiedError
 from tests.integration.utils.integration_test import IntegrationHttpTestCase, return_done_future, create_table
 
 
@@ -175,3 +176,17 @@ class TestJoinController(IntegrationHttpTestCase):
         self.assertEqual(response.code, HTTPStatus.OK.value)
         load_mock.assert_called_once_with(self.table_name)
         match_mock.join.assert_called_once_with(self.player_name, 1, self.args.start_balance)
+
+    @patch('pokerserver.controllers.base.BaseController.load_match')
+    @gen_test
+    async def test_join_occupied_position(self, load_mock):
+        await self.async_setup()
+        match_mock = Mock()
+        match_mock.table.players = []
+        match_mock.join.side_effect = return_done_future(exception=PositionOccupiedError)
+        load_mock.side_effect = return_done_future(match_mock)
+
+        response = await self.fetch_async('/table/{}/join?position=1&uuid={}'.format(self.table_name, self.uuid),
+                                          raise_error=False)
+
+        self.assertEqual(response.code, HTTPStatus.CONFLICT.value)

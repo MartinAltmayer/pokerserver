@@ -3,6 +3,7 @@ from tornado.web import MissingArgumentError
 
 from pokerserver.controllers.base import BaseController, authenticated, HTTPError
 from pokerserver.models import Table
+from pokerserver.models.match import PositionOccupiedError
 
 TABLE_NAME_PATTERN = "([^/]+)"
 
@@ -24,6 +25,8 @@ class JoinController(BaseController):
         match = await self.load_match(table_name)
         try:
             await match.join(self.player_name, position, self.settings['args'].start_balance)
+        except PositionOccupiedError:
+            raise HTTPError(HTTPStatus.CONFLICT, 'Position occupied')
         except ValueError as error:
             raise HTTPError(HTTPStatus.BAD_REQUEST, str(error))
 

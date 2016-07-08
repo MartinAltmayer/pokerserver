@@ -5,6 +5,7 @@ from tornado.testing import gen_test
 
 from pokerserver.database import Database, TableConfig
 from pokerserver.models import get_all_cards, Match, Player, Table
+from pokerserver.models.match import PositionOccupiedError
 from tests.integration.utils.integration_test import IntegrationTestCase, create_table, return_done_future
 
 
@@ -60,7 +61,7 @@ class TestJoin(IntegrationTestCase):
     async def test_join_occupied_position(self):
         await self.async_setup()
         await self.match.join(self.player_name, 1, 0)
-        with self.assertRaises(ValueError):
+        with self.assertRaises(PositionOccupiedError):
             await self.match.join(self.player_name + '2', 1, 0)
         await self.check_players({1: self.player_name})
 
@@ -93,13 +94,12 @@ class TestJoin(IntegrationTestCase):
     @gen_test
     async def test_join_concurrent(self):
         await self.async_setup()
-        with self.assertRaises(ValueError):
+        with self.assertRaises(PositionOccupiedError):
             await gather(
                 self.match.join(self.player_name, 1, 0),
                 self.match.join('other player', 1, 0),
                 loop=self.get_asyncio_loop()
             )
-
 
 
 class TestStartRound(IntegrationTestCase):

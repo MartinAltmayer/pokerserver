@@ -8,6 +8,10 @@ from pokerserver.models.player import Player
 LOG = logging.getLogger(__name__)
 
 
+class PositionOccupiedError(Exception):
+    pass
+
+
 class Match:
     def __init__(self, table):
         self.table = table
@@ -22,14 +26,14 @@ class Match:
         if not self.table.is_position_valid(position):
             raise ValueError('Invalid position')
         if not self.table.is_position_free(position):
-            raise ValueError('Position occupied')
+            raise PositionOccupiedError()
         if self.table.is_player_at_table(player_name):
             raise ValueError('Player has already joined')
 
         try:
             await Player.add_player(self.table, position, player_name, start_balance, '', 0)
         except DuplicateKeyError:
-            raise ValueError('Position has been occupied by another player just now')
+            raise PositionOccupiedError()
 
         player = await Player.load_by_name(player_name)
         self.table.players.append(player)
