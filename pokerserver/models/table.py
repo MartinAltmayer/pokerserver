@@ -77,7 +77,7 @@ class Table:
             'currentPlayer': self.current_player,
             'dealer': self.dealer,
             'isClosed': self.is_closed,
-            'canJoin': player_name not in player_names
+            'canJoin': player_name not in player_names and len(self.players) < self.config.max_player_count
         }
 
         return result

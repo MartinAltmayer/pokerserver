@@ -107,6 +107,46 @@ class TestTableController(IntegrationHttpTestCase):
             'smallBlind': 1
         })
 
+    @gen_test
+    async def test_get_for_unauthorized_player(self):
+        await self.async_setup()
+        response = await self.fetch_async('/table/{}'.format(self.table_name))
+        self.assertEqual(response.code, HTTPStatus.OK.value)
+        table = loads(response.body.decode())
+        self.assertEqual(table, {
+            'bigBlind': 2,
+            'canJoin': True,
+            'currentPlayer': None,
+            'dealer': None,
+            'isClosed': False,
+            'mainPot': 0,
+            'openCards': [],
+            'players': [{
+                'table_id': 1,
+                'balance': 0,
+                'cards': [],
+                'name': 'a',
+                'bet': 0,
+                'position': 1
+            }, {
+                'table_id': 1,
+                'balance': 0,
+                'cards': [],
+                'name': 'b',
+                'bet': 0,
+                'position': 2
+            }, {
+                'table_id': 1,
+                'balance': 0,
+                'cards': [],
+                'name': 'c',
+                'bet': 0,
+                'position': 5
+            }],
+            'sidePots': [],
+            'smallBlind': 1
+        })
+
 
 class TestJoinController(IntegrationHttpTestCase):
     async def async_setup(self):
