@@ -1,12 +1,8 @@
 from unittest.mock import patch, Mock
 from tornado.testing import gen_test
 
-from pokerserver.database.database import Database
-from pokerserver.database.tables import TableConfig
-from pokerserver.models.card import get_all_cards
-from pokerserver.models.match import Match
-from pokerserver.models.player import Player
-from pokerserver.models.table import Table
+from pokerserver.database import Database, TableConfig
+from pokerserver.models import get_all_cards, Match, Player, Table
 from tests.integration.utils.integration_test import IntegrationTestCase, create_table, return_done_future
 
 
