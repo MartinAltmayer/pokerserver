@@ -34,7 +34,7 @@ class BaseController(RequestHandler):
         if uuid_data is not None:
             self.player_name = uuid_data['player_name']
             self.player = await Player.load_if_exists(self.player_name)
-            LOG.info("Authenticated %s", self.player_name)
+            LOG.info("[%s] Authenticated", self.player_name)
 
     def _get_uuid(self):
         try:

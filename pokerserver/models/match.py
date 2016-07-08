@@ -1,12 +1,19 @@
 import random
+import logging
 
 from pokerserver.models.card import get_all_cards
 from pokerserver.models.player import Player
+
+LOG = logging.getLogger(__name__)
 
 
 class Match:
     def __init__(self, table):
         self.table = table
+
+    def log(self, player_or_name, message):
+        player_name = player_or_name if isinstance(player_or_name, str) else player_or_name.name
+        LOG.info('[%s] %s', player_name, message)
 
     async def join(self, player_name, position, start_balance):
         if self.table.is_closed:
@@ -23,6 +30,8 @@ class Match:
         player = await Player.load_by_name(player_name)
         self.table.players.append(player)
 
+        self.log(player_name, 'Joined table {} at {}'.format(self.table.name, position))
+
         if len(self.table.players) == self.table.config.min_player_count:
             await self.start()
 
@@ -37,6 +46,7 @@ class Match:
             small_blind_player=small_blind_player, big_blind_player=big_blind_player, current_player=current_player)
         await self.pay_blinds()
         await self.distribute_cards()
+        self.log(current_player, "Started table {}".format(self.table.name))
 
     def find_blind_players(self, dealer):
         if len(self.table.players) == 2:
