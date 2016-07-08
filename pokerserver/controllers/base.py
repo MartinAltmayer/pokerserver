@@ -49,7 +49,8 @@ class BaseController(RequestHandler):
             exception = kwargs['exc_info'][1]
             standard_message = httputil.responses[status_code]
             log_message = exception.log_message
-            self.set_status(status_code, reason='{} ({})'.format(standard_message, log_message))
+            if log_message is not None:
+                self.set_status(status_code, reason='{} ({})'.format(standard_message, log_message))
 
         super().write_error(status_code, **kwargs)
 
