@@ -38,7 +38,7 @@ class BaseController(RequestHandler):
         try:
             return UUID(self.get_query_argument('uuid'))
         except MissingArgumentError:
-            raise HTTPError(HTTPStatus.UNAUTHORIZED)
+            return None
         except ValueError:
             raise HTTPError(HTTPStatus.BAD_REQUEST, 'Invalid uuid')
 
