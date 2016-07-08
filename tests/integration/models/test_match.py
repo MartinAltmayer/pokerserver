@@ -7,10 +7,10 @@ from tests.integration.utils.integration_test import IntegrationTestCase, create
 
 
 class TestJoin(IntegrationTestCase):
-    async def async_setup(self):
+    async def async_setup(self, table_count=1):
         self.player_name = 'player'
         config = TableConfig(min_player_count=2, max_player_count=2, small_blind=1, big_blind=2)
-        await Table.create_tables(1, config)
+        await Table.create_tables(table_count, config)
         await self.load_match()
 
     async def load_match(self):
@@ -79,6 +79,14 @@ class TestJoin(IntegrationTestCase):
         await self.match.join(self.player_name + ' II.', 2, 0)
         self.match.start.assert_called_once_with()
 
+    @gen_test
+    async def test_join_two_tables(self):
+        await self.async_setup(table_count=2)
+        tables = await Table.load_all()
+        self.assertEqual(len(tables), 2)
+        for table in tables:
+            match = Match(table)
+            await match.join(self.player_name, 1, 0)
 
 class TestStartRound(IntegrationTestCase):
     @staticmethod

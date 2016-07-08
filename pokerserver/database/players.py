@@ -17,8 +17,7 @@ class PlayersRelation:
             balance INT NOT NULL,
             cards VARCHAR NOT NULL,
             bet int NOT NULL,
-            PRIMARY KEY (table_id, position),
-            UNIQUE (name)
+            PRIMARY KEY (table_id, position)
         )
     """
 
