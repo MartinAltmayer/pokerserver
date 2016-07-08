@@ -4,6 +4,8 @@ from uuid import UUID
 
 from http import HTTPStatus
 import logging
+
+from tornado import httputil
 from tornado.web import RequestHandler, MissingArgumentError, HTTPError
 
 from pokerserver.database.uuids import UUIDsRelation
@@ -41,6 +43,15 @@ class BaseController(RequestHandler):
             return None
         except ValueError:
             raise HTTPError(HTTPStatus.BAD_REQUEST, 'Invalid uuid')
+
+    def write_error(self, status_code, **kwargs):
+        if 'exc_info' in kwargs:
+            exception = kwargs['exc_info'][1]
+            standard_message = httputil.responses[status_code]
+            log_message = exception.log_message
+            self.set_status(status_code, reason='{} ({})'.format(standard_message, log_message))
+
+        super().write_error(status_code, **kwargs)
 
     @classmethod
     async def load_match(cls, table_name):
