@@ -170,3 +170,6 @@ class Table:
 
         await TablesRelation.set_cards(
             self.table_id, remaining_deck=self.remaining_deck, open_cards=self.open_cards)
+
+    async def check_and_unset_current_player(self, player_name):
+        return await TablesRelation.check_and_unset_current_player(self.table_id, player_name)

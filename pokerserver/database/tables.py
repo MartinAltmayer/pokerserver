@@ -61,6 +61,12 @@ class TablesRelation:
         ORDER BY table_id
     """.format(','.join(FIELDS))
 
+    LOAD_BY_ID_QUERY = """
+        SELECT {}
+        FROM tables
+        WHERE table_id = ?
+    """.format(','.join(FIELDS))
+
     LOAD_BY_NAME_QUERY = """
         SELECT {}
         FROM tables
@@ -73,10 +79,18 @@ class TablesRelation:
         WHERE table_id = ?
     """
 
+    SET_CURRENT_PLAYER_QUERY = "UPDATE tables SET current_player=? WHERE table_id=?"
+
     SET_CARDS_QUERY = """
         UPDATE tables
         SET remaining_deck=?, open_cards=?
         WHERE table_id = ?
+    """
+
+    CHECK_CURRENT_PLAYER_QUERY = """
+        UPDATE tables
+        SET current_player=NULL
+        WHERE table_id=? AND current_player=?
     """
 
     @classmethod
@@ -87,6 +101,15 @@ class TablesRelation:
             async for row in cursor:
                 table_data.append(cls._from_db(row))
         return table_data
+
+    @classmethod
+    async def load_table_by_id(cls, table_id):
+        db = Database.instance()
+        row = await db.find_row(cls.LOAD_BY_ID_QUERY, table_id)
+        if row is not None:
+            return cls._from_db(row)
+        else:
+            return None
 
     @classmethod
     async def load_table_by_name(cls, name):
@@ -129,8 +152,18 @@ class TablesRelation:
             cls.SET_SPECIAL_PLAYERS_QUERY, dealer, small_blind_player, big_blind_player, current_player, table_id)
 
     @classmethod
+    async def set_current_player(cls, table_id, current_player):
+        await Database.instance().execute(cls.SET_CURRENT_PLAYER_QUERY, current_player, table_id)
+
+    @classmethod
     async def set_cards(cls, table_id, remaining_deck, open_cards):
         remaining_deck = make_card_list(remaining_deck)
         open_cards = make_card_list(open_cards)
         await Database.instance().execute(
             cls.SET_CARDS_QUERY, remaining_deck, open_cards, table_id)
+
+    @classmethod
+    async def check_and_unset_current_player(cls, table_id, current_player):
+        db = Database.instance()
+        async with db.execute(cls.CHECK_CURRENT_PLAYER_QUERY, table_id, current_player) as cursor:
+            return cursor.rowcount > 0
