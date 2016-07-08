@@ -93,6 +93,7 @@ class PlayersRelation:
 
     @classmethod
     async def add_player(cls, table_id, position, name, balance, cards, bet):  # pylint: disable=too-many-arguments
+        assert position > 0
         cards = make_card_list(cards)
         await Database.instance().execute(cls.INSERT_QUERY, table_id, position, name, balance, cards, bet)
 

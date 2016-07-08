@@ -87,7 +87,7 @@ class Table:
             'name': self.name,
             'min_player_count': self.config.min_player_count,
             'max_player_count': self.config.max_player_count,
-            'players': [player.name for player in self.players]
+            'players': {player.position: player.name for player in self.players}
         }
 
     def is_free(self):
