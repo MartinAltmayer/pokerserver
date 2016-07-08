@@ -88,6 +88,7 @@ class TestJoin(IntegrationTestCase):
             match = Match(table)
             await match.join(self.player_name, 1, 0)
 
+
 class TestStartRound(IntegrationTestCase):
     @staticmethod
     def create_match(positions):

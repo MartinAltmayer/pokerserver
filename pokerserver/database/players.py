@@ -1,4 +1,5 @@
 from collections import namedtuple
+from datetime import datetime
 
 from pokerserver.database import Database
 from pokerserver.database.utils import make_card_list, from_card_list
@@ -7,7 +8,7 @@ from pokerserver.database.utils import make_card_list, from_card_list
 class PlayersRelation:
     NAME = 'players'
 
-    FIELDS = ['table_id', 'position', 'name', 'balance', 'cards', 'bet']
+    FIELDS = ['table_id', 'position', 'name', 'balance', 'cards', 'bet', 'last_seen']
 
     CREATE_QUERY = """
         CREATE TABLE players (
@@ -17,6 +18,7 @@ class PlayersRelation:
             balance INT NOT NULL,
             cards VARCHAR NOT NULL,
             bet int NOT NULL,
+            last_seen TEXT NOT NULL,
             PRIMARY KEY (table_id, position)
         )
     """
@@ -71,6 +73,7 @@ class PlayersRelation:
     def _from_db(cls, row):
         data = cls.PLAYERS_RELATION_ROW(*row)._asdict()
         data['cards'] = from_card_list(data['cards'])
+        data['last_seen'] = datetime.strptime(data['last_seen'], "%Y-%m-%d %H:%M:%S.%f")
         return data
 
     @classmethod
@@ -91,10 +94,10 @@ class PlayersRelation:
         return player_data
 
     @classmethod
-    async def add_player(cls, table_id, position, name, balance, cards, bet):  # pylint: disable=too-many-arguments
+    async def add_player(cls, table_id, position, name, balance, cards, bet, last_seen):  # pylint: disable=too-many-arguments
         assert position > 0
         cards = make_card_list(cards)
-        await Database.instance().execute(cls.INSERT_QUERY, table_id, position, name, balance, cards, bet)
+        await Database.instance().execute(cls.INSERT_QUERY, table_id, position, name, balance, cards, bet, last_seen)
 
     @classmethod
     async def set_balance(cls, name, balance):

@@ -1,3 +1,4 @@
+from datetime import datetime
 from tornado.testing import gen_test
 
 from pokerserver.database import PlayersRelation
@@ -7,9 +8,9 @@ from tests.integration.utils.integration_test import IntegrationTestCase
 
 class TestPlayersRelation(IntegrationTestCase):
     PLAYER_ROWS = [
-        (1, 1, 'player1', 10, 'cards1', 5),
-        (1, 2, 'player2', 20, 'cards2', 10),
-        (2, 3, 'player3', 30, 'cards3', 15)
+        (1, 1, 'player1', 10, 'cards1', 5, datetime.fromtimestamp(123)),
+        (1, 2, 'player2', 20, 'cards2', 10, datetime.fromtimestamp(123)),
+        (2, 3, 'player3', 30, 'cards3', 15, datetime.fromtimestamp(123))
     ]
     PLAYER_DATA = [{
         'table_id': table_id,
@@ -17,8 +18,9 @@ class TestPlayersRelation(IntegrationTestCase):
         'name': name,
         'balance': balance,
         'cards': from_card_list(cards),
-        'bet': bet
-    } for table_id, position, name, balance, cards, bet in PLAYER_ROWS]
+        'bet': bet,
+        'last_seen': last_seen
+    } for table_id, position, name, balance, cards, bet, last_seen in PLAYER_ROWS]
 
     async def create_players(self):
         for fields in self.PLAYER_ROWS:

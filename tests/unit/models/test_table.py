@@ -43,7 +43,7 @@ class TestTable(TestCase):
         })
 
     def test_to_dict_with_players_and_unauthorized(self):
-        self.table.players = [Player(42, i, "Player{}".format(i), 0, [], 0) for i in range(7)]
+        self.table.players = [Player(42, i, "Player{}".format(i), 0, [], 0, None) for i in range(7)]
         result = self.table.to_dict(None)
         self.assertEqual(result, {
             'bigBlind': 10,
@@ -69,7 +69,7 @@ class TestTable(TestCase):
         })
 
     def test_to_dict_with_players_and_authorized(self):
-        self.table.players = [Player(42, i, "Player{}".format(i), 0, [], 0) for i in range(7)]
+        self.table.players = [Player(42, i, "Player{}".format(i), 0, [], 0, None) for i in range(7)]
         result = self.table.to_dict("Player1")
         self.assertEqual(result, {
             'bigBlind': 10,
@@ -95,7 +95,7 @@ class TestTable(TestCase):
         })
 
     def test_to_dict_with_full_table_and_unauthorized(self):
-        self.table.players = [Player(42, i, "Player{}".format(i), 0, [], 0) for i in range(8)]
+        self.table.players = [Player(42, i, "Player{}".format(i), 0, [], 0, None) for i in range(8)]
         result = self.table.to_dict(None)
         self.assertEqual(result, {
             'bigBlind': 10,
@@ -121,7 +121,7 @@ class TestTable(TestCase):
         })
 
     def test_to_dict_with_full_table_and_authorized(self):
-        self.table.players = [Player(42, i, "Player{}".format(i), 0, [], 0) for i in range(8)]
+        self.table.players = [Player(42, i, "Player{}".format(i), 0, [], 0, None) for i in range(8)]
         result = self.table.to_dict("Player1")
         self.assertEqual(result, {
             'bigBlind': 10,

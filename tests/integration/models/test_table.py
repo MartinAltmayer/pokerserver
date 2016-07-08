@@ -23,7 +23,8 @@ class TestTable(AsyncTestCase):
                 'name': name,
                 'balance': position * 1000,
                 'cards': 'AcAd',
-                'bet': position * 500
+                'bet': position * 500,
+                'last_seen': 0
             }
             for position, name in enumerate(players)
             for table_id in enumerate(existing_table_names)

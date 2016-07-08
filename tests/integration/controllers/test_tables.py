@@ -1,4 +1,5 @@
 import json
+from datetime import datetime
 from http import HTTPStatus
 from unittest.mock import Mock, patch
 
@@ -26,10 +27,11 @@ class TestTablesController(IntegrationHttpTestCase):
             table_1_id, 'table1', config1, ['2s', '3s', '4s'], [], 0, [], "frodo", "pippin", "pippin", "frodo", False)
         await TablesRelation.create_table(
             table_2_id, 'table2', config2, ['7c', '8s', '9h'], [], 0, [], "gandalf", "bilbo", "bilbo", "gandalf", False)
-        await PlayersRelation.add_player(table_1_id, 1, "frodo", 10, ['Ac', 'Ad'], 0)
-        await PlayersRelation.add_player(table_1_id, 2, "pippin", 10, ['Kc', 'Kd'], 0)
-        await PlayersRelation.add_player(table_2_id, 1, "gandalf", 10, ['Ac', 'Ad'], 0)
-        await PlayersRelation.add_player(table_2_id, 2, "bilbo", 10, ['Kc', 'Kd'], 0)
+        timestamp = datetime.now()
+        await PlayersRelation.add_player(table_1_id, 1, "frodo", 10, ['Ac', 'Ad'], 0, timestamp)
+        await PlayersRelation.add_player(table_1_id, 2, "pippin", 10, ['Kc', 'Kd'], 0, timestamp)
+        await PlayersRelation.add_player(table_2_id, 1, "gandalf", 10, ['Ac', 'Ad'], 0, timestamp)
+        await PlayersRelation.add_player(table_2_id, 2, "bilbo", 10, ['Kc', 'Kd'], 0, timestamp)
 
     @gen_test
     async def test_tables_response(self):

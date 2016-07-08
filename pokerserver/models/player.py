@@ -1,3 +1,4 @@
+from datetime import datetime
 from pokerserver.database import PlayersRelation
 
 PLAYER_NAME_PATTERN = "[A-Za-z0-9]{3,}"
@@ -8,13 +9,14 @@ class PlayerNotFoundError(Exception):
 
 
 class Player:
-    def __init__(self, table_id, position, name, balance, cards, bet):  # pylint: disable=too-many-arguments
+    def __init__(self, table_id, position, name, balance, cards, bet, last_seen=None):  # pylint: disable=too-many-arguments
         self.table_id = table_id
         self.position = position
         self.name = name
         self.balance = balance
         self.cards = cards
         self.bet = bet
+        self.last_seen = last_seen if last_seen is not None else datetime.now()
 
     def to_dict(self, show_cards=False):
         return {
@@ -40,7 +42,7 @@ class Player:
 
     @classmethod
     async def add_player(cls, table, position, name, balance, cards, bet):  # pylint: disable=too-many-arguments
-        await PlayersRelation.add_player(table.table_id, position, name, balance, cards, bet)
+        await PlayersRelation.add_player(table.table_id, position, name, balance, cards, bet, datetime.now())
 
     @classmethod
     async def load_by_table_id(cls, table_id):
