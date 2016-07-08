@@ -1,6 +1,7 @@
 import random
 import logging
 
+from pokerserver.database.database import DuplicateKeyError
 from pokerserver.models.card import get_all_cards
 from pokerserver.models.player import Player
 
@@ -25,7 +26,10 @@ class Match:
         if self.table.is_player_at_table(player_name):
             raise ValueError('Player has already joined')
 
-        await Player.add_player(self.table, position, player_name, start_balance, '', 0)
+        try:
+            await Player.add_player(self.table, position, player_name, start_balance, '', 0)
+        except DuplicateKeyError:
+            raise ValueError('Position has been occupied by another player just now')
 
         player = await Player.load_by_name(player_name)
         self.table.players.append(player)

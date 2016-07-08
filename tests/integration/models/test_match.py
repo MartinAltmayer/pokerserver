@@ -1,4 +1,6 @@
 from unittest.mock import patch, Mock
+
+from asyncio.tasks import gather
 from tornado.testing import gen_test
 
 from pokerserver.database import Database, TableConfig
@@ -87,6 +89,17 @@ class TestJoin(IntegrationTestCase):
         for table in tables:
             match = Match(table)
             await match.join(self.player_name, 1, 0)
+
+    @gen_test
+    async def test_join_concurrent(self):
+        await self.async_setup()
+        with self.assertRaises(ValueError):
+            await gather(
+                self.match.join(self.player_name, 1, 0),
+                self.match.join('other player', 1, 0),
+                loop=self.get_asyncio_loop()
+            )
+
 
 
 class TestStartRound(IntegrationTestCase):
