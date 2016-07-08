@@ -1,4 +1,4 @@
-from pokerserver.controllers.table import JoinController
+from pokerserver.controllers.table import JoinController, FoldController
 from pokerserver.controllers.uuid import UUIDController
 from .info import InfoController
 from .table import TableController
@@ -9,6 +9,7 @@ _CONTROLLERS = [
     TableController,
     TablesController,
     JoinController,
+    FoldController,
     UUIDController
 ]
 

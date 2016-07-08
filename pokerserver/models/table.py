@@ -162,6 +162,9 @@ class Table:
             current_player=self.current_player.name if self.current_player else None
         )
 
+    async def set_current_player(self, current_player):
+        await TablesRelation.set_current_player(self.table_id, current_player.name if current_player else None)
+
     async def set_cards(self, remaining_deck=None, open_cards=None):
         if remaining_deck is not None:
             self.remaining_deck = remaining_deck

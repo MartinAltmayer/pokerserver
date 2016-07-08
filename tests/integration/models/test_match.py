@@ -5,7 +5,8 @@ from tornado.testing import gen_test
 
 from pokerserver.database import Database, TableConfig
 from pokerserver.models import get_all_cards, Match, Player, Table
-from pokerserver.models.match import PositionOccupiedError
+from pokerserver.models.match import PositionOccupiedError, InvalidTurnError
+from pokerserver.models.player import Player
 from tests.integration.utils.integration_test import IntegrationTestCase, create_table, return_done_future
 
 
@@ -181,3 +182,25 @@ class TestStartRound(IntegrationTestCase):
             self.assertEqual(2, len(player.cards))
         self.assertEqual(46, len(table.remaining_deck))
         self.assertEqual([], table.open_cards)
+
+
+class TestFold(IntegrationTestCase):
+    async def async_setup(self):
+        self.player1 = Player(table_id=1, position=1, name='John', balance=0, cards=[], bet=0)
+        self.player2 = Player(table_id=1, position=2, name='Jack', balance=0, cards=[], bet=0)
+        self.table = await create_table(players=[self.player1, self.player2])
+        await self.table.set_current_player(self.player1)
+        self.match = Match(self.table)
+
+    @gen_test
+    async def test_fold_invalid_player(self):
+        await self.async_setup()
+        with self.assertRaises(InvalidTurnError):
+            await self.match.fold(self.player2.name)
+
+    @gen_test
+    async def test_fold_changes_current_player(self):
+        await self.async_setup()
+        await self.match.fold(self.player1.name)
+        table = await Table.load_by_name(self.table.name)
+        self.assertEqual(self.player2.name, table.current_player.name)

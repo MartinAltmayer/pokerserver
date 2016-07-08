@@ -3,7 +3,7 @@ from tornado.web import MissingArgumentError
 
 from pokerserver.controllers.base import BaseController, authenticated, HTTPError
 from pokerserver.models import Table
-from pokerserver.models.match import PositionOccupiedError
+from pokerserver.models.match import PositionOccupiedError, InvalidTurnError
 
 TABLE_NAME_PATTERN = "([^/]+)"
 
@@ -37,3 +37,15 @@ class JoinController(BaseController):
             raise HTTPError(HTTPStatus.BAD_REQUEST, 'Missing parameter: "position"')
         except ValueError:
             raise HTTPError(HTTPStatus.BAD_REQUEST, 'Invalid position')
+
+
+class FoldController(BaseController):
+    route = '/table/' + TABLE_NAME_PATTERN + '/fold'
+
+    @authenticated
+    async def get(self, table_name):  # pylint: disable=arguments-differ
+        match = await self.load_match(table_name)
+        try:
+            await match.fold(self.player_name)
+        except InvalidTurnError as error:
+            raise HTTPError(HTTPStatus.BAD_REQUEST, str(error))

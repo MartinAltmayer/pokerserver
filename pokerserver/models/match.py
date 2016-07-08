@@ -12,7 +12,7 @@ class PositionOccupiedError(Exception):
     pass
 
 
-class NotYourTurnError(Exception):
+class InvalidTurnError(Exception):
     pass
 
 
@@ -20,10 +20,10 @@ class Match:
     def __init__(self, table):
         self.table = table
 
-    async def check_and_unset_current_player(self, current_player):
-        is_current_player = await self.table.check_current_player(current_player)
+    async def check_and_unset_current_player(self, player_name):
+        is_current_player = await self.table.check_and_unset_current_player(player_name)
         if not is_current_player:
-            raise NotYourTurnError()
+            raise InvalidTurnError('It\'s not your turn')
 
     async def join(self, player_name, position, start_balance):
         if self.table.is_closed:
@@ -85,6 +85,11 @@ class Match:
             await player.set_cards([cards.pop(), cards.pop()])
 
         await self.table.set_cards(cards)
+
+    async def fold(self, player_name):
+        await self.check_and_unset_current_player(player_name)
+        player = self.table.find_player(player_name)
+        await self.table.set_current_player(self.table.player_left_of(player))
 
     @staticmethod
     def log(player_or_name, message):
