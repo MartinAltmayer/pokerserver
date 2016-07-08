@@ -6,7 +6,7 @@ from http import HTTPStatus
 import logging
 
 from tornado import httputil
-from tornado.web import RequestHandler, MissingArgumentError, HTTPError
+from tornado.web import RequestHandler, MissingArgumentError, HTTPError as TornadoHTTPError
 
 from pokerserver.database.uuids import UUIDsRelation
 from pokerserver.models.match import Match
@@ -73,3 +73,10 @@ def authenticated(method):
             method(controller, *args)
 
     return wrapper
+
+
+class HTTPError(TornadoHTTPError):
+    def __init__(self, status_code, *args, **kwargs):
+        assert isinstance(status_code, HTTPStatus)
+        status_code = status_code.value
+        super().__init__(status_code, *args, **kwargs)
