@@ -1,28 +1,6 @@
 # Pokerserver for our Python Workshop at TNG Technology Consulting
 
 [![Build Status](https://travis-ci.org/MartinAltmayer/pokerserver.png)](https://travis-ci.org/MartinAltmayer/pokerserver)
-## Requirements
-
-The server has several external dependencies for database access and message queuing:
-
-- unixodbc (used by aioodbc via pyodbc).
-- sqliteodbc (SQLite3 driver).
-
-### Installation of Dependencies Under Max OS X
-
-    brew update
-    brew install unixodbc sqliteodbc
-
-Add the SQLite3 driver to `~/odbcinst.ini`:
-
-    [SQLite3]
-    Description=SQLite3 ODBC Driver
-    Driver=/usr/local/lib/libsqlite3odbc.so
-    Setup=/usr/local/lib/libsqlite3odbc.so
-    Threading=2
-    
-More information with respect to the correct configuration of the odbc drivers can be found at 
-<http://www.ch-werner.de/sqliteodbc/html/index.html>.
 
 ## PIP Package Installation
 
