@@ -4,7 +4,7 @@ from pokerserver.version import NAME, VERSION
 
 requirements = [
     'tornado>=4.3',
-    'aioodbc==0.0.2'
+    'aioodbc==0.0.3'
 ]
 
 setup(
