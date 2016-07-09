@@ -7,12 +7,11 @@ The server has several external dependencies for database access and message que
 
 - unixodbc (used by aioodbc via pyodbc).
 - sqliteodbc (SQLite3 driver).
-- rabbitmq.
 
 ### Installation of Dependencies Under Max OS X
 
     brew update
-    brew install unixodbc sqliteodbc rabbitmq
+    brew install unixodbc sqliteodbc
 
 Add the SQLite3 driver to `~/odbcinst.ini`:
 
@@ -31,20 +30,17 @@ More information with respect to the correct configuration of the odbc drivers c
     
 ## Running the server
 
-Ensure that the RabbitMQ server is running. On Mac OS X, you can start it via
-
-    /usr/local/sbin/rabbitmq-server
+Create the required SQLite database by running
     
-The location of the server executable is valid for the Homebrew-based install on Mac OS X and may differ for other 
-operating systems.
+    createpokerdb [<database file>]
+    
+You can omit the database file parameter to create a database with the default name `poker.db`.
 
-On Debian Linux the RabbitMQ is installed as a service an can be started using
-
-    service rabbitmq-server start
-
-Then simply call the pokerserver script that was generated during package installation:
+Simply call the pokerserver script that was generated during package installation:
     
     pokerserver
+    
+Use `pokerserver --help` to see a full list of available parameters.
     
 ## Development Setup
 
