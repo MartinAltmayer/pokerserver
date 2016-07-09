@@ -1,9 +1,9 @@
-import random
 import logging
+import random
 
-from pokerserver.database.database import DuplicateKeyError
-from pokerserver.models.card import get_all_cards
-from pokerserver.models.player import Player
+from pokerserver.database import DuplicateKeyError
+from .card import get_all_cards
+from .player import Player
 
 LOG = logging.getLogger(__name__)
 

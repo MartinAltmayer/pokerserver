@@ -1,8 +1,8 @@
 from collections import namedtuple
 from datetime import datetime
 
-from pokerserver.database import Database
-from pokerserver.database.utils import make_card_list, from_card_list
+from .database import Database
+from .utils import make_card_list, from_card_list
 
 
 class PlayersRelation:
@@ -17,7 +17,7 @@ class PlayersRelation:
             name VARCHAR NOT NULL,
             balance INT NOT NULL,
             cards VARCHAR NOT NULL,
-            bet int NOT NULL,
+            bet INT NOT NULL,
             last_seen TEXT NOT NULL,
             PRIMARY KEY (table_id, position)
         )
@@ -94,7 +94,8 @@ class PlayersRelation:
         return player_data
 
     @classmethod
-    async def add_player(cls, table_id, position, name, balance, cards, bet, last_seen):  # pylint: disable=too-many-arguments
+    async def add_player(cls, table_id, position, name, balance, cards, bet,
+                         last_seen):  # pylint: disable=too-many-arguments
         assert position > 0
         cards = make_card_list(cards)
         await Database.instance().execute(cls.INSERT_QUERY, table_id, position, name, balance, cards, bet, last_seen)

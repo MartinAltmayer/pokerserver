@@ -1,8 +1,7 @@
 from collections import namedtuple
 
-from pokerserver.database import Database
-from pokerserver.database.utils import from_card_list, make_card_list, make_int_list, from_int_list
-
+from .database import Database
+from .utils import from_card_list, make_card_list, make_int_list, from_int_list
 
 TableConfig = namedtuple('TableConfig', ['min_player_count', 'max_player_count', 'small_blind', 'big_blind'])
 

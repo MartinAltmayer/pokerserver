@@ -1,19 +1,17 @@
-from argparse import ArgumentParser
 import asyncio
 import logging
-from logging.config import dictConfig
 import os
 import sys
+from argparse import ArgumentParser
+from logging.config import dictConfig
 
 from tornado.ioloop import IOLoop
 from tornado.platform.asyncio import AsyncIOMainLoop
 from tornado.web import Application
 
 from pokerserver.configuration import LOGGING
-from pokerserver.controllers import HANDLERS
-from pokerserver.controllers.tables import TablesController
-from pokerserver.database import Database
-from pokerserver.database.tables import TableConfig
+from pokerserver.controllers import HANDLERS, TablesController
+from pokerserver.database import Database, TableConfig
 
 LOG = logging.getLogger(__name__)
 
