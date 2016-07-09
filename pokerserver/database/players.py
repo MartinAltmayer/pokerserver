@@ -1,6 +1,6 @@
 from collections import namedtuple
-from datetime import datetime
 
+from pokerserver.database.database import convert_datetime
 from .database import Database
 from .utils import make_card_list, from_card_list
 
@@ -73,7 +73,7 @@ class PlayersRelation:
     def _from_db(cls, row):
         data = cls.PLAYERS_RELATION_ROW(*row)._asdict()
         data['cards'] = from_card_list(data['cards'])
-        data['last_seen'] = datetime.strptime(data['last_seen'], "%Y-%m-%d %H:%M:%S.%f")
+        data['last_seen'] = convert_datetime(data['last_seen'])
         return data
 
     @classmethod
@@ -94,8 +94,8 @@ class PlayersRelation:
         return player_data
 
     @classmethod
-    async def add_player(cls, table_id, position, name, balance, cards, bet,
-                         last_seen):  # pylint: disable=too-many-arguments
+    async def add_player(cls, table_id, position, name, balance, cards, bet,  # pylint: disable=too-many-arguments
+                         last_seen):
         assert position > 0
         cards = make_card_list(cards)
         await Database.instance().execute(cls.INSERT_QUERY, table_id, position, name, balance, cards, bet, last_seen)

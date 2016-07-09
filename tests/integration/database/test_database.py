@@ -1,8 +1,9 @@
+from datetime import datetime
 from nose.tools import nottest
 from tornado.testing import gen_test
 
-from pokerserver.database import Database, RELATIONS, DbException
-from pokerserver.database.database import DuplicateKeyError
+from pokerserver.database import Database, RELATIONS, DbException, DuplicateKeyError
+from pokerserver.database.database import convert_datetime
 from pokerserver.database.players import PlayersRelation
 from pokerserver.database.tables import TablesRelation
 from pokerserver.database.uuids import UUIDsRelation
@@ -11,10 +12,6 @@ from tests.integration.utils.integration_test import IntegrationTestCase
 
 class TestDatabase(IntegrationTestCase):
     SETUP_DB_CONNECTION = False
-
-    def check_connections_released(self):
-        # pylint: disable=protected-access
-        self.assertEqual(Database.POOL_SIZE, self.db._pool.freesize)
 
     async def check_table_exists(self, db, name):
         exists = await db.find_one("""
@@ -33,6 +30,7 @@ class TestDatabase(IntegrationTestCase):
     async def test_connect(self):
         db = await self.connect_database()
         self.assertIsInstance(db, Database)
+        self.assertTrue(db.connected)
 
     @gen_test
     async def test_close(self):
@@ -42,19 +40,23 @@ class TestDatabase(IntegrationTestCase):
         self.assertTrue(db.closed)
 
     @gen_test
+    async def test_basic_query(self):
+        db = await self.connect_database()
+        result = await db.find_one("SELECT 42")
+        self.assertEqual(42, result)
+
+    @gen_test
+    async def test_execute(self):
+        db = await self.connect_database()
+        await db.execute("CREATE TABLE test ( an INT ) ")
+        self.assertTrue(await self.check_table_exists(db, 'test'))
+
+    @gen_test
     async def test_execute_with_statement(self):
         db = await self.connect_database()
         async with db.execute('SELECT 42') as cursor:
             row = await cursor.fetchone()
             self.assertEqual([42], list(row))
-        self.assertTrue(cursor.closed)
-        self.check_connections_released()
-
-    @gen_test
-    async def test_execute_direct(self):
-        db = await self.connect_database()
-        await db.execute("CREATE TABLE test ( an INT ) ")
-        self.assertTrue(await self.check_table_exists(db, 'test'))
 
     @gen_test
     async def test_execute_with_params(self):
@@ -83,7 +85,6 @@ class TestDatabase(IntegrationTestCase):
         db = await self.connect_database()
         value = await db.find_one('SELECT 42')
         self.assertEqual(42, value)
-        self.check_connections_released()
 
     @gen_test
     async def test_find_one_returns_none(self):
@@ -96,27 +97,6 @@ class TestDatabase(IntegrationTestCase):
         db = await self.connect_database()
         with self.assertRaises(DbException):
             await db.execute('STUPID QUERY')
-
-    @gen_test
-    async def test_create_tables(self):
-        db = await self.connect_database()
-        await db.create_tables()
-        for table_class in RELATIONS:
-            self.assertTrue(await self.check_table_exists(db, table_class.NAME))
-
-    @gen_test
-    async def test_clear_tables(self):
-        db = await self.connect_database()
-        await db.create_tables()
-        await db.execute(PlayersRelation.INSERT_QUERY, [1] * len(PlayersRelation.FIELDS))
-        await db.execute(TablesRelation.INSERT_QUERY, [1] * len(TablesRelation.FIELDS))
-        await db.execute(UUIDsRelation.INSERT_QUERY, [1] * len(UUIDsRelation.FIELDS))
-
-        await db.clear_tables(exclude=['uuids'])
-
-        self.assertEqual(0, await db.find_one('SELECT COUNT(*) FROM players'))
-        self.assertEqual(0, await db.find_one('SELECT COUNT(*) FROM tables'))
-        self.assertEqual(1, await db.find_one('SELECT COUNT(*) FROM uuids'))
 
     @gen_test
     async def test_insert_with_duplicate(self):
@@ -133,3 +113,52 @@ class TestDatabase(IntegrationTestCase):
 
         with self.assertRaises(DuplicateKeyError):
             await db.execute("INSERT INTO test (id, name) VALUES (2, 'luke')")
+
+    @gen_test
+    async def test_fake_cursor(self):
+        db = await self.connect_database()
+        expected_rows = [('abc', 2), ('def', 3), ('ghi', 4)]
+        await db.execute('CREATE TABLE test ( name VARCHAR, value INT )')
+        for row in expected_rows:
+            await db.execute('INSERT INTO test (name, value) VALUES (?, ?)', *row)
+
+        actual_rows = []
+        async with db.execute('SELECT name, value FROM test ORDER BY value') as cursor:
+            async for row in cursor:
+                actual_rows.append(row)
+
+        self.assertEqual(expected_rows, actual_rows)
+
+    @gen_test
+    async def test_rowcount(self):
+        db = await self.connect_database()
+        await db.execute('CREATE TABLE test ( name VARCHAR, value INT )')
+        async with db.execute('INSERT INTO test (name, value) VALUES (?, ?)', 'abc', 2) as cursor:
+            self.assertEqual(1, cursor.rowcount)
+
+    @gen_test
+    async def test_create_tables(self):
+        db = await self.connect_database()
+        await db.create_tables()
+        for table_class in RELATIONS:
+            self.assertTrue(await self.check_table_exists(db, table_class.NAME))
+
+    @gen_test
+    async def test_clear_tables(self):
+        db = await self.connect_database()
+        await db.create_tables()
+        await db.execute(PlayersRelation.INSERT_QUERY, *([1] * len(PlayersRelation.FIELDS)))
+        await db.execute(TablesRelation.INSERT_QUERY, *([1] * len(TablesRelation.FIELDS)))
+        await db.execute(UUIDsRelation.INSERT_QUERY, *([1] * len(UUIDsRelation.FIELDS)))
+
+        await db.clear_tables(exclude=['uuids'])
+
+        self.assertEqual(0, await db.find_one('SELECT COUNT(*) FROM players'))
+        self.assertEqual(0, await db.find_one('SELECT COUNT(*) FROM tables'))
+        self.assertEqual(1, await db.find_one('SELECT COUNT(*) FROM uuids'))
+
+    def test_convert_datetime(self):
+        expected = datetime(2016, 7, 8, 21, 0, 30, 141000)
+        self.assertEqual(expected, convert_datetime("2016-07-08 21:00:30.141"))
+        expected = datetime(2016, 7, 8, 21, 0, 30)
+        self.assertEqual(expected, convert_datetime("2016-07-08 21:00:30"))

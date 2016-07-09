@@ -1,6 +1,12 @@
 import asyncio
+from asyncio.tasks import gather
+from datetime import datetime
 import logging
-import aioodbc
+from functools import partial
+import sqlite3
+from queue import Queue
+import threading
+from collections import namedtuple
 
 LOG = logging.getLogger(__name__)
 
@@ -17,38 +23,81 @@ class Database:
     POOL_SIZE = 4
 
     _instance = None
-    _pool = None
 
     @classmethod
     def instance(cls):
         return cls._instance
 
+    def __init__(self, path, loop):
+        self.path = path
+        self._loop = loop
+        self._queue = Queue()
+        self._threads = []
+        self.closed = False
+        self.connected = False
+
     @classmethod
-    async def connect(cls, path, *, loop=None):
+    async def connect(cls, path, loop=None):
         # pylint: disable=protected-access
         assert cls._instance is None, 'Must not connect to database twice'
-        dsn = 'Driver=SQLite3;Database={}'.format(path)
         if loop is None:
             loop = asyncio.get_event_loop()
-        db = cls._instance = Database()
-        try:
-            db._pool = await aioodbc.create_pool(
-                dsn=dsn, loop=loop, minsize=cls.POOL_SIZE, maxsize=cls.POOL_SIZE)
-        except Exception as exc:  # pylint: disable=broad-except
-            raise DbException('Creating database pool failed') from exc
+        db = cls._instance = Database(path, loop)
+        db._connect()
         return db
 
-    async def close(self):
-        try:
-            self._pool.close()
-            await self._pool.wait_closed()
-            Database._instance = None
-        except Exception as exc:  # pylint: disable=broad-except
-            raise DbException('Closing database pool failed') from exc
+    def _connect(self):
+        for _ in range(self.POOL_SIZE):
+            connection = sqlite3.connect(self.path, check_same_thread=False)
+            self._threads.append(threading.Thread(target=partial(self._run_in_thread, connection, self._queue)))
+        self.connected = True
+        for thread in self._threads:
+            thread.start()
 
-    @property
-    def closed(self):
-        return self._pool.closed
+    async def close(self):
+        if not self.connected:
+            return
+        self.connected = False
+        Database._instance = None
+
+        futures = []
+        for _ in range(self.POOL_SIZE):
+            task = CloseTask(self._loop)
+            futures.append(task.future)
+            self._queue.put(task)
+
+        await gather(*futures, loop=self._loop)
+        self.closed = True
+
+    def execute(self, query, *args):
+        task = QueryTask(self._loop, query, *args)
+        self._queue.put(task)
+        return _ExecuteContextManager(task)
+
+    async def find_one(self, query, *args):
+        result = await self.execute(query, *args)
+        if len(result.rows) > 0:
+            return result.rows[0][0]
+        else:
+            return None
+
+    async def find_row(self, query, *args):
+        result = await self.execute(query, *args)
+        if len(result.rows) > 0:
+            return result.rows[0]
+        else:
+            return None
+
+    @staticmethod
+    def _run_in_thread(connection, queue):
+        try:
+            while True:
+                task = queue.get()
+                task.execute_and_resolve(connection)
+                if isinstance(task, CloseTask):
+                    return
+        finally:
+            connection.close()
 
     async def create_table(self, table_class):
         await self.execute(table_class.CREATE_QUERY)
@@ -64,71 +113,108 @@ class Database:
             if table_class.NAME not in exclude:
                 await self.execute('DELETE FROM {}'.format(table_class.NAME))
 
-    def execute(self, query, *args):
-        return _ExecuteContextManager(self._pool, query, *args)
 
-    async def find_row(self, query, *args):
-        async with self.execute(query, *args) as cursor:
-            row = await cursor.fetchone()
-            return tuple(row) if row is not None else None
+class Task:
+    def __init__(self, loop):
+        self.loop = loop
+        self.future = asyncio.Future(loop=loop)
+        self.result = None
 
-    async def find_one(self, query, *args):
-        row = await self.find_row(query, *args)
-        return row[0] if row is not None else None
+    def execute(self, connection):
+        raise NotImplementedError()
 
+    def execute_and_resolve(self, connection):
+        try:
+            result = self.execute(connection)
+            self.loop.call_soon_threadsafe(partial(self.future.set_result, result))
+        except Exception as exc:  # pylint: disable=broad-except
+            self.loop.call_soon_threadsafe(partial(self.future.set_exception, exc))
+
+
+class CloseTask(Task):
+    def execute(self, connection):
+        connection.close()
+
+
+class QueryTask(Task):
+    def __init__(self, loop, query, *args):
+        super().__init__(loop)
+        self.query = query
+        self.args = args
+
+    def execute(self, connection):
+        try:
+            cursor = connection.execute(self.query, self.args)
+        except sqlite3.IntegrityError as exc:
+            connection.rollback()
+            raise DuplicateKeyError(str(exc))
+        except sqlite3.OperationalError as exc:
+            connection.rollback()
+            raise DbException(str(exc)) from exc
+
+        connection.commit()
+        result = QueryResult(rows=list(cursor), rowcount=cursor.rowcount)
+        cursor.close()
+        return result
+
+    def __str__(self):
+        return "<QUERY: {}, {}>".format(self.query, self.args)
+
+
+QueryResult = namedtuple('QueryResult', 'rows rowcount')
+
+
+# The stuff below is just to support the following pattern which was necessary while using aioodbc:
+# async with db.execute(...) as cursor:
+#     async for row in cursor:
+#
+# Implementing execute would be much easier without it
 
 class _ExecuteContextManager:
-    def __init__(self, pool, query, *args):
-        self._pool = pool
-        self._conn = None
-        self._cursor = None
-        self._query = query
-        self._args = args
+    def __init__(self, task):
+        self.task = task
 
     async def __aenter__(self):
-        try:
-            self._conn = await self._pool.acquire()
-            self._cursor = await self._conn.cursor()
-            await self._cursor.execute(self._query, *self._args)
-            await self._cursor.commit()
-            return self._cursor
-        except Exception as exc:  # pylint: disable=broad-except
-            await self._clear()
-            self._handle_query_exception(exc)
-
-    async def _clear(self):
-        if not self._cursor.closed:
-            await self._cursor.close()
-        await self._pool.release(self._conn)
-        self._pool = None
-        self._conn = None
-        self._cursor = None
+        result = await self.task.future
+        return FakeCursor(result)
 
     async def __aexit__(self, exc_type, exc, traceback):
-        await self._clear()
+        pass
 
     def __await__(self):
-        return self._coroutine().__await__()
+        return self.task.future.__await__()
 
-    async def _coroutine(self):
-        try:
-            async with self._pool.acquire() as connection:
-                try:
-                    async with connection.cursor() as cursor:
-                        await cursor.execute(self._query, *self._args)
-                        await cursor.commit()
-                except Exception:  # pylint: disable=broad-except
-                    # aioodbc deadlocks if we do not close the connection (the cursor is already closed)
-                    # We must close the connection before releasing it, otherwise it is added to the pool again.
-                    await connection.close()
-                    raise
-        except Exception as exc:  # pylint: disable=broad-except
-            self._handle_query_exception(exc)
 
-    def _handle_query_exception(self, exc):
-        LOG.error("Executing query failed: %s %s", exc, self._query)
-        if 'unique' in str(exc).lower():  # I could not find a proper way for this check
-            raise DuplicateKeyError('Query: {}'.format(self._query)) from exc
+class FakeCursor:
+    def __init__(self, result):
+        self._result = result
+        self._index = 0
+
+    async def fetchone(self):
+        if self._index < len(self._result.rows):
+            row = self._result.rows[self._index]
+            self._index += 1
+            return row
         else:
-            raise DbException('Executing query failed. Exception: {}. Query: {} Args: {}'
-                              .format(exc, self._query, self._args)) from exc
+            return None
+
+    @property
+    def rowcount(self):
+        return self._result.rowcount
+
+    async def __aiter__(self):  # Will give PendingDeprecationWarnings starting with Python 3.5.2 (should remove async)
+        return self
+
+    async def __anext__(self):
+        value = await self.fetchone()
+        if value is not None:
+            return value
+        else:
+            raise StopAsyncIteration()
+
+
+def convert_datetime(db_string):
+    if '.' in db_string:
+        return datetime.strptime(db_string, "%Y-%m-%d %H:%M:%S.%f")
+    else:
+        return datetime.strptime(db_string, "%Y-%m-%d %H:%M:%S")

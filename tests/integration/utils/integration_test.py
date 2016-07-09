@@ -8,9 +8,7 @@ from tornado.testing import AsyncTestCase, AsyncHTTPTestCase
 from tornado.web import Application
 
 from pokerserver.controllers import HANDLERS
-from pokerserver.database import Database
-from pokerserver.database.players import PlayersRelation
-from pokerserver.database.tables import TablesRelation, TableConfig
+from pokerserver.database import Database, PlayersRelation, TablesRelation, TableConfig
 from pokerserver.models.table import Table
 
 
