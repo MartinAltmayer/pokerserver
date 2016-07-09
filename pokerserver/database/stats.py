@@ -1,4 +1,4 @@
-from pokerserver.database import Database
+from .database import Database
 
 
 class StatsRelation:

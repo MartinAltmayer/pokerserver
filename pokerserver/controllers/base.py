@@ -1,17 +1,14 @@
 import asyncio
 import functools
-from uuid import UUID
-
-from http import HTTPStatus
 import logging
+from http import HTTPStatus
+from uuid import UUID
 
 from tornado import httputil
 from tornado.web import RequestHandler, MissingArgumentError, HTTPError as TornadoHTTPError
 
-from pokerserver.database.uuids import UUIDsRelation
-from pokerserver.models.match import Match
-from pokerserver.models.player import Player
-from pokerserver.models.table import Table, TableNotFoundError
+from pokerserver.database import UUIDsRelation
+from pokerserver.models import Match, Player, Table, TableNotFoundError
 
 LOG = logging.getLogger(__name__)
 

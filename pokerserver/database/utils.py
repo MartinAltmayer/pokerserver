@@ -1,4 +1,3 @@
-
 def make_card_list(cards):
     return ','.join(cards)
 

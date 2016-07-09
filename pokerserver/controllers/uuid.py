@@ -1,14 +1,12 @@
 import re
 import uuid as mod_uuid
-
 from http import HTTPStatus
 
 from tornado.web import MissingArgumentError
 
-from pokerserver.controllers.base import BaseController, HTTPError
-from pokerserver.database.database import DuplicateKeyError
-from pokerserver.database.uuids import UUIDsRelation
-from pokerserver.models.player import PLAYER_NAME_PATTERN
+from pokerserver.database import DuplicateKeyError, UUIDsRelation
+from pokerserver.models import PLAYER_NAME_PATTERN
+from .base import BaseController, HTTPError
 
 
 class UUIDController(BaseController):

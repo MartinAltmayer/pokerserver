@@ -1,8 +1,7 @@
+from collections import namedtuple
 from uuid import UUID
 
-from collections import namedtuple
-
-from pokerserver.database import Database
+from .database import Database
 
 
 class UUIDsRelation:
