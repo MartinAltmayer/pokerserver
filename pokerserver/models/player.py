@@ -9,6 +9,7 @@ class PlayerNotFoundError(Exception):
 
 
 class Player:
+    # pylint: disable=too-many-instance-attributes
     def __init__(self, table_id, position, name, balance, cards, bet, last_seen=None, has_folded=False):  # pylint: disable=too-many-arguments
         self.table_id = table_id
         self.position = position

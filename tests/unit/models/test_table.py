@@ -15,44 +15,44 @@ class TestTable(TestCase):
     def test_to_dict_without_players_and_unauthorized(self):
         result = self.table.to_dict(None)
         self.assertEqual(result, {
-            'bigBlind': 10,
-            'canJoin': True,
-            'currentPlayer': None,
+            'big_blind': 10,
+            'can_join': True,
+            'current_player': None,
             'dealer': None,
-            'isClosed': False,
-            'mainPot': 0,
-            'openCards': [],
+            'is_closed': False,
+            'main_pot': 0,
+            'open_cards': [],
             'players': [],
-            'sidePots': [],
-            'smallBlind': 1
+            'side_pots': [],
+            'small_blind': 1
         })
 
     def test_to_dict_without_players_and_authorized(self):
         result = self.table.to_dict("Player1")
         self.assertEqual(result, {
-            'bigBlind': 10,
-            'canJoin': True,
-            'currentPlayer': None,
+            'big_blind': 10,
+            'can_join': True,
+            'current_player': None,
             'dealer': None,
-            'isClosed': False,
-            'mainPot': 0,
-            'openCards': [],
+            'is_closed': False,
+            'main_pot': 0,
+            'open_cards': [],
             'players': [],
-            'sidePots': [],
-            'smallBlind': 1
+            'side_pots': [],
+            'small_blind': 1
         })
 
     def test_to_dict_with_players_and_unauthorized(self):
         self.table.players = [Player(42, i, "Player{}".format(i), 0, [], 0, None) for i in range(7)]
         result = self.table.to_dict(None)
         self.assertEqual(result, {
-            'bigBlind': 10,
-            'canJoin': True,
-            'currentPlayer': None,
+            'big_blind': 10,
+            'can_join': True,
+            'current_player': None,
             'dealer': None,
-            'isClosed': False,
-            'mainPot': 0,
-            'openCards': [],
+            'is_closed': False,
+            'main_pot': 0,
+            'open_cards': [],
             'players': [
                 {
                     'table_id': 42,
@@ -65,21 +65,21 @@ class TestTable(TestCase):
                 }
                 for i in range(7)
             ],
-            'sidePots': [],
-            'smallBlind': 1
+            'side_pots': [],
+            'small_blind': 1
         })
 
     def test_to_dict_with_players_and_authorized(self):
         self.table.players = [Player(42, i, "Player{}".format(i), 0, [], 0, None) for i in range(7)]
         result = self.table.to_dict("Player1")
         self.assertEqual(result, {
-            'bigBlind': 10,
-            'canJoin': False,
-            'currentPlayer': None,
+            'big_blind': 10,
+            'can_join': False,
+            'current_player': None,
             'dealer': None,
-            'isClosed': False,
-            'mainPot': 0,
-            'openCards': [],
+            'is_closed': False,
+            'main_pot': 0,
+            'open_cards': [],
             'players': [
                 {
                     'table_id': 42,
@@ -92,21 +92,21 @@ class TestTable(TestCase):
                 }
                 for i in range(7)
             ],
-            'sidePots': [],
-            'smallBlind': 1
+            'side_pots': [],
+            'small_blind': 1
         })
 
     def test_to_dict_with_full_table_and_unauthorized(self):
         self.table.players = [Player(42, i, "Player{}".format(i), 0, [], 0, None) for i in range(8)]
         result = self.table.to_dict(None)
         self.assertEqual(result, {
-            'bigBlind': 10,
-            'canJoin': False,
-            'currentPlayer': None,
+            'big_blind': 10,
+            'can_join': False,
+            'current_player': None,
             'dealer': None,
-            'isClosed': False,
-            'mainPot': 0,
-            'openCards': [],
+            'is_closed': False,
+            'main_pot': 0,
+            'open_cards': [],
             'players': [
                 {
                     'table_id': 42,
@@ -119,21 +119,21 @@ class TestTable(TestCase):
                 }
                 for i in range(8)
             ],
-            'sidePots': [],
-            'smallBlind': 1
+            'side_pots': [],
+            'small_blind': 1
         })
 
     def test_to_dict_with_full_table_and_authorized(self):
         self.table.players = [Player(42, i, "Player{}".format(i), 0, [], 0, None) for i in range(8)]
         result = self.table.to_dict("Player1")
         self.assertEqual(result, {
-            'bigBlind': 10,
-            'canJoin': False,
-            'currentPlayer': None,
+            'big_blind': 10,
+            'can_join': False,
+            'current_player': None,
             'dealer': None,
-            'isClosed': False,
-            'mainPot': 0,
-            'openCards': [],
+            'is_closed': False,
+            'main_pot': 0,
+            'open_cards': [],
             'players': [
                 {
                     'table_id': 42,
@@ -146,6 +146,6 @@ class TestTable(TestCase):
                 }
                 for i in range(8)
             ],
-            'sidePots': [],
-            'smallBlind': 1
+            'side_pots': [],
+            'small_blind': 1
         })

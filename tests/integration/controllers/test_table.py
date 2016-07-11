@@ -35,13 +35,13 @@ class TestTableController(IntegrationHttpTestCase):
         self.assertEqual(response.code, HTTPStatus.OK.value)
         table = loads(response.body.decode())
         self.assertEqual(table, {
-            'bigBlind': 2,
-            'canJoin': False,
-            'currentPlayer': None,
+            'big_blind': 2,
+            'can_join': False,
+            'current_player': None,
             'dealer': None,
-            'isClosed': False,
-            'mainPot': 0,
-            'openCards': [],
+            'is_closed': False,
+            'main_pot': 0,
+            'open_cards': [],
             'players': [{
                 'table_id': 1,
                 'balance': 0,
@@ -67,8 +67,8 @@ class TestTableController(IntegrationHttpTestCase):
                 'position': 5,
                 'has_folded': False
             }],
-            'sidePots': [],
-            'smallBlind': 1
+            'side_pots': [],
+            'small_blind': 1
         })
 
     @gen_test
@@ -78,13 +78,13 @@ class TestTableController(IntegrationHttpTestCase):
         self.assertEqual(response.code, HTTPStatus.OK.value)
         table = loads(response.body.decode())
         self.assertEqual(table, {
-            'bigBlind': 2,
-            'canJoin': True,
-            'currentPlayer': None,
+            'big_blind': 2,
+            'can_join': True,
+            'current_player': None,
             'dealer': None,
-            'isClosed': False,
-            'mainPot': 0,
-            'openCards': [],
+            'is_closed': False,
+            'main_pot': 0,
+            'open_cards': [],
             'players': [{
                 'table_id': 1,
                 'balance': 0,
@@ -110,8 +110,8 @@ class TestTableController(IntegrationHttpTestCase):
                 'position': 5,
                 'has_folded': False
             }],
-            'sidePots': [],
-            'smallBlind': 1
+            'side_pots': [],
+            'small_blind': 1
         })
 
     @gen_test
@@ -121,13 +121,13 @@ class TestTableController(IntegrationHttpTestCase):
         self.assertEqual(response.code, HTTPStatus.OK.value)
         table = loads(response.body.decode())
         self.assertEqual(table, {
-            'bigBlind': 2,
-            'canJoin': True,
-            'currentPlayer': None,
+            'big_blind': 2,
+            'can_join': True,
+            'current_player': None,
             'dealer': None,
-            'isClosed': False,
-            'mainPot': 0,
-            'openCards': [],
+            'is_closed': False,
+            'main_pot': 0,
+            'open_cards': [],
             'players': [{
                 'table_id': 1,
                 'balance': 0,
@@ -153,8 +153,8 @@ class TestTableController(IntegrationHttpTestCase):
                 'position': 5,
                 'has_folded': False
             }],
-            'sidePots': [],
-            'smallBlind': 1
+            'side_pots': [],
+            'small_blind': 1
         })
 
 

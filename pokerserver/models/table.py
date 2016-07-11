@@ -69,15 +69,15 @@ class Table:
         player_names = {player.name for player in self.players}
         result = {
             'players': [player.to_dict(show_cards=player_name == player.name) for player in self.players],
-            'smallBlind': self.config.small_blind,
-            'bigBlind': self.config.big_blind,
-            'openCards': self.open_cards,
-            'mainPot': self.main_pot,
-            'sidePots': self.side_pots,
-            'currentPlayer': self.current_player,
-            'dealer': self.dealer,
-            'isClosed': self.is_closed,
-            'canJoin': player_name not in player_names and len(self.players) < self.config.max_player_count
+            'small_blind': self.config.small_blind,
+            'big_blind': self.config.big_blind,
+            'open_cards': self.open_cards,
+            'main_pot': self.main_pot,
+            'side_pots': self.side_pots,
+            'current_player': self.current_player.name if self.current_player else None,
+            'dealer': self.dealer.name if self.dealer else None,
+            'is_closed': self.is_closed,
+            'can_join': player_name not in player_names and len(self.players) < self.config.max_player_count
         }
 
         return result
