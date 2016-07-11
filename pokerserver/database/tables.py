@@ -163,6 +163,10 @@ class TablesRelation:
 
     @classmethod
     async def check_and_unset_current_player(cls, table_id, current_player):
+        """In one atomic operation, check whether the given name coincides with the current player and if that is the
+        case, set current_player to None. This is used to make sure that even the current player cannot play more
+        than one turn.
+        """
         db = Database.instance()
         async with db.execute(cls.CHECK_CURRENT_PLAYER_QUERY, table_id, current_player) as cursor:
             return cursor.rowcount > 0

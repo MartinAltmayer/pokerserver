@@ -110,6 +110,7 @@ async def create_table(table_id=1, name='Table', min_player_count=2, max_player_
             player.balance,
             player.cards,
             player.bet,
-            player.last_seen
+            player.last_seen,
+            player.has_folded
         )
     return await Table.load_by_name(name)

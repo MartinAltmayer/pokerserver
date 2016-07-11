@@ -60,7 +60,8 @@ class TestTable(TestCase):
                     'name': "Player{}".format(i),
                     'balance': 0,
                     'cards': [],
-                    'bet': 0
+                    'bet': 0,
+                    'has_folded': False
                 }
                 for i in range(7)
             ],
@@ -86,7 +87,8 @@ class TestTable(TestCase):
                     'name': "Player{}".format(i),
                     'balance': 0,
                     'cards': [],
-                    'bet': 0
+                    'bet': 0,
+                    'has_folded': False
                 }
                 for i in range(7)
             ],
@@ -112,7 +114,8 @@ class TestTable(TestCase):
                     'name': "Player{}".format(i),
                     'balance': 0,
                     'cards': [],
-                    'bet': 0
+                    'bet': 0,
+                    'has_folded': False
                 }
                 for i in range(8)
             ],
@@ -138,7 +141,8 @@ class TestTable(TestCase):
                     'name': "Player{}".format(i),
                     'balance': 0,
                     'cards': [],
-                    'bet': 0
+                    'bet': 0,
+                    'has_folded': False
                 }
                 for i in range(8)
             ],

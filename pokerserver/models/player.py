@@ -9,7 +9,7 @@ class PlayerNotFoundError(Exception):
 
 
 class Player:
-    def __init__(self, table_id, position, name, balance, cards, bet, last_seen=None):  # pylint: disable=too-many-arguments
+    def __init__(self, table_id, position, name, balance, cards, bet, last_seen=None, has_folded=False):  # pylint: disable=too-many-arguments
         self.table_id = table_id
         self.position = position
         self.name = name
@@ -17,6 +17,7 @@ class Player:
         self.cards = cards
         self.bet = bet
         self.last_seen = last_seen if last_seen is not None else datetime.now()
+        self.has_folded = has_folded
 
     def to_dict(self, show_cards=False):
         return {
@@ -25,7 +26,8 @@ class Player:
             'name': self.name,
             'balance': self.balance,
             'cards': self.cards if show_cards else [],
-            'bet': self.bet
+            'bet': self.bet,
+            'has_folded': self.has_folded
         }
 
     @classmethod
@@ -41,8 +43,11 @@ class Player:
         return await PlayersRelation.load_by_name(name)
 
     @classmethod
-    async def add_player(cls, table, position, name, balance, cards, bet):  # pylint: disable=too-many-arguments
-        await PlayersRelation.add_player(table.table_id, position, name, balance, cards, bet, datetime.now())
+    async def add_player(cls, table, position, name, balance):  # pylint: disable=too-many-arguments
+        await PlayersRelation.add_player(
+            table.table_id, position, name, balance,
+            cards=[], bet=0, last_seen=datetime.now(), has_folded=False
+        )
 
     @classmethod
     async def load_by_table_id(cls, table_id):
@@ -53,8 +58,9 @@ class Player:
     def is_valid_name(cls, name):
         return name.isalpha()
 
-    async def pay(self, amount):
-        await self.set_balance(self.balance - amount)
+    async def increase_bet(self, amount):
+        assert amount <= self.balance
+        await PlayersRelation.set_balance_and_bet(self.name, self.balance - amount, self.bet + amount)
 
     async def set_balance(self, balance):
         assert balance >= 0
@@ -65,3 +71,7 @@ class Player:
         assert len(cards) <= 2
         await PlayersRelation.set_cards(self.name, cards)
         self.cards = cards
+
+    async def fold(self):
+        self.has_folded = True
+        await PlayersRelation.set_has_folded(self.name, True)

@@ -8,9 +8,9 @@ from tests.integration.utils.integration_test import IntegrationTestCase
 
 class TestPlayersRelation(IntegrationTestCase):
     PLAYER_ROWS = [
-        (1, 1, 'player1', 10, 'cards1', 5, datetime.fromtimestamp(123)),
-        (1, 2, 'player2', 20, 'cards2', 10, datetime.fromtimestamp(123)),
-        (2, 3, 'player3', 30, 'cards3', 15, datetime.fromtimestamp(123))
+        (1, 1, 'player1', 10, 'cards1', 5, datetime.fromtimestamp(123), False),
+        (1, 2, 'player2', 20, 'cards2', 10, datetime.fromtimestamp(123), False),
+        (2, 3, 'player3', 30, 'cards3', 15, datetime.fromtimestamp(123), True)
     ]
     PLAYER_DATA = [{
         'table_id': table_id,
@@ -19,8 +19,9 @@ class TestPlayersRelation(IntegrationTestCase):
         'balance': balance,
         'cards': from_card_list(cards),
         'bet': bet,
-        'last_seen': last_seen
-    } for table_id, position, name, balance, cards, bet, last_seen in PLAYER_ROWS]
+        'last_seen': last_seen,
+        'has_folded': has_folded
+    } for table_id, position, name, balance, cards, bet, last_seen, has_folded in PLAYER_ROWS]
 
     async def create_players(self):
         for fields in self.PLAYER_ROWS:
@@ -67,6 +68,18 @@ class TestPlayersRelation(IntegrationTestCase):
         self.assertEqual(new_balance, player['balance'])
 
     @gen_test
+    async def test_set_balance_and_bet(self):
+        await PlayersRelation.add_player(*self.PLAYER_ROWS[0])
+        player_data = self.PLAYER_DATA[0]
+        new_balance = player_data['balance'] + 100
+        new_bet = player_data['bet'] + 20
+        await PlayersRelation.set_balance_and_bet(player_data['name'], new_balance, new_bet)
+
+        player = await PlayersRelation.load_by_name(player_data['name'])
+        self.assertEqual(new_balance, player['balance'])
+        self.assertEqual(new_bet, player['bet'])
+
+    @gen_test
     async def test_set_cards(self):
         await PlayersRelation.add_player(*self.PLAYER_ROWS[0])
         player_data = self.PLAYER_DATA[0]
@@ -76,3 +89,14 @@ class TestPlayersRelation(IntegrationTestCase):
 
         player = await PlayersRelation.load_by_name(player_data['name'])
         self.assertEqual(cards, player['cards'])
+
+    @gen_test
+    async def test_set_has_folded(self):
+        await PlayersRelation.add_player(*self.PLAYER_ROWS[0])
+        player_data = self.PLAYER_DATA[0]
+        assert not player_data['has_folded']
+
+        await PlayersRelation.set_has_folded(player_data['name'], True)
+
+        player = await PlayersRelation.load_by_name(player_data['name'])
+        self.assertTrue(player['has_folded'])

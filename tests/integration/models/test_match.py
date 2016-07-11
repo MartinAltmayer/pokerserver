@@ -1,9 +1,10 @@
-from unittest.mock import patch, Mock
+from unittest.mock import patch, Mock, call
 
 from asyncio.tasks import gather
 from tornado.testing import gen_test
 
 from pokerserver.database import Database, TableConfig
+from pokerserver.database.players import PlayersRelation
 from pokerserver.models import get_all_cards, Match, Player, Table
 from pokerserver.models.match import PositionOccupiedError, InvalidTurnError
 from pokerserver.models.player import Player
@@ -154,6 +155,27 @@ class TestStartRound(IntegrationTestCase):
         self.assertCountEqual(cards[-6:-4], table.players[2].cards)
         self.assertCountEqual(cards[:-6], table.remaining_deck)
 
+    @patch('pokerserver.database.players.PlayersRelation.set_balance_and_bet', side_effect=return_done_future())
+    @gen_test
+    async def test_pay_blinds(self, set_balance_and_bet_mock):
+        table_id = 1
+        balance = 100
+        players = [
+            Player(table_id, 1, 'small_blind', balance, [], 0),
+            Player(table_id, 2, 'big_blind', balance, [], 0),
+            Player(table_id, 3, 'no_blind', balance, [], 0)
+        ]
+        table = await create_table(table_id=table_id, players=players,
+                                   small_blind_player='small_blind', big_blind_player='big_blind')
+        match = Match(table)
+
+        await match.pay_blinds()
+
+        set_balance_and_bet_mock.assert_has_calls([
+            call('small_blind', balance - table.config.small_blind, table.config.small_blind),
+            call('big_blind', balance - table.config.big_blind, table.config.big_blind)
+        ])
+
     @patch('random.choice')
     @gen_test
     async def test_start(self, choice_mock):
@@ -197,6 +219,15 @@ class TestFold(IntegrationTestCase):
         await self.async_setup()
         with self.assertRaises(InvalidTurnError):
             await self.match.fold(self.player2.name)
+
+    @gen_test
+    async def test_fold_sets_has_folded(self):
+        await self.async_setup()
+
+        await self.match.fold(self.player1.name)
+
+        player_data = await PlayersRelation.load_by_name(self.player1.name)
+        self.assertTrue(player_data['has_folded'])
 
     @gen_test
     async def test_fold_changes_current_player(self):

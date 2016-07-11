@@ -36,7 +36,7 @@ class Match:
             raise ValueError('Player has already joined')
 
         try:
-            await Player.add_player(self.table, position, player_name, start_balance, '', 0)
+            await Player.add_player(self.table, position, player_name, start_balance)
         except DuplicateKeyError:
             raise PositionOccupiedError()
 
@@ -75,8 +75,8 @@ class Match:
 
     async def pay_blinds(self):
         # Players who cannot pay their blind should have been forced to leave the table.
-        await self.table.small_blind_player.pay(self.table.config.small_blind)
-        await self.table.big_blind_player.pay(self.table.config.big_blind)
+        await self.table.small_blind_player.increase_bet(self.table.config.small_blind)
+        await self.table.big_blind_player.increase_bet(self.table.config.big_blind)
 
     async def distribute_cards(self):
         cards = get_all_cards()
@@ -89,7 +89,12 @@ class Match:
     async def fold(self, player_name):
         await self.check_and_unset_current_player(player_name)
         player = self.table.find_player(player_name)
-        await self.table.set_current_player(self.table.player_left_of(player))
+        await player.fold()
+        await self.next_player_or_round(player)
+
+    async def next_player_or_round(self, current_player):
+        # This has to be extended.
+        await self.table.set_current_player(self.table.player_left_of(current_player))
 
     @staticmethod
     def log(player_or_name, message):

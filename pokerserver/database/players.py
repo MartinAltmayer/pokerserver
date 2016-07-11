@@ -8,7 +8,7 @@ from .utils import make_card_list, from_card_list
 class PlayersRelation:
     NAME = 'players'
 
-    FIELDS = ['table_id', 'position', 'name', 'balance', 'cards', 'bet', 'last_seen']
+    FIELDS = ['table_id', 'position', 'name', 'balance', 'cards', 'bet', 'last_seen', 'has_folded']
 
     CREATE_QUERY = """
         CREATE TABLE players (
@@ -19,6 +19,7 @@ class PlayersRelation:
             cards VARCHAR NOT NULL,
             bet INT NOT NULL,
             last_seen TEXT NOT NULL,
+            has_folded INT NOT NULL,
             PRIMARY KEY (table_id, position)
         )
     """
@@ -54,9 +55,21 @@ class PlayersRelation:
         WHERE name = ?
     """
 
+    SET_BALANCE_AND_BET_QUERY = """
+        UPDATE players
+        SET balance = ?, bet = ?
+        WHERE name = ?
+    """
+
     SET_CARDS_QUERY = """
         UPDATE players
         SET cards = ?
+        WHERE name = ?
+    """
+
+    SET_HAS_FOLDED_QUERY = """
+        UPDATE players
+        SET has_folded = ?
         WHERE name = ?
     """
 
@@ -74,6 +87,7 @@ class PlayersRelation:
         data = cls.PLAYERS_RELATION_ROW(*row)._asdict()
         data['cards'] = from_card_list(data['cards'])
         data['last_seen'] = convert_datetime(data['last_seen'])
+        data['has_folded'] = bool(data['has_folded'])
         return data
 
     @classmethod
@@ -95,16 +109,25 @@ class PlayersRelation:
 
     @classmethod
     async def add_player(cls, table_id, position, name, balance, cards, bet,  # pylint: disable=too-many-arguments
-                         last_seen):
+                         last_seen, has_folded):
         assert position > 0
         cards = make_card_list(cards)
-        await Database.instance().execute(cls.INSERT_QUERY, table_id, position, name, balance, cards, bet, last_seen)
+        await Database.instance().execute(cls.INSERT_QUERY, table_id, position, name, balance, cards, bet,
+                                          last_seen, has_folded)
 
     @classmethod
     async def set_balance(cls, name, balance):
         await Database.instance().execute(cls.SET_BALANCE_QUERY, balance, name)
 
     @classmethod
+    async def set_balance_and_bet(cls, name, balance, bet):
+        await Database.instance().execute(cls.SET_BALANCE_AND_BET_QUERY, balance, bet, name)
+
+    @classmethod
     async def set_cards(cls, name, cards):
         cards = make_card_list(cards)
         await Database.instance().execute(cls.SET_CARDS_QUERY, cards, name)
+
+    @classmethod
+    async def set_has_folded(cls, name, has_folded):
+        await Database.instance().execute(cls.SET_HAS_FOLDED_QUERY, has_folded, name)

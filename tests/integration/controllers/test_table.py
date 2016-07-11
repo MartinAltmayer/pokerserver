@@ -48,21 +48,24 @@ class TestTableController(IntegrationHttpTestCase):
                 'cards': [],
                 'name': 'a',
                 'bet': 0,
-                'position': 1
+                'position': 1,
+                'has_folded': False
             }, {
                 'table_id': 1,
                 'balance': 0,
                 'cards': [],
                 'name': 'b',
                 'bet': 0,
-                'position': 2
+                'position': 2,
+                'has_folded': False
             }, {
                 'table_id': 1,
                 'balance': 0,
                 'cards': ['Qh', 'Qc'],
                 'name': 'c',
                 'bet': 0,
-                'position': 5
+                'position': 5,
+                'has_folded': False
             }],
             'sidePots': [],
             'smallBlind': 1
@@ -88,21 +91,24 @@ class TestTableController(IntegrationHttpTestCase):
                 'cards': [],
                 'name': 'a',
                 'bet': 0,
-                'position': 1
+                'position': 1,
+                'has_folded': False
             }, {
                 'table_id': 1,
                 'balance': 0,
                 'cards': [],
                 'name': 'b',
                 'bet': 0,
-                'position': 2
+                'position': 2,
+                'has_folded': False
             }, {
                 'table_id': 1,
                 'balance': 0,
                 'cards': [],
                 'name': 'c',
                 'bet': 0,
-                'position': 5
+                'position': 5,
+                'has_folded': False
             }],
             'sidePots': [],
             'smallBlind': 1
@@ -128,21 +134,24 @@ class TestTableController(IntegrationHttpTestCase):
                 'cards': [],
                 'name': 'a',
                 'bet': 0,
-                'position': 1
+                'position': 1,
+                'has_folded': False
             }, {
                 'table_id': 1,
                 'balance': 0,
                 'cards': [],
                 'name': 'b',
                 'bet': 0,
-                'position': 2
+                'position': 2,
+                'has_folded': False
             }, {
                 'table_id': 1,
                 'balance': 0,
                 'cards': [],
                 'name': 'c',
                 'bet': 0,
-                'position': 5
+                'position': 5,
+                'has_folded': False
             }],
             'sidePots': [],
             'smallBlind': 1
