@@ -5,7 +5,7 @@ from .database import Database
 
 
 class UUIDsRelation:
-    NAME = 'tables'
+    NAME = 'uuids'
 
     FIELDS = ['uuid', 'player_name']
 
