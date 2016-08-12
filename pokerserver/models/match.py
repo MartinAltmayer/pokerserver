@@ -99,10 +99,19 @@ class Match:
     async def call(self, player_name):
         await self.check_and_unset_current_player(player_name)
         player = self.table.find_player(player_name)
-        print([p.bet for p in self.table.players])
         highest_bet = max(p.bet for p in self.table.players)
         increase = min(player.balance, highest_bet - player.bet)
         await player.increase_bet(increase)
+        await self.next_player_or_round(player)
+
+    async def raise_bet(self, player_name, amount):
+        await self.check_and_unset_current_player(player_name)
+        player = self.table.find_player(player_name)
+        if amount <= 0:
+            raise InvalidTurnError('Amount too low')
+        if amount > player.balance:
+            raise InvalidTurnError('Balance too low')
+        await player.increase_bet(amount)
         await self.next_player_or_round(player)
 
     @staticmethod

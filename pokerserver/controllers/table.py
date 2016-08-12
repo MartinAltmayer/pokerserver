@@ -61,3 +61,24 @@ class CallController(BaseController):
             await match.call(self.player_name)
         except InvalidTurnError as error:
             raise HTTPError(HTTPStatus.BAD_REQUEST, str(error))
+
+
+class RaiseController(BaseController):
+    route = '/table/' + TABLE_NAME_PATTERN + '/raise'
+
+    @authenticated
+    async def get(self, table_name):  # pylint: disable=arguments-differ
+        match = await self.load_match(table_name)
+        amount = self._get_amount()
+        try:
+            await match.raise_bet(self.player_name, amount)
+        except InvalidTurnError as error:
+            raise HTTPError(HTTPStatus.BAD_REQUEST, str(error))
+
+    def _get_amount(self):
+        try:
+            return int(self.get_query_argument('amount'))
+        except MissingArgumentError:
+            raise HTTPError(HTTPStatus.BAD_REQUEST, 'Missing parameter: "amount"')
+        except ValueError:
+            raise HTTPError(HTTPStatus.BAD_REQUEST, 'Invalid amount')

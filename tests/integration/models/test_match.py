@@ -247,11 +247,6 @@ class TestCall(IntegrationTestCase):
         await self.table.set_current_player(self.player1)
         self.match = Match(self.table)
 
-    async def set_balance_and_bet(self, player, balance, bet):
-        await PlayersRelation.set_balance_and_bet(player.name, balance, bet)
-        player.balance = balance
-        player.bet = bet
-
     @gen_test
     async def test_call_invalid_player(self):
         await self.async_setup()
@@ -282,3 +277,48 @@ class TestCall(IntegrationTestCase):
         player1 = await Player.load_by_name(self.player1.name)
         self.assertEqual(12, player1.bet)
         self.assertEqual(0, player1.balance)
+
+
+class TestRaise(IntegrationTestCase):
+    async def async_setup(self, player1_balance=0, player1_bet=0):
+        self.player1 = Player(table_id=1, position=1, name='John', cards=[],
+                              balance=player1_balance, bet=player1_bet)
+        self.player2 = Player(table_id=1, position=2, name='Jack', cards=[], balance=0, bet=0)
+        self.table = await create_table(players=[self.player1, self.player2])
+        await self.table.set_current_player(self.player1)
+        self.match = Match(self.table)
+
+    @gen_test
+    async def test_raise_invalid_player(self):
+        await self.async_setup(player1_balance=10)
+        with self.assertRaises(InvalidTurnError):
+            await self.match.raise_bet(self.player2.name, 1)
+
+    @gen_test
+    async def test_raise_negative(self):
+        await self.async_setup(player1_balance=10)
+        with self.assertRaises(InvalidTurnError):
+            await self.match.raise_bet(self.player1.name, 0)
+        with self.assertRaises(InvalidTurnError):
+            await self.match.raise_bet(self.player1.name, -1)
+
+    @gen_test
+    async def test_raise_insufficient_balance(self):
+        await self.async_setup(player1_balance=9)
+        with self.assertRaises(InvalidTurnError):
+            await self.match.raise_bet(self.player1.name, 10)
+
+    @gen_test
+    async def test_raise_changes_current_player(self):
+        await self.async_setup(player1_balance=10)
+        await self.match.raise_bet(self.player1.name, 1)
+        table = await Table.load_by_name(self.table.name)
+        self.assertEqual(self.player2.name, table.current_player.name)
+
+    @gen_test
+    async def test_raise(self):
+        await self.async_setup(player1_balance=10, player1_bet=2)
+        await self.match.raise_bet(self.player1.name, 9)
+        player1 = await Player.load_by_name(self.player1.name)
+        self.assertEqual(11, player1.bet)
+        self.assertEqual(1, player1.balance)

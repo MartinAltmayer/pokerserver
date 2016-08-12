@@ -195,6 +195,20 @@ class TestJoinController(IntegrationHttpTestCase):
 
         self.assertEqual(response.code, HTTPStatus.CONFLICT.value)
 
+    @gen_test
+    async def test_join_missing_parameter(self):
+        await self.async_setup()
+        response = await self.fetch_async('/table/{}/join?uuid={}'.format(self.table_name, self.uuid),
+                                          raise_error=False)
+        self.assertEqual(response.code, HTTPStatus.BAD_REQUEST.value)
+
+    @gen_test
+    async def test_join_invalid_parameter(self):
+        await self.async_setup()
+        response = await self.fetch_async('/table/{}/join?position=-1&uuid={}'.format(self.table_name, self.uuid),
+                                          raise_error=False)
+        self.assertEqual(response.code, HTTPStatus.BAD_REQUEST.value)
+
 
 class TestFoldController(IntegrationHttpTestCase):
     async def async_setup(self):
@@ -213,7 +227,7 @@ class TestFoldController(IntegrationHttpTestCase):
         match_mock.fold.side_effect = return_done_future()
         load_mock.side_effect = return_done_future(match_mock)
 
-        response = await self.fetch_async('/table/{}/fold?position=1&uuid={}'.format(self.table_name, self.uuid))
+        response = await self.fetch_async('/table/{}/fold?uuid={}'.format(self.table_name, self.uuid))
 
         self.assertEqual(response.code, HTTPStatus.OK.value)
         load_mock.assert_called_once_with(self.table_name)
@@ -228,7 +242,7 @@ class TestFoldController(IntegrationHttpTestCase):
         match_mock.fold.side_effect = return_done_future(exception=InvalidTurnError)
         load_mock.side_effect = return_done_future(match_mock)
 
-        response = await self.fetch_async('/table/{}/fold?position=1&uuid={}'.format(self.table_name, self.uuid),
+        response = await self.fetch_async('/table/{}/fold?uuid={}'.format(self.table_name, self.uuid),
                                           raise_error=False)
 
         self.assertEqual(response.code, HTTPStatus.BAD_REQUEST.value)
@@ -251,7 +265,7 @@ class TestCallController(IntegrationHttpTestCase):
         match_mock.call.side_effect = return_done_future()
         load_mock.side_effect = return_done_future(match_mock)
 
-        response = await self.fetch_async('/table/{}/call?position=1&uuid={}'.format(self.table_name, self.uuid))
+        response = await self.fetch_async('/table/{}/call?uuid={}'.format(self.table_name, self.uuid))
 
         self.assertEqual(response.code, HTTPStatus.OK.value)
         load_mock.assert_called_once_with(self.table_name)
@@ -266,7 +280,59 @@ class TestCallController(IntegrationHttpTestCase):
         match_mock.call.side_effect = return_done_future(exception=InvalidTurnError)
         load_mock.side_effect = return_done_future(match_mock)
 
-        response = await self.fetch_async('/table/{}/call?position=1&uuid={}'.format(self.table_name, self.uuid),
+        response = await self.fetch_async('/table/{}/call?uuid={}'.format(self.table_name, self.uuid),
                                           raise_error=False)
 
+        self.assertEqual(response.code, HTTPStatus.BAD_REQUEST.value)
+
+
+class TestRaiseController(IntegrationHttpTestCase):
+    async def async_setup(self):
+        self.uuid = uuid4()
+        self.player_name = 'player'
+        await UUIDsRelation.add_uuid(self.uuid, self.player_name)
+        table = await create_table(max_player_count=2)
+        self.table_name = table.name
+
+    @patch('pokerserver.controllers.base.BaseController.load_match')
+    @gen_test
+    async def test_raise(self, load_mock):
+        await self.async_setup()
+        match_mock = Mock()
+        match_mock.table.players = []
+        match_mock.raise_bet.side_effect = return_done_future()
+        load_mock.side_effect = return_done_future(match_mock)
+
+        response = await self.fetch_async('/table/{}/raise?amount=17&uuid={}'.format(self.table_name, self.uuid))
+
+        self.assertEqual(response.code, HTTPStatus.OK.value)
+        load_mock.assert_called_once_with(self.table_name)
+        match_mock.raise_bet.assert_called_once_with(self.player_name, 17)
+
+    @patch('pokerserver.controllers.base.BaseController.load_match')
+    @gen_test
+    async def test_raise_invalid_turn(self, load_mock):
+        await self.async_setup()
+        match_mock = Mock()
+        match_mock.table.players = []
+        match_mock.raise_bet.side_effect = return_done_future(exception=InvalidTurnError)
+        load_mock.side_effect = return_done_future(match_mock)
+
+        response = await self.fetch_async('/table/{}/raise?amount=3&uuid={}'.format(self.table_name, self.uuid),
+                                          raise_error=False)
+
+        self.assertEqual(response.code, HTTPStatus.BAD_REQUEST.value)
+
+    @gen_test
+    async def test_raise_missing_parameter(self):
+        await self.async_setup()
+        response = await self.fetch_async('/table/{}/raise?uuid={}'.format(self.table_name, self.uuid),
+                                          raise_error=False)
+        self.assertEqual(response.code, HTTPStatus.BAD_REQUEST.value)
+
+    @gen_test
+    async def test_raise_invalid_parameter(self):
+        await self.async_setup()
+        response = await self.fetch_async('/table/{}/raise?amount=googol&uuid={}'.format(self.table_name, self.uuid),
+                                          raise_error=False)
         self.assertEqual(response.code, HTTPStatus.BAD_REQUEST.value)
