@@ -54,24 +54,24 @@ class Match:
 
     async def start_hand(self):
         assert len(self.table.players) >= 2
-        small_blind_player, big_blind_player, current_player = self.find_blind_players(self.table.dealer)
+        small_blind_player, big_blind_player, under_the_gun = self.find_blind_players(self.table.dealer)
         await self.table.set_special_players(
-            small_blind_player=small_blind_player, big_blind_player=big_blind_player, current_player=current_player)
+            small_blind_player=small_blind_player, big_blind_player=big_blind_player, current_player=under_the_gun)
         await self.pay_blinds()
         await self.distribute_cards()
-        self.log(current_player, "Started table {}".format(self.table.name))
+        self.log(under_the_gun, "Started table {}".format(self.table.name))
 
     def find_blind_players(self, dealer):
         if len(self.table.players) == 2:
             small_blind = dealer
             big_blind = self.table.player_left_of(small_blind)
-            start_player = big_blind
+            under_the_gun = big_blind
         else:
             small_blind = self.table.player_left_of(dealer)
             big_blind = self.table.player_left_of(small_blind)
-            start_player = self.table.player_left_of(big_blind)
+            under_the_gun = self.table.player_left_of(big_blind)
 
-        return small_blind, big_blind, start_player
+        return small_blind, big_blind, under_the_gun
 
     async def pay_blinds(self):
         # Players who cannot pay their blind should have been forced to leave the table.
