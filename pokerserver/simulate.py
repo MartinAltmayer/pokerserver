@@ -1,8 +1,8 @@
-import threading
-import random
 import argparse
+import random
+import threading
 
-from pokerserver.simpleclient import Client
+from pokerserver.client.simple import Client
 
 NUMBER_OF_PLAYERS = 2
 

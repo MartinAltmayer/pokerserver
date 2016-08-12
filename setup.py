@@ -19,7 +19,8 @@ setup(
         'console_scripts': [
             'pokerserver=pokerserver.applications.server:main',
             'createpokerdb=pokerserver.applications.create_database:main',
-            'clearpokerdb=pokerserver.applications.clear_database:main'
+            'clearpokerdb=pokerserver.applications.clear_database:main',
+            'simpleclient=pokerserver.applications.simple_client:main',
         ]
     },
     install_requires=requirements,
