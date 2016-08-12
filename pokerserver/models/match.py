@@ -99,7 +99,7 @@ class Match:
     async def call(self, player_name):
         await self.check_and_unset_current_player(player_name)
         player = self.table.find_player(player_name)
-        highest_bet = max(p.bet for p in self.table.players)
+        highest_bet = self._get_highest_bet()
         if highest_bet == 0:
             raise InvalidTurnError('Cannot call without bet, use \'check\' instead')
         increase = min(player.balance, highest_bet - player.bet)
@@ -109,20 +109,23 @@ class Match:
     async def check(self, player_name):
         await self.check_and_unset_current_player(player_name)
         player = self.table.find_player(player_name)
-        highest_bet = max(p.bet for p in self.table.players)
-        if highest_bet > 0:
+        if self._get_highest_bet() > 0:
             raise InvalidTurnError('Cannot check after a bet was made')
         await self.next_player_or_round(player)
 
     async def raise_bet(self, player_name, amount):
         await self.check_and_unset_current_player(player_name)
         player = self.table.find_player(player_name)
-        if amount <= 0:
+        highest_bet = self._get_highest_bet()
+        if amount <= highest_bet - player.bet:
             raise InvalidTurnError('Amount too low')
         if amount > player.balance:
             raise InvalidTurnError('Balance too low')
         await player.increase_bet(amount)
         await self.next_player_or_round(player)
+
+    def _get_highest_bet(self):
+        return max(p.bet for p in self.table.players)
 
     @staticmethod
     def log(player_or_name, message):

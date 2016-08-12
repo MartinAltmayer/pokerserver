@@ -322,10 +322,10 @@ class TestCheck(IntegrationTestCase):
 
 
 class TestRaise(IntegrationTestCase):
-    async def async_setup(self, player1_balance=0, player1_bet=0):
+    async def async_setup(self, player1_balance=0, player1_bet=0, player2_bet=0):
         self.player1 = Player(table_id=1, position=1, name='John', cards=[],
                               balance=player1_balance, bet=player1_bet)
-        self.player2 = Player(table_id=1, position=2, name='Jack', cards=[], balance=0, bet=0)
+        self.player2 = Player(table_id=1, position=2, name='Jack', cards=[], balance=0, bet=player2_bet)
         self.table = await create_table(players=[self.player1, self.player2])
         await self.table.set_current_player(self.player1)
         self.match = Match(self.table)
@@ -337,10 +337,14 @@ class TestRaise(IntegrationTestCase):
             await self.match.raise_bet(self.player2.name, 1)
 
     @gen_test
+    async def test_raise_amount_too_low(self):
+        await self.async_setup(player1_balance=10, player1_bet=2, player2_bet=5)
+        with self.assertRaises(InvalidTurnError):
+            await self.match.raise_bet(self.player1.name, 2)
+
+    @gen_test
     async def test_raise_negative(self):
         await self.async_setup(player1_balance=10)
-        with self.assertRaises(InvalidTurnError):
-            await self.match.raise_bet(self.player1.name, 0)
         with self.assertRaises(InvalidTurnError):
             await self.match.raise_bet(self.player1.name, -1)
 
