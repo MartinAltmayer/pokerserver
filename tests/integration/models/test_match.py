@@ -1,13 +1,14 @@
+from asyncio.tasks import gather
 from unittest.mock import patch, Mock, call
 
-from asyncio.tasks import gather
 from tornado.testing import gen_test
 
 from pokerserver.database import Database, TableConfig
 from pokerserver.database.players import PlayersRelation
-from pokerserver.models import get_all_cards, Match, Player, Table
-from pokerserver.models.match import PositionOccupiedError, InvalidTurnError
-from pokerserver.models.player import Player
+from pokerserver.models import (
+    Player, get_all_cards, Match, Table, NotYourTurnError, PositionOccupiedError,
+    InsufficientBalanceError, InvalidBetError, InvalidTurnError
+)
 from tests.integration.utils.integration_test import IntegrationTestCase, create_table, return_done_future
 
 
@@ -206,165 +207,151 @@ class TestStartRound(IntegrationTestCase):
         self.assertEqual([], table.open_cards)
 
 
-class TestFold(IntegrationTestCase):
-    async def async_setup(self):
-        self.player1 = Player(table_id=1, position=1, name='John', balance=0, cards=[], bet=0)
-        self.player2 = Player(table_id=1, position=2, name='Jack', balance=0, cards=[], bet=0)
-        self.table = await create_table(players=[self.player1, self.player2])
-        await self.table.set_current_player(self.player1)
+class BettingTestCase(IntegrationTestCase):
+    async def async_setup(self, balances=(2, 2, 2, 2), bets=(0, 0, 0, 0)):
+        assert len(balances) == len(bets)
+
+        self.players = [
+            Player(table_id=1, position=index + 1, name='John{}'.format(index), cards=[], balance=balance, bet=bet)
+            for index, (balance, bet) in enumerate(zip(balances, bets))
+        ]
+        self.table = await create_table(players=self.players)
+        await self.table.set_special_players(
+            dealer=self.players[0 % len(self.players)],
+            small_blind_player=self.players[1 % len(self.players)],
+            big_blind_player=self.players[2 % len(self.players)],
+            current_player=self.players[3 % len(self.players)])
         self.match = Match(self.table)
 
+
+class TestFold(BettingTestCase):
     @gen_test
     async def test_fold_invalid_player(self):
         await self.async_setup()
-        with self.assertRaises(InvalidTurnError):
-            await self.match.fold(self.player2.name)
+        with self.assertRaises(NotYourTurnError):
+            await self.match.fold(self.players[1].name)
 
     @gen_test
     async def test_fold_sets_has_folded(self):
         await self.async_setup()
 
-        await self.match.fold(self.player1.name)
+        await self.match.fold(self.players[3].name)
 
-        player_data = await PlayersRelation.load_by_name(self.player1.name)
+        player_data = await PlayersRelation.load_by_name(self.players[3].name)
         self.assertTrue(player_data['has_folded'])
 
     @gen_test
     async def test_fold_changes_current_player(self):
         await self.async_setup()
-        await self.match.fold(self.player1.name)
+        await self.match.fold(self.players[3].name)
         table = await Table.load_by_name(self.table.name)
-        self.assertEqual(self.player2.name, table.current_player.name)
+        self.assertEqual(self.players[1].name, table.current_player.name)
 
 
-class TestCall(IntegrationTestCase):
-    async def async_setup(self, player1_balance=10, player1_bet=0, player2_balance=10, player2_bet=2):
-        self.player1 = Player(table_id=1, position=1, name='John', cards=[],
-                              balance=player1_balance, bet=player1_bet)
-        self.player2 = Player(table_id=1, position=2, name='Jack', cards=[],
-                              balance=player2_balance, bet=player2_bet)
-        self.table = await create_table(players=[self.player1, self.player2])
-        await self.table.set_current_player(self.player1)
-        self.match = Match(self.table)
-
+class TestCall(BettingTestCase):
     @gen_test
     async def test_call_invalid_player(self):
         await self.async_setup()
-        with self.assertRaises(InvalidTurnError):
-            await self.match.call(self.player2.name)
+        with self.assertRaises(NotYourTurnError):
+            await self.match.call(self.players[1].name)
 
     @gen_test
     async def test_call_changes_current_player(self):
-        await self.async_setup()
-        await self.match.call(self.player1.name)
+        await self.async_setup(bets=[0, 1, 2, 0])
+        await self.match.call(self.players[3].name)
         table = await Table.load_by_name(self.table.name)
-        self.assertEqual(self.player2.name, table.current_player.name)
+        self.assertEqual(self.players[0].name, table.current_player.name)
 
     @gen_test
     async def test_call_sufficient_balance(self):
-        await self.async_setup(player1_balance=10, player1_bet=2, player2_bet=5)
-        await self.match.call(self.player1.name)
+        await self.async_setup(balances=[0, 1, 2, 12], bets=[0, 1, 5, 0])
+        await self.match.call(self.players[3].name)
 
-        player1 = await Player.load_by_name(self.player1.name)
-        self.assertEqual(5, player1.bet)
-        self.assertEqual(7, player1.balance)
+        player = await Player.load_by_name(self.players[3].name)
+        self.assertEqual(5, player.bet)
+        self.assertEqual(7, player.balance)
 
     @gen_test
     async def test_call_insufficient_balance(self):
-        await self.async_setup(player1_balance=10, player1_bet=2, player2_bet=15)
-        await self.match.call(self.player1.name)
+        await self.async_setup(balances=[0, 1, 2, 10], bets=[3, 15, 0, 3])
+        await self.match.call(self.players[3].name)
 
-        player1 = await Player.load_by_name(self.player1.name)
-        self.assertEqual(12, player1.bet)
-        self.assertEqual(0, player1.balance)
+        player = await Player.load_by_name(self.players[3].name)
+        self.assertEqual(13, player.bet)
+        self.assertEqual(0, player.balance)
 
     @gen_test
     async def test_call_without_bet(self):
-        await self.async_setup(player1_balance=10, player1_bet=0, player2_bet=0)
-        with self.assertRaises(InvalidTurnError):
-            await self.match.call(self.player1.name)
+        await self.async_setup()
+        with self.assertRaises(NotYourTurnError):
+            await self.match.call(self.players[0].name)
 
 
-class TestCheck(IntegrationTestCase):
-    async def async_setup(self, player2_bet=0):
-        self.player1 = Player(table_id=1, position=1, name='John', cards=[], balance=10, bet=0)
-        self.player2 = Player(table_id=1, position=2, name='Jack', cards=[], balance=10, bet=player2_bet)
-        self.table = await create_table(players=[self.player1, self.player2])
-        await self.table.set_current_player(self.player1)
-        self.match = Match(self.table)
-
+class TestCheck(BettingTestCase):
     @gen_test
     async def test_check_invalid_player(self):
         await self.async_setup()
-        with self.assertRaises(InvalidTurnError):
-            await self.match.check(self.player2.name)
+        with self.assertRaises(NotYourTurnError):
+            await self.match.check(self.players[2].name)
 
     @gen_test
     async def test_check_changes_current_player(self):
-        await self.async_setup()
-        await self.match.check(self.player1.name)
+        await self.async_setup(bets=[None, None, None, None])
+        await self.match.check(self.players[3].name)
         table = await Table.load_by_name(self.table.name)
-        self.assertEqual(self.player2.name, table.current_player.name)
+        self.assertEqual(self.players[0].name, table.current_player.name)
 
     @gen_test
     async def test_check_after_bet(self):
-        await self.async_setup(player2_bet=1)
+        await self.async_setup(bets=(1, 2, 1, 0))
         with self.assertRaises(InvalidTurnError):
-            await self.match.check(self.player1.name)
+            await self.match.check(self.players[3].name)
 
     @gen_test
     async def test_check(self):
-        await self.async_setup()
-        await self.match.check(self.player1.name)
-        player1 = await Player.load_by_name(self.player1.name)
-        self.assertEqual(0, player1.bet)
-        self.assertEqual(10, player1.balance)
+        await self.async_setup(bets=[0, 0, 0, 0], balances=[2, 2, 2, 2])
+        await self.match.check(self.players[3].name)
+        player = await Player.load_by_name(self.players[3].name)
+        self.assertEqual(0, player.bet)
+        self.assertEqual(2, player.balance)
 
 
-class TestRaise(IntegrationTestCase):
-    async def async_setup(self, player1_balance=0, player1_bet=0, player2_bet=0):
-        self.player1 = Player(table_id=1, position=1, name='John', cards=[],
-                              balance=player1_balance, bet=player1_bet)
-        self.player2 = Player(table_id=1, position=2, name='Jack', cards=[], balance=0, bet=player2_bet)
-        self.table = await create_table(players=[self.player1, self.player2])
-        await self.table.set_current_player(self.player1)
-        self.match = Match(self.table)
-
+class TestRaise(BettingTestCase):
     @gen_test
     async def test_raise_invalid_player(self):
-        await self.async_setup(player1_balance=10)
-        with self.assertRaises(InvalidTurnError):
-            await self.match.raise_bet(self.player2.name, 1)
+        await self.async_setup()
+        with self.assertRaises(NotYourTurnError):
+            await self.match.raise_bet(self.players[1].name, 1)
 
     @gen_test
     async def test_raise_amount_too_low(self):
-        await self.async_setup(player1_balance=10, player1_bet=2, player2_bet=5)
-        with self.assertRaises(InvalidTurnError):
-            await self.match.raise_bet(self.player1.name, 2)
+        await self.async_setup(bets=[2, 5, 0, 0])
+        with self.assertRaises(InvalidBetError):
+            await self.match.raise_bet(self.players[3].name, 2)
 
     @gen_test
     async def test_raise_negative(self):
-        await self.async_setup(player1_balance=10)
-        with self.assertRaises(InvalidTurnError):
-            await self.match.raise_bet(self.player1.name, -1)
+        await self.async_setup()
+        with self.assertRaises(InvalidBetError):
+            await self.match.raise_bet(self.players[3].name, -1)
 
     @gen_test
     async def test_raise_insufficient_balance(self):
-        await self.async_setup(player1_balance=9)
-        with self.assertRaises(InvalidTurnError):
-            await self.match.raise_bet(self.player1.name, 10)
+        await self.async_setup(balances=[9, 0, 0, 0])
+        with self.assertRaises(InsufficientBalanceError):
+            await self.match.raise_bet(self.players[3].name, 10)
 
     @gen_test
     async def test_raise_changes_current_player(self):
-        await self.async_setup(player1_balance=10)
-        await self.match.raise_bet(self.player1.name, 1)
+        await self.async_setup(balances=[10, 0, 0], bets=[0, 0, 0])
+        await self.match.raise_bet(self.players[0].name, 1)
         table = await Table.load_by_name(self.table.name)
-        self.assertEqual(self.player2.name, table.current_player.name)
+        self.assertEqual(self.players[1].name, table.current_player.name)
 
     @gen_test
     async def test_raise(self):
-        await self.async_setup(player1_balance=10, player1_bet=2)
-        await self.match.raise_bet(self.player1.name, 9)
-        player1 = await Player.load_by_name(self.player1.name)
-        self.assertEqual(11, player1.bet)
-        self.assertEqual(1, player1.balance)
+        await self.async_setup(balances=[0, 0, 0, 10])
+        await self.match.raise_bet(self.players[3].name, 9)
+        player = await Player.load_by_name(self.players[3].name)
+        self.assertEqual(9, player.bet)
+        self.assertEqual(1, player.balance)

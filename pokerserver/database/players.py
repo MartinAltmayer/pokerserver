@@ -17,7 +17,7 @@ class PlayersRelation:
             name VARCHAR NOT NULL,
             balance INT NOT NULL,
             cards VARCHAR NOT NULL,
-            bet INT NOT NULL,
+            bet INT,
             last_seen TEXT NOT NULL,
             has_folded INT NOT NULL,
             PRIMARY KEY (table_id, position)

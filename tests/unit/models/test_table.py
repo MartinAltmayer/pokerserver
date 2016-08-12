@@ -1,10 +1,10 @@
-from unittest import TestCase
+from nose.tools import assert_equal
 
 from pokerserver.database import TableConfig
 from pokerserver.models import Table, Player
 
 
-class TestTable(TestCase):
+class TestTable:
     def setUp(self):
         self.table = Table(
             42,
@@ -14,7 +14,7 @@ class TestTable(TestCase):
 
     def test_to_dict_without_players_and_unauthorized(self):
         result = self.table.to_dict(None)
-        self.assertEqual(result, {
+        assert_equal(result, {
             'big_blind': 10,
             'can_join': True,
             'current_player': None,
@@ -29,7 +29,7 @@ class TestTable(TestCase):
 
     def test_to_dict_without_players_and_authorized(self):
         result = self.table.to_dict("Player1")
-        self.assertEqual(result, {
+        assert_equal(result, {
             'big_blind': 10,
             'can_join': True,
             'current_player': None,
@@ -45,7 +45,7 @@ class TestTable(TestCase):
     def test_to_dict_with_players_and_unauthorized(self):
         self.table.players = [Player(42, i, "Player{}".format(i), 0, [], 0, None) for i in range(7)]
         result = self.table.to_dict(None)
-        self.assertEqual(result, {
+        assert_equal(result, {
             'big_blind': 10,
             'can_join': True,
             'current_player': None,
@@ -72,7 +72,7 @@ class TestTable(TestCase):
     def test_to_dict_with_players_and_authorized(self):
         self.table.players = [Player(42, i, "Player{}".format(i), 0, [], 0, None) for i in range(7)]
         result = self.table.to_dict("Player1")
-        self.assertEqual(result, {
+        assert_equal(result, {
             'big_blind': 10,
             'can_join': False,
             'current_player': None,
@@ -99,7 +99,7 @@ class TestTable(TestCase):
     def test_to_dict_with_full_table_and_unauthorized(self):
         self.table.players = [Player(42, i, "Player{}".format(i), 0, [], 0, None) for i in range(8)]
         result = self.table.to_dict(None)
-        self.assertEqual(result, {
+        assert_equal(result, {
             'big_blind': 10,
             'can_join': False,
             'current_player': None,
@@ -126,7 +126,7 @@ class TestTable(TestCase):
     def test_to_dict_with_full_table_and_authorized(self):
         self.table.players = [Player(42, i, "Player{}".format(i), 0, [], 0, None) for i in range(8)]
         result = self.table.to_dict("Player1")
-        self.assertEqual(result, {
+        assert_equal(result, {
             'big_blind': 10,
             'can_join': False,
             'current_player': None,
