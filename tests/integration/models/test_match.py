@@ -235,3 +235,50 @@ class TestFold(IntegrationTestCase):
         await self.match.fold(self.player1.name)
         table = await Table.load_by_name(self.table.name)
         self.assertEqual(self.player2.name, table.current_player.name)
+
+
+class TestCall(IntegrationTestCase):
+    async def async_setup(self, player1_balance=0, player1_bet=0, player2_balance=0, player2_bet=0):
+        self.player1 = Player(table_id=1, position=1, name='John', cards=[],
+                              balance=player1_balance, bet=player1_bet)
+        self.player2 = Player(table_id=1, position=2, name='Jack', cards=[],
+                              balance=player2_balance, bet=player2_bet)
+        self.table = await create_table(players=[self.player1, self.player2])
+        await self.table.set_current_player(self.player1)
+        self.match = Match(self.table)
+
+    async def set_balance_and_bet(self, player, balance, bet):
+        await PlayersRelation.set_balance_and_bet(player.name, balance, bet)
+        player.balance = balance
+        player.bet = bet
+
+    @gen_test
+    async def test_call_invalid_player(self):
+        await self.async_setup()
+        with self.assertRaises(InvalidTurnError):
+            await self.match.call(self.player2.name)
+
+    @gen_test
+    async def test_call_changes_current_player(self):
+        await self.async_setup()
+        await self.match.call(self.player1.name)
+        table = await Table.load_by_name(self.table.name)
+        self.assertEqual(self.player2.name, table.current_player.name)
+
+    @gen_test
+    async def test_call_sufficient_balance(self):
+        await self.async_setup(player1_balance=10, player1_bet=2, player2_bet=5)
+        await self.match.call(self.player1.name)
+
+        player1 = await Player.load_by_name(self.player1.name)
+        self.assertEqual(5, player1.bet)
+        self.assertEqual(7, player1.balance)
+
+    @gen_test
+    async def test_call_insufficient_balance(self):
+        await self.async_setup(player1_balance=10, player1_bet=2, player2_bet=15)
+        await self.match.call(self.player1.name)
+
+        player1 = await Player.load_by_name(self.player1.name)
+        self.assertEqual(12, player1.bet)
+        self.assertEqual(0, player1.balance)

@@ -62,6 +62,8 @@ class Player:
     async def increase_bet(self, amount):
         assert amount <= self.balance
         await PlayersRelation.set_balance_and_bet(self.name, self.balance - amount, self.bet + amount)
+        self.balance -= amount
+        self.bet += amount
 
     async def set_balance(self, balance):
         assert balance >= 0

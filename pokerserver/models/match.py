@@ -96,6 +96,15 @@ class Match:
         # This has to be extended.
         await self.table.set_current_player(self.table.player_left_of(current_player))
 
+    async def call(self, player_name):
+        await self.check_and_unset_current_player(player_name)
+        player = self.table.find_player(player_name)
+        print([p.bet for p in self.table.players])
+        highest_bet = max(p.bet for p in self.table.players)
+        increase = min(player.balance, highest_bet - player.bet)
+        await player.increase_bet(increase)
+        await self.next_player_or_round(player)
+
     @staticmethod
     def log(player_or_name, message):
         player_name = player_or_name if isinstance(player_or_name, str) else player_or_name.name

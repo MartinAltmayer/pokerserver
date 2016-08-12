@@ -49,3 +49,15 @@ class FoldController(BaseController):
             await match.fold(self.player_name)
         except InvalidTurnError as error:
             raise HTTPError(HTTPStatus.BAD_REQUEST, str(error))
+
+
+class CallController(BaseController):
+    route = '/table/' + TABLE_NAME_PATTERN + '/call'
+
+    @authenticated
+    async def get(self, table_name):  # pylint: disable=arguments-differ
+        match = await self.load_match(table_name)
+        try:
+            await match.call(self.player_name)
+        except InvalidTurnError as error:
+            raise HTTPError(HTTPStatus.BAD_REQUEST, str(error))
