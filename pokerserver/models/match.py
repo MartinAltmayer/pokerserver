@@ -100,8 +100,18 @@ class Match:
         await self.check_and_unset_current_player(player_name)
         player = self.table.find_player(player_name)
         highest_bet = max(p.bet for p in self.table.players)
+        if highest_bet == 0:
+            raise InvalidTurnError('Cannot call without bet, use \'check\' instead')
         increase = min(player.balance, highest_bet - player.bet)
         await player.increase_bet(increase)
+        await self.next_player_or_round(player)
+
+    async def check(self, player_name):
+        await self.check_and_unset_current_player(player_name)
+        player = self.table.find_player(player_name)
+        highest_bet = max(p.bet for p in self.table.players)
+        if highest_bet > 0:
+            raise InvalidTurnError('Cannot check after a bet was made')
         await self.next_player_or_round(player)
 
     async def raise_bet(self, player_name, amount):

@@ -1,5 +1,5 @@
 from .info import InfoController
-from .table import TableController, JoinController, FoldController, CallController, RaiseController
+from .table import TableController, JoinController, FoldController, CallController, CheckController, RaiseController
 from .tables import TablesController
 from .uuid import UUIDController
 
@@ -10,6 +10,7 @@ _CONTROLLERS = [
     JoinController,
     FoldController,
     CallController,
+    CheckController,
     RaiseController,
     UUIDController
 ]
