@@ -6,8 +6,7 @@ from uuid import uuid4
 from tornado.testing import gen_test
 
 from pokerserver.database.uuids import UUIDsRelation
-from pokerserver.models import Player
-from pokerserver.models.match import PositionOccupiedError, InvalidTurnError
+from pokerserver.models import Player, NotYourTurnError, PositionOccupiedError, InvalidTurnError
 from tests.integration.utils.integration_test import IntegrationHttpTestCase, return_done_future, create_table
 
 
@@ -239,7 +238,7 @@ class TestFoldController(IntegrationHttpTestCase):
         await self.async_setup()
         match_mock = Mock()
         match_mock.table.players = []
-        match_mock.fold.side_effect = return_done_future(exception=InvalidTurnError)
+        match_mock.fold.side_effect = return_done_future(exception=NotYourTurnError)
         load_mock.side_effect = return_done_future(match_mock)
 
         response = await self.fetch_async('/table/{}/fold?uuid={}'.format(self.table_name, self.uuid),
@@ -277,7 +276,7 @@ class TestCallController(IntegrationHttpTestCase):
         await self.async_setup()
         match_mock = Mock()
         match_mock.table.players = []
-        match_mock.call.side_effect = return_done_future(exception=InvalidTurnError)
+        match_mock.call.side_effect = return_done_future(exception=NotYourTurnError)
         load_mock.side_effect = return_done_future(match_mock)
 
         response = await self.fetch_async('/table/{}/call?uuid={}'.format(self.table_name, self.uuid),
@@ -353,7 +352,7 @@ class TestRaiseController(IntegrationHttpTestCase):
         await self.async_setup()
         match_mock = Mock()
         match_mock.table.players = []
-        match_mock.raise_bet.side_effect = return_done_future(exception=InvalidTurnError)
+        match_mock.raise_bet.side_effect = return_done_future(exception=NotYourTurnError)
         load_mock.side_effect = return_done_future(match_mock)
 
         response = await self.fetch_async('/table/{}/raise?amount=3&uuid={}'.format(self.table_name, self.uuid),

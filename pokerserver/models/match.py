@@ -16,6 +16,18 @@ class InvalidTurnError(Exception):
     pass
 
 
+class NotYourTurnError(InvalidTurnError):
+    pass
+
+
+class InsufficientBalanceError(InvalidTurnError):
+    pass
+
+
+class InvalidBetError(InvalidTurnError):
+    pass
+
+
 class Match:
     def __init__(self, table):
         self.table = table
@@ -23,7 +35,7 @@ class Match:
     async def check_and_unset_current_player(self, player_name):
         is_current_player = await self.table.check_and_unset_current_player(player_name)
         if not is_current_player:
-            raise InvalidTurnError('It\'s not your turn')
+            raise NotYourTurnError('It\'s not your turn')
 
     async def join(self, player_name, position, start_balance):
         if self.table.is_closed:
@@ -48,8 +60,8 @@ class Match:
         if len(self.table.players) == self.table.config.min_player_count:
             await self.start()
 
-    async def start(self):
-        await self.table.set_special_players(dealer=random.choice(self.table.players))
+    async def start(self, dealer=None):
+        await self.table.set_special_players(dealer=dealer or random.choice(self.table.players))
         await self.start_hand()
 
     async def start_hand(self):
@@ -74,7 +86,7 @@ class Match:
         return small_blind, big_blind, under_the_gun
 
     async def pay_blinds(self):
-        # Players who cannot pay their blind should have been forced to leave the table.
+        # If a player cannot pay a blind, the pot should be split up.
         await self.table.small_blind_player.increase_bet(self.table.config.small_blind)
         await self.table.big_blind_player.increase_bet(self.table.config.big_blind)
 
@@ -93,8 +105,19 @@ class Match:
         await self.next_player_or_round(player)
 
     async def next_player_or_round(self, current_player):
-        # This has to be extended.
-        await self.table.set_current_player(self.table.player_left_of(current_player))
+        if self.betting_round_finished():
+            await self.next_round()
+        else:
+            # It is not enough to simply select the player left of the current one!
+            await self.table.set_current_player(self.table.player_left_of(current_player))
+
+    def betting_round_finished(self):
+        active_players = [player for player in self.table.players if not player.has_folded]
+        bets = {player.bet for player in active_players}
+        return len(active_players) == 0 or len(bets) == 1 and bets != {None}
+
+    async def next_round(self):
+        await self.table.set_current_player(self.table.small_blind_player)
 
     async def call(self, player_name):
         await self.check_and_unset_current_player(player_name)
@@ -109,18 +132,15 @@ class Match:
     async def check(self, player_name):
         await self.check_and_unset_current_player(player_name)
         player = self.table.find_player(player_name)
-        highest_bet = max(p.bet for p in self.table.players)
-        if highest_bet > 0:
-            raise InvalidTurnError('Cannot check after a bet was made')
         await self.next_player_or_round(player)
 
     async def raise_bet(self, player_name, amount):
         await self.check_and_unset_current_player(player_name)
         player = self.table.find_player(player_name)
         if amount <= 0:
-            raise InvalidTurnError('Amount too low')
+            raise InvalidBetError('Amount too low')
         if amount > player.balance:
-            raise InvalidTurnError('Balance too low')
+            raise InsufficientBalanceError('Balance too low')
         await player.increase_bet(amount)
         await self.next_player_or_round(player)
 

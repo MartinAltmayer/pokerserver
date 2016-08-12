@@ -10,7 +10,8 @@ class TestPlayersRelation(IntegrationTestCase):
     PLAYER_ROWS = [
         (1, 1, 'player1', 10, 'cards1', 5, datetime.fromtimestamp(123), False),
         (1, 2, 'player2', 20, 'cards2', 10, datetime.fromtimestamp(123), False),
-        (2, 3, 'player3', 30, 'cards3', 15, datetime.fromtimestamp(123), True)
+        (2, 3, 'player3', 20, 'cards3', 10, datetime.fromtimestamp(123), False),
+        (2, 4, 'player4', 30, 'cards3', None, datetime.fromtimestamp(123), True)
     ]
     PLAYER_DATA = [{
         'table_id': table_id,

@@ -20,6 +20,11 @@ class Player:
         self.last_seen = last_seen if last_seen is not None else datetime.now()
         self.has_folded = has_folded
 
+    def __eq__(self, other):
+        if not isinstance(other, Player):
+            return False
+        return self.__dict__ == other.__dict__
+
     def to_dict(self, show_cards=False):
         return {
             'table_id': self.table_id,
@@ -60,13 +65,14 @@ class Player:
         return name.isalpha()
 
     async def increase_bet(self, amount):
-        assert amount <= self.balance
+        assert amount > 0, 'Need to increase bet by more than 0.'
+        assert amount <= self.balance, 'Trying to bet more than remaining balance.'
         await PlayersRelation.set_balance_and_bet(self.name, self.balance - amount, self.bet + amount)
         self.balance -= amount
         self.bet += amount
 
     async def set_balance(self, balance):
-        assert balance >= 0
+        assert balance >= 0, 'Insufficient balance.'
         await PlayersRelation.set_balance(self.name, balance)
         self.balance = balance
 

@@ -117,7 +117,7 @@ class Table:
         return any(player.name == player_name for player in self.players)
 
     def player_left_of(self, player):
-        players = sorted(self.players, key=lambda p: p.position)
+        players = sorted(self.players, key=lambda player: player.position)
         index = players.index(player)
         return players[(index + 1) % len(players)]
 
