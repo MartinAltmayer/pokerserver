@@ -7,5 +7,5 @@ before_install:
   - sudo apt-get -qq update
 install: "pip install -r requirements.txt"
 script:
-  - "pep8 pokerserver && python setup.py lint --lint-rcfile setup.cfg"
+  - "pep8 pokerserver tests && python setup.py lint --lint-rcfile setup.cfg"
   - "python setup.py nosetests"
