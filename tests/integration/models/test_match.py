@@ -266,7 +266,6 @@ class TestCall(BettingTestCase):
     async def test_call_sufficient_balance(self):
         await self.async_setup(balances=[0, 1, 2, 12], bets=[0, 1, 5, 0])
         await self.match.call(self.players[3].name)
-
         player = await Player.load_by_name(self.players[3].name)
         self.assertEqual(5, player.bet)
         self.assertEqual(7, player.balance)
@@ -275,7 +274,6 @@ class TestCall(BettingTestCase):
     async def test_call_insufficient_balance(self):
         await self.async_setup(balances=[0, 1, 2, 10], bets=[3, 15, 0, 3])
         await self.match.call(self.players[3].name)
-
         player = await Player.load_by_name(self.players[3].name)
         self.assertEqual(13, player.bet)
         self.assertEqual(0, player.balance)
@@ -283,6 +281,20 @@ class TestCall(BettingTestCase):
     @gen_test
     async def test_call_without_bet(self):
         await self.async_setup()
+        with self.assertRaises(NotYourTurnError):
+            await self.match.call(self.players[0].name)
+
+    @gen_test
+    async def test_call_heads_up(self):
+        await self.async_setup(balances=[2, 2], bets=[2, 0])
+        await self.match.call(self.players[1].name)
+        player = await Player.load_by_name(self.players[1].name)
+        self.assertEqual(2, player.bet)
+        self.assertEqual(0, player.balance)
+
+    @gen_test
+    async def test_call_invalid_player_heads_up(self):
+        await self.async_setup(balances=[2, 2], bets=[0, 0])
         with self.assertRaises(NotYourTurnError):
             await self.match.call(self.players[0].name)
 
@@ -314,6 +326,20 @@ class TestCheck(BettingTestCase):
         player = await Player.load_by_name(self.players[3].name)
         self.assertEqual(0, player.bet)
         self.assertEqual(2, player.balance)
+
+    @gen_test
+    async def test_check_heads_up(self):
+        await self.async_setup(balances=[2, 2], bets=[0, 0])
+        await self.match.check(self.players[1].name)
+        player = await Player.load_by_name(self.players[1].name)
+        self.assertEqual(0, player.bet)
+        self.assertEqual(2, player.balance)
+
+    @gen_test
+    async def test_check_invalid_player_heads_up(self):
+        await self.async_setup(balances=[2, 2], bets=[0, 0])
+        with self.assertRaises(NotYourTurnError):
+            await self.match.check(self.players[0].name)
 
 
 class TestRaise(BettingTestCase):
@@ -355,3 +381,17 @@ class TestRaise(BettingTestCase):
         player = await Player.load_by_name(self.players[3].name)
         self.assertEqual(9, player.bet)
         self.assertEqual(1, player.balance)
+
+    @gen_test
+    async def test_raise_heads_up(self):
+        await self.async_setup(balances=[0, 10], bets=[0, 0])
+        await self.match.raise_bet(self.players[1].name, 9)
+        player = await Player.load_by_name(self.players[1].name)
+        self.assertEqual(9, player.bet)
+        self.assertEqual(1, player.balance)
+
+    @gen_test
+    async def test_raise_invalid_player_heads_up(self):
+        await self.async_setup(balances=[2, 2], bets=[0, 0])
+        with self.assertRaises(NotYourTurnError):
+            await self.match.raise_bet(self.players[0].name, 1)
