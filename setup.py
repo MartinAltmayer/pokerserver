@@ -21,6 +21,7 @@ setup(
             'createpokerdb=pokerserver.applications.create_database:main',
             'clearpokerdb=pokerserver.applications.clear_database:main',
             'simpleclient=pokerserver.applications.simple_client:main',
+            'pokercli=pokerserver.applications.poker_cli:main',
         ]
     },
     install_requires=requirements,

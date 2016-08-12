@@ -2,7 +2,7 @@ import argparse
 import random
 import threading
 
-from pokerserver.client.simple import Client
+from pokerserver.client.simple import SimpleClient
 
 NUMBER_OF_PLAYERS = 2
 
@@ -17,7 +17,7 @@ def main():
     args = parser.parse_args()
 
     for _ in range(args.number):
-        client = Client('localhost', 5555, get_random_name(), None)
+        client = SimpleClient('localhost', 5555, get_random_name(), None)
         client_thread = threading.Thread(target=client.play)
         client_thread.start()
 

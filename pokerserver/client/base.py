@@ -1,9 +1,6 @@
-from argparse import ArgumentParser
 import urllib.request
 from urllib.error import HTTPError
 import json as mod_json
-from http import HTTPStatus
-import time
 
 POLL_INTERVAL = 1
 
@@ -18,18 +15,36 @@ class TableInfo:
     def is_free_for(self, player_name):
         return len(self.players) < self.max_player_count and player_name not in self.players.values()
 
+    def find_free_positions(self):
+        return [position for position in range(1, self.max_player_count + 1)
+                if position not in self.players]
+
     def find_free_position(self):
-        for position in range(1, self.max_player_count + 1):
-            if position not in self.players:
-                return position
+        positions = self.find_free_positions()
+        if len(positions) > 0:
+            return positions[0]
         else:
             raise ValueError("No free position found")
 
 
 class Table:
-    def __init__(self, name, current_player, **_):
+    def __init__(self, name, current_player, players, **_):
         self.name = name
         self.current_player = current_player
+        self.players = [Player(**player_data) for player_data in players]
+        self.players.sort(key=lambda p: p.position)
+
+
+class Player:
+    def __init__(self, name, position, balance, bet, cards, has_folded, table_id):
+        # pylint: disable=too-many-arguments
+        self.name = name
+        self.position = int(position)
+        self.balance = int(balance)
+        self.bet = int(bet)
+        self.cards = cards
+        self.has_folded = bool(has_folded)
+        self.table_id = int(table_id)
 
 
 class BaseClient:
@@ -40,20 +55,29 @@ class BaseClient:
     def receive_uuid(self, player_name):
         return self.fetch('/uuid?player_name=' + player_name, json=False)
 
-    def fetch_table(self, name):
-        response = self.fetch('/table/{}'.format(name))
+    def fetch_table(self, name, uuid=None):
+        if uuid:
+            response = self.fetch('/table/{}?uuid={}'.format(name, uuid))
+        else:
+            response = self.fetch('/table/{}'.format(name))
         return Table(name, **response)
 
     def fetch_tables(self):
         response = self.fetch('/tables')
         return [TableInfo(**table_data) for table_data in response['tables']]
 
-    def find_free_table(self, tables, player_name):
+    @staticmethod
+    def find_free_table(tables, *player_names):
         for table in tables:
-            if table.is_free_for(player_name):
+            if (len(table.find_free_positions()) >= len(player_names) and
+                    all(table.is_free_for(name) for name in player_names)):
                 return table
         else:
             raise RuntimeError('No free table')
+
+    def join_table(self, table, player_name, position, uuid):
+        self.fetch('/table/{}/join?player_name={}&position={}&uuid={}'.format(
+            table.name, player_name, position, uuid))
 
     def fetch(self, url, json=True):
         url = 'http://{}:{}{}'.format(self.host, self.port, url)
@@ -74,5 +98,5 @@ class BaseClient:
         else:
             return data
 
-    def log(self, message):
+    def log(self, message):  # pylint: disable=no-self-use
         print(message)

@@ -39,8 +39,7 @@ class SimpleClient(BaseClient):
 
             self.log("Joining {} at {}...".format(free_table.name, free_position))
             try:
-                self.fetch('/table/{}/join?player_name={}&position={}&uuid={}'.format(
-                    free_table.name, self.player_name, free_position, self.uuid))
+                self.join_table(free_table, self.player_name, free_position, self.uuid)
                 return free_table, free_position
             except HTTPError as error:
                 if error.code != HTTPStatus.CONFLICT.value:
