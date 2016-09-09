@@ -1,4 +1,6 @@
+# pylint: disable=no-self-use
 from asyncio.tasks import gather
+from unittest import TestCase
 from unittest.mock import patch, Mock, call
 
 from tornado.testing import gen_test
@@ -217,7 +219,7 @@ class BettingTestCase(IntegrationTestCase):
         ]
         self.table = await create_table(players=self.players)
         await self.table.set_special_players(
-            dealer=self.players[0 % len(self.players)],
+            dealer=self.players[0],
             small_blind_player=self.players[1 % len(self.players)],
             big_blind_player=self.players[2 % len(self.players)],
             current_player=self.players[3 % len(self.players)])
@@ -245,7 +247,7 @@ class TestFold(BettingTestCase):
         await self.async_setup()
         await self.match.fold(self.players[3].name)
         table = await Table.load_by_name(self.table.name)
-        self.assertEqual(self.players[1].name, table.current_player.name)
+        self.assertEqual(self.players[0].name, table.current_player.name)
 
 
 class TestCall(BettingTestCase):
@@ -308,7 +310,7 @@ class TestCheck(BettingTestCase):
 
     @gen_test
     async def test_check_changes_current_player(self):
-        await self.async_setup(bets=[None, None, None, None])
+        await self.async_setup(bets=[0, 0, 0, 0])
         await self.match.check(self.players[3].name)
         table = await Table.load_by_name(self.table.name)
         self.assertEqual(self.players[0].name, table.current_player.name)
@@ -395,3 +397,45 @@ class TestRaise(BettingTestCase):
         await self.async_setup(balances=[2, 2], bets=[0, 0])
         with self.assertRaises(NotYourTurnError):
             await self.match.raise_bet(self.players[0].name, 1)
+
+
+class TestFindNextPlayer(TestCase):
+    def setUp(self):
+        super().setUp()
+        config = TableConfig(min_player_count=2, max_player_count=4, big_blind=2, small_blind=1)
+        self.table = Table(1, 'test', config)
+        self.match = Match(self.table)
+
+    def create_player(self, position, has_folded=False):
+        mock = Mock(spec=Player, position=position, has_folded=has_folded)
+        mock.name = 'p{}'.format(position)
+        return mock
+
+    def test_find_next_player_basic(self):
+        players = [self.create_player(4 - i) for i in range(4)]
+        self.table.players = players
+        self.assertEqual(players[1], self.match.find_next_player(players[2]))
+        self.assertEqual(players[3], self.match.find_next_player(players[0]))
+
+    def test_find_next_player_inactive(self):
+        players = [self.create_player(i, has_folded=i == 2) for i in range(4)]
+        self.table.players = players
+        self.assertEqual(players[3], self.match.find_next_player(players[1]))
+
+    def test_find_next_player_all_inactive(self):
+        players = [self.create_player(i, has_folded=True) for i in range(4)]
+        self.table.players = players
+        self.assertIsNone(self.match.find_next_player(players[0]))
+
+    def test_find_next_player_all_inactive_except_current(self):
+        players = [self.create_player(i, has_folded=i != 0) for i in range(4)]
+        self.table.players = players
+        self.assertIsNone(self.match.find_next_player(players[0]))
+
+    def test_find_next_player_has_highest_bet(self):
+        players = [self.create_player(i) for i in range(4)]
+        self.table.players = players
+        self.assertEqual(players[1], self.match.find_next_player(players[0]))
+
+        self.table.highest_bet_player = players[1]
+        self.assertIsNone(self.match.find_next_player(players[0]))

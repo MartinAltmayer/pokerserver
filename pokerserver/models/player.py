@@ -84,3 +84,6 @@ class Player:
     async def fold(self):
         self.has_folded = True
         await PlayersRelation.set_has_folded(self.name, True)
+
+    def __repr__(self):
+        return '<Player {}>'.format(self.name)

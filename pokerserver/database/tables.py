@@ -24,6 +24,7 @@ class TablesRelation:
         'dealer',
         'small_blind_player',
         'big_blind_player',
+        'highest_bet_player',
         'is_closed'
     ]
 
@@ -43,6 +44,7 @@ class TablesRelation:
             dealer VARCHAR,
             small_blind_player VARCHAR,
             big_blind_player VARCHAR,
+            highest_bet_player VARCHAR,
             is_closed BOOLEAN NOT NULL
         )
     """
@@ -74,11 +76,9 @@ class TablesRelation:
 
     SET_SPECIAL_PLAYERS_QUERY = """
         UPDATE tables
-        SET dealer=?, small_blind_player=?, big_blind_player=?, current_player=?
+        SET {}
         WHERE table_id = ?
     """
-
-    SET_CURRENT_PLAYER_QUERY = "UPDATE tables SET current_player=? WHERE table_id=?"
 
     SET_CARDS_QUERY = """
         UPDATE tables
@@ -134,25 +134,27 @@ class TablesRelation:
     # pylint: disable=too-many-arguments, too-many-locals
     @classmethod
     async def create_table(cls, table_id, name, config, remaining_deck, open_cards, main_pot, side_pots,
-                           current_player, dealer, small_blind_player, big_blind_player, is_closed):
+                           current_player, dealer, small_blind_player, big_blind_player, highest_bet_player,
+                           is_closed):
         db = Database.instance()
         remaining_deck = make_card_list(remaining_deck)
         open_cards = make_card_list(open_cards)
         side_pots = make_int_list(side_pots)
         await db.execute(
             cls.INSERT_QUERY, table_id, name, config.min_player_count, config.max_player_count, remaining_deck,
-            config.small_blind, config.big_blind, open_cards, main_pot, side_pots, current_player, dealer,
-            small_blind_player, big_blind_player, is_closed
+            config.small_blind, config.big_blind, open_cards, main_pot, side_pots, current_player,
+            dealer, small_blind_player, big_blind_player, highest_bet_player, is_closed
         )
 
     @classmethod
-    async def set_special_players(cls, table_id, dealer, small_blind_player, big_blind_player, current_player):
-        await Database.instance().execute(
-            cls.SET_SPECIAL_PLAYERS_QUERY, dealer, small_blind_player, big_blind_player, current_player, table_id)
-
-    @classmethod
-    async def set_current_player(cls, table_id, current_player):
-        await Database.instance().execute(cls.SET_CURRENT_PLAYER_QUERY, current_player, table_id)
+    async def set_special_players(cls, table_id, **kwargs):
+        assert set(kwargs.keys()) <= {
+            'dealer', 'small_blind_player', 'big_blind_player', 'current_player', 'highest_bet_player'}
+        if len(kwargs) == 0:
+            return
+        set_clause = ', '.join('{}=?'.format(key) for key in kwargs)
+        params = list(kwargs.values()) + [table_id]
+        await Database.instance().execute(cls.SET_SPECIAL_PLAYERS_QUERY.format(set_clause), *params)
 
     @classmethod
     async def set_cards(cls, table_id, remaining_deck, open_cards):

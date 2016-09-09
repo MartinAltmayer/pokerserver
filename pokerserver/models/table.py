@@ -12,7 +12,7 @@ class Table:
     # pylint: disable=too-many-arguments, too-many-locals
     def __init__(self, table_id, name, config, players=None, remaining_deck=None,
                  open_cards=None, main_pot=0, side_pots=None, current_player=None, dealer=None,
-                 small_blind_player=None, big_blind_player=None, is_closed=False):
+                 small_blind_player=None, big_blind_player=None, highest_bet_player=None, is_closed=False):
         self.table_id = table_id
         self.name = name
         self.config = config
@@ -25,6 +25,7 @@ class Table:
         self.dealer = dealer
         self.small_blind_player = small_blind_player
         self.big_blind_player = big_blind_player
+        self.highest_bet_player = highest_bet_player
         self.is_closed = is_closed
 
     @classmethod
@@ -60,9 +61,9 @@ class Table:
         table_ids_and_names = await cls._get_unused_table_names_and_ids(number)
         for table_id, table_name in table_ids_and_names:
             await TablesRelation.create_table(
-                table_id=table_id, name=table_name, config=table_config, remaining_deck=[], open_cards=[], main_pot=0,
-                side_pots=[], current_player=None, dealer=None, small_blind_player=None, big_blind_player=None,
-                is_closed=False
+                table_id=table_id, name=table_name, config=table_config, remaining_deck=[], open_cards=[],
+                main_pot=0, side_pots=[], current_player=None, dealer=None,
+                small_blind_player=None, big_blind_player=None, highest_bet_player=None, is_closed=False
             )
 
     def to_dict(self, player_name):
@@ -116,10 +117,16 @@ class Table:
     def is_player_at_table(self, player_name):
         return any(player.name == player_name for player in self.players)
 
-    def player_left_of(self, player):
-        players = sorted(self.players, key=lambda player: player.position)
-        index = players.index(player)
-        return players[(index + 1) % len(players)]
+    def active_players(self):
+        return [player for player in self.players if not player.has_folded]
+
+    def player_left_of(self, player, player_filter=None):
+        players = player_filter if player_filter is not None else self.players
+        players = [p for p in players if p != player]
+        if len(players) == 0:
+            raise ValueError('No player left of {}'.format(player.name))
+        players.sort(key=lambda p: (p.position <= player.position, p.position))
+        return players[0]
 
     @classmethod
     async def _get_unused_table_names_and_ids(cls, number):
@@ -143,27 +150,16 @@ class Table:
 
         return zip(found_ids, found_names)
 
-    async def set_special_players(self, *, dealer=None, small_blind_player=None,
-                                  big_blind_player=None, current_player=None):
-        if dealer is not None:
-            self.dealer = dealer
-        if small_blind_player is not None:
-            self.small_blind_player = small_blind_player
-        if big_blind_player is not None:
-            self.big_blind_player = big_blind_player
-        if current_player is not None:
-            self.current_player = current_player
-
-        await TablesRelation.set_special_players(
-            self.table_id,
-            dealer=self.dealer.name if self.dealer else None,
-            small_blind_player=self.small_blind_player.name if self.small_blind_player else None,
-            big_blind_player=self.big_blind_player.name if self.big_blind_player else None,
-            current_player=self.current_player.name if self.current_player else None
-        )
+    async def set_special_players(self, **kwargs):
+        assert set(kwargs.keys()) <= {
+            'dealer', 'small_blind_player', 'big_blind_player', 'current_player', 'highest_bet_player'}
+        self.__dict__.update(kwargs)
+        updates = {key: player.name if player is not None else None for key, player in kwargs.items()}
+        await TablesRelation.set_special_players(self.table_id, **updates)
 
     async def set_current_player(self, current_player):
-        await TablesRelation.set_current_player(self.table_id, current_player.name if current_player else None)
+        await TablesRelation.set_special_players(
+            self.table_id, current_player=current_player.name if current_player else None)
 
     async def set_cards(self, remaining_deck=None, open_cards=None):
         if remaining_deck is not None:

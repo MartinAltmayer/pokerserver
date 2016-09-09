@@ -17,7 +17,7 @@ class PlayersRelation:
             name VARCHAR NOT NULL,
             balance INT NOT NULL,
             cards VARCHAR NOT NULL,
-            bet INT,
+            bet INT NOT NULL,
             last_seen TEXT NOT NULL,
             has_folded INT NOT NULL,
             PRIMARY KEY (table_id, position)
@@ -121,6 +121,8 @@ class PlayersRelation:
 
     @classmethod
     async def set_balance_and_bet(cls, name, balance, bet):
+        assert balance is not None
+        assert bet is not None
         await Database.instance().execute(cls.SET_BALANCE_AND_BET_QUERY, balance, bet, name)
 
     @classmethod

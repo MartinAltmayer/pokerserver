@@ -46,5 +46,5 @@ class SimpleClient(BaseClient):
                     raise
                 # else continue
 
-    def log(self, message):
-        super().log('[{}] {}'.format(self.player_name, message))
+    def log(self, message, new_line=True):
+        super().log('[{}] {}'.format(self.player_name, message), new_line=new_line)

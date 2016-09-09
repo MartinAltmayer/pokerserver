@@ -42,6 +42,7 @@ class TestTable(AsyncTestCase):
                 'dealer': 'Percival',
                 'small_blind_player': 'Tristan',
                 'big_blind_player': 'Lancelot',
+                'highest_bet_player': None,
                 'is_closed': False
             }
             for table_id, name in enumerate(existing_table_names)
@@ -51,17 +52,47 @@ class TestTable(AsyncTestCase):
 
         await Table.create_tables(2, config)
         create_table.assert_has_calls([
-            call(table_id=3, name='Table2', config=config, remaining_deck=[], open_cards=[], main_pot=0, side_pots=[],
-                 current_player=None, dealer=None, small_blind_player=None, big_blind_player=None, is_closed=False),
-            call(table_id=4, name='Table4', config=config, remaining_deck=[], open_cards=[], main_pot=0, side_pots=[],
-                 current_player=None, dealer=None, small_blind_player=None, big_blind_player=None, is_closed=False)
+            call(
+                table_id=3, name='Table2', config=config, remaining_deck=[], open_cards=[], main_pot=0,
+                side_pots=[], current_player=None, dealer=None, small_blind_player=None,
+                big_blind_player=None, highest_bet_player=None, is_closed=False
+            ),
+            call(
+                table_id=4, name='Table4', config=config, remaining_deck=[], open_cards=[], main_pot=0,
+                side_pots=[], current_player=None, dealer=None, small_blind_player=None,
+                big_blind_player=None, highest_bet_player=None, is_closed=False
+            )
         ])
 
     def test_player_left_of(self):
         players = [Mock(position=position) for position in (1, 2, 5)]
-        for player, name in zip(players, 'abc'):
-            player.name = name
+        for player in players:
+            player.name = 'p{}'.format(player.position)
         table = Table(table_id=1, name='a table', config=Mock(), players=players)
-        for position, left_player_name in zip([1, 2, 5], 'bca'):
+
+        for position, left_player_name in zip([1, 2, 5], ['p2', 'p5', 'p1']):
             player = table.get_player_at(position)
             self.assertEqual(left_player_name, table.player_left_of(player).name)
+
+    def test_player_left_of_with_filter(self):
+        players = [Mock(position=position) for position in (1, 2, 5)]
+        for player in players:
+            player.name = 'p{}'.format(player.position)
+        table = Table(table_id=1, name='a table', config=Mock(), players=players)
+
+        player_filter = [table.get_player_at(1), table.get_player_at(5)]
+        for position, left_player_name in zip([1, 2, 5], ['p5', 'p5', 'p1']):
+            player = table.get_player_at(position)
+            self.assertEqual(left_player_name, table.player_left_of(player, player_filter).name)
+
+    def test_player_left_of_fails(self):
+        players = [Mock(position=position) for position in (1, 2, 5)]
+        for player in players:
+            player.name = 'p{}'.format(player.position)
+        table = Table(table_id=1, name='a table', config=Mock(), players=players)
+
+        player = table.get_player_at(1)
+        with self.assertRaises(ValueError):
+            table.player_left_of(player, [])
+        with self.assertRaises(ValueError):
+            table.player_left_of(player, [player])

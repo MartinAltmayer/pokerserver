@@ -105,16 +105,21 @@ class Match:
         await self.next_player_or_round(player)
 
     async def next_player_or_round(self, current_player):
-        if self.betting_round_finished():
+        next_player = self.find_next_player(current_player)
+        if next_player is None:
             await self.next_round()
         else:
-            # It is not enough to simply select the player left of the current one!
-            await self.table.set_current_player(self.table.player_left_of(current_player))
+            await self.table.set_current_player(next_player)
 
-    def betting_round_finished(self):
+    def find_next_player(self, current_player):
         active_players = [player for player in self.table.players if not player.has_folded]
-        bets = {player.bet for player in active_players}
-        return len(active_players) == 0 or len(bets) == 1 and bets != {None}
+        if len(active_players) == 0 or active_players == [current_player]:
+            return None
+
+        next_player = self.table.player_left_of(current_player, active_players)
+        if next_player == self.table.highest_bet_player:
+            return None
+        return next_player
 
     async def next_round(self):
         await self.table.set_current_player(self.table.small_blind_player)

@@ -18,6 +18,7 @@ TABLES = [
         'dealer': 'b',
         'small_blind_player': 'c',
         'big_blind_player': 'd',
+        'highest_bet_player': 'e',
         'is_closed': False
     }, {
         'table_id': 2,
@@ -31,6 +32,7 @@ TABLES = [
         'dealer': 'f',
         'small_blind_player': 'g',
         'big_blind_player': 'h',
+        'highest_bet_player': None,
         'is_closed': False
     }, {
         'table_id': 3,
@@ -44,6 +46,7 @@ TABLES = [
         'dealer': None,
         'small_blind_player': None,
         'big_blind_player': None,
+        'highest_bet_player': None,
         'is_closed': False
     }
 ]
@@ -54,7 +57,7 @@ class TestTablesRelation(IntegrationTestCase):
     async def test_create_table(self):
         config = TableConfig(4, 30, 12, 24)
         await TablesRelation.create_table(42, 'Game of Thrones', config, ['2s', 'Jc', '4h'], [], 1000, [],
-                                          "Eddard", "John", "Arya", "Bran", False)
+                                          "Eddard", "John", "Arya", "Bran", None, False)
         tables = await TablesRelation.load_all()
         self.assertEqual(
             tables,
@@ -70,6 +73,7 @@ class TestTablesRelation(IntegrationTestCase):
                 'dealer': 'John',
                 'small_blind_player': 'Arya',
                 'big_blind_player': 'Bran',
+                'highest_bet_player': None,
                 'is_closed': False
             }]
         )
@@ -98,7 +102,8 @@ class TestTablesRelation(IntegrationTestCase):
             dealer='Donald',
             small_blind_player='Huey',
             big_blind_player='Dewey',
-            current_player='Louie'
+            current_player='Louie',
+            highest_bet_player='Scrooge'
         )
 
         table = await TablesRelation.load_table_by_name(table_data['name'])
@@ -106,16 +111,43 @@ class TestTablesRelation(IntegrationTestCase):
         self.assertEqual('Huey', table['small_blind_player'])
         self.assertEqual('Dewey', table['big_blind_player'])
         self.assertEqual('Louie', table['current_player'])
+        self.assertEqual('Scrooge', table['highest_bet_player'])
 
     @gen_test
-    async def test_set_current_player(self):
+    async def test_set_special_players_none(self):
         table_data = TABLES[0]
         await TablesRelation.create_table(**table_data)
 
-        await TablesRelation.set_current_player(table_data['table_id'], 'Dagobert')
+        await TablesRelation.set_special_players(
+            table_data['table_id'],
+            dealer=None,
+            small_blind_player=None,
+            big_blind_player=None,
+            current_player=None,
+            highest_bet_player=None
+        )
 
         table = await TablesRelation.load_table_by_name(table_data['name'])
-        self.assertEqual('Dagobert', table['current_player'])
+        self.assertIsNone(table['dealer'])
+        self.assertIsNone(table['small_blind_player'])
+        self.assertIsNone(table['big_blind_player'])
+        self.assertIsNone(table['current_player'])
+        self.assertIsNone(table['highest_bet_player'])
+
+    @gen_test
+    async def test_set_special_players_partial(self):
+        table_data = TABLES[0]
+        await TablesRelation.create_table(**table_data)
+
+        await TablesRelation.set_special_players(
+            table_data['table_id'],
+            dealer='John'
+        )
+
+        table = await TablesRelation.load_table_by_name(table_data['name'])
+        self.assertEqual('John', table['dealer'])
+        for key in ['small_blind_player', 'big_blind_player', 'current_player', 'highest_bet_player']:
+            self.assertEqual(table_data[key], table[key])
 
     @gen_test
     async def test_set_cards(self):
@@ -136,7 +168,7 @@ class TestCheckAndUnsetCurrentPlayer(IntegrationTestCase):
         table_data = TABLES[0]
         table_id = table_data['table_id']
         await TablesRelation.create_table(**table_data)
-        await TablesRelation.set_current_player(table_id, 'Scrooge')
+        await TablesRelation.set_special_players(table_id, current_player='Scrooge')
         return table_id
 
     @gen_test
