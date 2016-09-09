@@ -81,12 +81,12 @@ class BaseClient:
 
     def fetch(self, url, json=True):
         url = 'http://{}:{}{}'.format(self.host, self.port, url)
-        self.log("Fetching from {}... ".format(url))
+        self.log("Fetching from {}... ".format(url), newLine=False)
         try:
             response = urllib.request.urlopen(url)
-            self.log('...{}'.format(response.code))
+            self.log('{}'.format(response.code))
         except HTTPError as error:
-            self.log('...{}'.format(error.code))
+            self.log('{}'.format(error.code))
             raise
 
         data = response.read()
@@ -98,5 +98,5 @@ class BaseClient:
         else:
             return data
 
-    def log(self, message):  # pylint: disable=no-self-use
-        print(message)
+    def log(self, message, newLine=True):  # pylint: disable=no-self-use
+        print(message, end='\n' if newLine else '')

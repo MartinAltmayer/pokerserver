@@ -84,11 +84,14 @@ class CliClient(BaseClient):
                 print('Invalid command. Enter one of fold, call, check, raise <amount>')
 
         uuid = self.uuids[self.table.current_player]
-        if command.argument_name is None:
-            self.fetch('/table/{}/{}?uuid={}'.format(self.table.name, command.name, uuid))
-        else:
-            self.fetch('/table/{}/{}?uuid={}&{}={}'.format(self.table.name, command.name, uuid,
-                                                           command.argument_name, command.argument))
+        try:
+            if command.argument_name is None:
+                self.fetch('/table/{}/{}?uuid={}'.format(self.table.name, command.name, uuid))
+            else:
+                self.fetch('/table/{}/{}?uuid={}&{}={}'.format(self.table.name, command.name, uuid,
+                                                               command.argument_name, command.argument))
+        except HTTPError as exc:
+            print(exc)
 
     @property
     def players(self):
@@ -104,7 +107,8 @@ class CliClient(BaseClient):
 
 class Command:
     def __init__(self, name, argument=None):
-        assert name in ['fold', 'call', 'check', 'raise']
+        if name not in ['fold', 'call', 'check', 'raise']:
+            raise ValueError('Invalid command')
         self.name = name
         self.argument = argument
 
