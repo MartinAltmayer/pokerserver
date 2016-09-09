@@ -34,8 +34,8 @@ class Table:
 
         players_by_table_id = {}
         for table in tables:
-            player = await Player.load_by_table_id(table['table_id'])
-            players_by_table_id[table['table_id']] = player
+            players = await Player.load_by_table_id(table['table_id'])
+            players_by_table_id[table['table_id']] = players
 
         return [cls(**table, players=players_by_table_id[table['table_id']]) for table in tables]
 
@@ -46,7 +46,8 @@ class Table:
             raise TableNotFoundError()
 
         players = await Player.load_by_table_id(table_data['table_id'])
-        for player_attribute in ['dealer', 'small_blind_player', 'big_blind_player', 'current_player']:
+        for player_attribute in ['dealer', 'small_blind_player', 'big_blind_player', 'current_player',
+                                 'highest_bet_player']:
             if table_data[player_attribute] is not None:
                 for player in players:
                     if player.name == table_data[player_attribute]:
@@ -119,6 +120,21 @@ class Table:
 
     def active_players(self):
         return [player for player in self.players if not player.has_folded]
+
+    def players_between(self, player1, player2):
+        def sorted_by_position(players):
+            players.sort(key=lambda p: p.position)
+            return players
+
+        if player1 == player2:
+            return [player1]
+        if player1.position < player2.position:
+            return sorted_by_position(
+                [p for p in self.players if player1.position <= p.position <= player2.position])
+        else:
+            section1 = sorted_by_position([p for p in self.players if p.position >= player1.position])
+            section2 = sorted_by_position([p for p in self.players if p.position <= player2.position])
+            return section1 + section2
 
     def player_left_of(self, player, player_filter=None):
         players = player_filter if player_filter is not None else self.players

@@ -404,38 +404,61 @@ class TestFindNextPlayer(TestCase):
         super().setUp()
         config = TableConfig(min_player_count=2, max_player_count=4, big_blind=2, small_blind=1)
         self.table = Table(1, 'test', config)
+        self.table.players = self.create_players(6)
+        self.sorted_players = sorted(self.table.players, key=lambda p: p.position)
+        self.table.dealer = self.table.players[0]
         self.match = Match(self.table)
 
-    def create_player(self, position, has_folded=False):
-        mock = Mock(spec=Player, position=position, has_folded=has_folded)
-        mock.name = 'p{}'.format(position)
-        return mock
+    def create_players(self, count):
+        # make sure that the positional order differs from the order in the list
+        players = [Mock(spec=Player, position=count - position, has_folded=False) for position in range(count)]
+        for player in players:
+            player.name = 'p{}'.format(player.position)
+        return players
 
     def test_find_next_player_basic(self):
-        players = [self.create_player(4 - i) for i in range(4)]
-        self.table.players = players
-        self.assertEqual(players[1], self.match.find_next_player(players[2]))
-        self.assertEqual(players[3], self.match.find_next_player(players[0]))
+        players = self.sorted_players
+        self.assertEqual(players[3], self.match.find_next_player(players[2]))
+        self.assertEqual(players[0], self.match.find_next_player(players[5]))
 
     def test_find_next_player_inactive(self):
-        players = [self.create_player(i, has_folded=i == 2) for i in range(4)]
-        self.table.players = players
-        self.assertEqual(players[3], self.match.find_next_player(players[1]))
+        players = self.sorted_players
+        players[3].has_folded = True
+        self.assertEqual(players[4], self.match.find_next_player(players[2]))
 
     def test_find_next_player_all_inactive(self):
-        players = [self.create_player(i, has_folded=True) for i in range(4)]
-        self.table.players = players
+        players = self.sorted_players
+        for player in players:
+            player.has_folded = True
         self.assertIsNone(self.match.find_next_player(players[0]))
 
     def test_find_next_player_all_inactive_except_current(self):
-        players = [self.create_player(i, has_folded=i != 0) for i in range(4)]
-        self.table.players = players
+        players = self.sorted_players
+        for player in players[1:]:
+            player.has_folded = True
         self.assertIsNone(self.match.find_next_player(players[0]))
 
     def test_find_next_player_has_highest_bet(self):
-        players = [self.create_player(i) for i in range(4)]
-        self.table.players = players
+        players = self.sorted_players
         self.assertEqual(players[1], self.match.find_next_player(players[0]))
 
         self.table.highest_bet_player = players[1]
         self.assertIsNone(self.match.find_next_player(players[0]))
+
+    def test_find_next_player_has_already_played(self):
+        players = self.sorted_players
+
+        next_player = self.match.find_next_player(players[2])
+        self.assertEqual(players[3], next_player)
+        next_player = self.match.find_next_player(players[1])
+        self.assertIsNone(next_player)
+
+    def test_find_next_player_heads_up(self):
+        self.table.players = players = self.create_players(2)
+        self.table.dealer = players[0]
+
+        self.assertEqual(players[0], self.match.find_next_player(players[1]))
+        self.assertIsNone(self.match.find_next_player(players[0]))
+
+        self.table.highest_bet_player = players[0]
+        self.assertEqual(players[1], self.match.find_next_player(players[0]))

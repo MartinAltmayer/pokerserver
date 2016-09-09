@@ -68,7 +68,12 @@ class Match:
         assert len(self.table.players) >= 2
         small_blind_player, big_blind_player, under_the_gun = self.find_blind_players(self.table.dealer)
         await self.table.set_special_players(
-            small_blind_player=small_blind_player, big_blind_player=big_blind_player, current_player=under_the_gun)
+            small_blind_player=small_blind_player,
+            big_blind_player=big_blind_player,
+            current_player=under_the_gun,
+            highest_bet_player=None
+        )
+        await self.reset_bets()
         await self.pay_blinds()
         await self.distribute_cards()
         self.log(under_the_gun, "Started table {}".format(self.table.name))
@@ -119,10 +124,22 @@ class Match:
         next_player = self.table.player_left_of(current_player, active_players)
         if next_player == self.table.highest_bet_player:
             return None
+        if self.table.highest_bet_player is None and self._has_made_turn(next_player, current_player):
+            return None
         return next_player
 
+    async def reset_bets(self):
+        await Player.reset_bets(self.table.table_id)
+        for player in self.table.players:
+            player.bet = 0
+
     async def next_round(self):
-        await self.table.set_current_player(self.table.small_blind_player)
+        await self.reset_bets()
+        await self.table.set_special_players(
+            current_player=self.table.small_blind_player,
+            highest_bet_player=None
+        )
+        self.log(self.table.small_blind_player, 'Starts new round')
 
     async def call(self, player_name):
         await self.check_and_unset_current_player(player_name)
@@ -150,10 +167,15 @@ class Match:
         if amount > player.balance:
             raise InsufficientBalanceError('Balance too low')
         await player.increase_bet(amount)
+        await self.table.set_special_players(highest_bet_player=player)
         await self.next_player_or_round(player)
 
     def _get_highest_bet(self):
         return max([0] + [p.bet for p in self.table.players if p.bet is not None])
+
+    def _has_made_turn(self, player, current_player):
+        _, _, start_player = self.find_blind_players(self.table.dealer)
+        return player in self.table.players_between(start_player, current_player)
 
     @staticmethod
     def log(player_or_name, message):

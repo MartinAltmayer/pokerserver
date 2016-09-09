@@ -96,3 +96,17 @@ class TestTable(AsyncTestCase):
             table.player_left_of(player, [])
         with self.assertRaises(ValueError):
             table.player_left_of(player, [player])
+
+    def test_players_between(self):
+        all_players = [Mock(position=8 - i) for i in range(1, 8)]
+        sorted_players = sorted(all_players, key=lambda p: p.position)
+        table = Table(table_id=1, name='a table', config=Mock(), players=all_players)
+
+        players = table.players_between(sorted_players[2], sorted_players[6])
+        self.assertEqual(sorted_players[2:7], players)
+
+        players = table.players_between(sorted_players[6], sorted_players[2])
+        self.assertEqual(sorted_players[6:] + sorted_players[:3], players)
+
+        players = table.players_between(sorted_players[2], sorted_players[2])
+        self.assertEqual([sorted_players[2]], players)

@@ -64,6 +64,10 @@ class Player:
     def is_valid_name(cls, name):
         return name.isalpha()
 
+    @classmethod
+    async def reset_bets(cls, table_id):
+        await PlayersRelation.reset_bets(table_id)
+
     async def increase_bet(self, amount):
         assert amount > 0, 'Need to increase bet by more than 0.'
         assert amount <= self.balance, 'Trying to bet more than remaining balance.'
