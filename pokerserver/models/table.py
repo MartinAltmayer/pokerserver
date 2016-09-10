@@ -1,10 +1,18 @@
-from pokerserver.database import TablesRelation
+from enum import Enum
 
+from pokerserver.database import TablesRelation
 from .player import Player
 
 
 class TableNotFoundError(Exception):
     pass
+
+
+class Round(Enum):
+    preflop = 1
+    flop = 2
+    turn = 3
+    river = 4
 
 
 # pylint: disable=too-many-instance-attributes
@@ -73,6 +81,7 @@ class Table:
             'players': [player.to_dict(show_cards=player_name == player.name) for player in self.players],
             'small_blind': self.config.small_blind,
             'big_blind': self.config.big_blind,
+            'round': self.round.name,
             'open_cards': self.open_cards,
             'main_pot': self.main_pot,
             'side_pots': self.side_pots,
@@ -91,6 +100,15 @@ class Table:
             'max_player_count': self.config.max_player_count,
             'players': {player.position: player.name for player in self.players}
         }
+
+    @property
+    def round(self):
+        return {
+            0: Round.preflop,
+            3: Round.flop,
+            4: Round.turn,
+            5: Round.river
+        }[len(self.open_cards)]
 
     def is_free(self):
         return len(self.players) < self.config.max_player_count

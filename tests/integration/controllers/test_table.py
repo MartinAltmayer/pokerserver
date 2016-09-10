@@ -39,6 +39,7 @@ class TestTableController(IntegrationHttpTestCase):
             'current_player': None,
             'dealer': None,
             'is_closed': False,
+            'round': 'preflop',
             'main_pot': 0,
             'open_cards': [],
             'players': [{
@@ -82,6 +83,7 @@ class TestTableController(IntegrationHttpTestCase):
             'current_player': None,
             'dealer': None,
             'is_closed': False,
+            'round': 'preflop',
             'main_pot': 0,
             'open_cards': [],
             'players': [{
@@ -125,6 +127,7 @@ class TestTableController(IntegrationHttpTestCase):
             'current_player': None,
             'dealer': None,
             'is_closed': False,
+            'round': 'preflop',
             'main_pot': 0,
             'open_cards': [],
             'players': [{
