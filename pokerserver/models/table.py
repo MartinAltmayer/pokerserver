@@ -139,19 +139,15 @@ class Table:
     def active_players(self):
         return [player for player in self.players if not player.has_folded]
 
-    def players_between(self, player1, player2):
-        def sorted_by_position(players):
-            players.sort(key=lambda p: p.position)
-            return players
-
-        if player1.position == player2.position:
-            return [player1]
-        if player1.position < player2.position:
-            return sorted_by_position(
-                [p for p in self.players if player1.position <= p.position <= player2.position])
+    def player_positions_between(self, pos1, pos2):
+        if pos1 == pos2:
+            return [pos1]
+        all_positions = [player.position for player in self.players]
+        if pos1 < pos2:
+            return sorted([p for p in all_positions if pos1 <= p <= pos2])
         else:
-            section1 = sorted_by_position([p for p in self.players if p.position >= player1.position])
-            section2 = sorted_by_position([p for p in self.players if p.position <= player2.position])
+            section1 = sorted([p for p in all_positions if p >= pos1])
+            section2 = sorted([p for p in all_positions if p <= pos2])
             return section1 + section2
 
     def player_left_of(self, player, player_filter=None):

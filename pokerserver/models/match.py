@@ -91,6 +91,12 @@ class Match:
 
         return small_blind, big_blind, under_the_gun
 
+    def find_start_player(self, dealer, round):
+        small_blind, big_blind, start_player = self.find_blind_players(dealer)
+        if round is not Round.preflop and len(self.table.players) == 2:
+            start_player = big_blind
+        return start_player
+
     async def pay_blinds(self):
         # If a player cannot pay a blind, the pot should be split up.
         await self.table.small_blind_player.increase_bet(self.table.config.small_blind)
@@ -126,6 +132,7 @@ class Match:
         next_player = self.table.player_left_of(current_player, active_players)
         if next_player == self.table.highest_bet_player:
             return None
+
         if self.table.highest_bet_player is None and self._has_made_turn(next_player, current_player):
             return None
         return next_player
@@ -142,15 +149,12 @@ class Match:
         elif self.table.round in [Round.flop, Round.turn]:
             await self.table.draw_cards(1)
 
-        if len(self.table.players) > 2:
-            next_player = self.table.small_blind_player
-        else:
-            next_player = self.table.big_blind_player
+        next_player = self.find_start_player(self.table.dealer, self.table.round)
         await self.table.set_special_players(
             current_player=next_player,
             highest_bet_player=None
         )
-        self.log(self.table.small_blind_player, 'Starts new round')
+        self.log(next_player, 'Starts new round')
 
     async def call(self, player_name):
         await self.check_and_unset_current_player(player_name)
@@ -191,8 +195,9 @@ class Match:
         return max([0] + [p.bet for p in self.table.players if p.bet is not None])
 
     def _has_made_turn(self, player, current_player):
-        _, _, start_player = self.find_blind_players(self.table.dealer)
-        return player in self.table.players_between(start_player, current_player)
+        start_player = self.find_start_player(self.table.dealer, self.table.round)
+        return player.position in self.table.player_positions_between(
+                start_player.position, current_player.position)
 
     @staticmethod
     def log(player_or_name, message):

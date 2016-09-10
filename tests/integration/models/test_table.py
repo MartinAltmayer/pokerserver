@@ -97,24 +97,10 @@ class TestTable(AsyncTestCase):
         with self.assertRaises(ValueError):
             table.player_left_of(player, [player])
 
-    def test_players_between(self):
-        all_players = [Mock(position=8 - i) for i in range(1, 8)]
-        sorted_players = sorted(all_players, key=lambda p: p.position)
+    def test_player_positions_between(self):
+        all_players = [Mock(position=p) for p in [7, 3, 5, 2, 6]]
         table = Table(table_id=1, name='a table', config=Mock(), players=all_players)
 
-        players = table.players_between(sorted_players[2], sorted_players[6])
-        self.assertEqual(sorted_players[2:7], players)
-
-        players = table.players_between(sorted_players[6], sorted_players[2])
-        self.assertEqual(sorted_players[6:] + sorted_players[:3], players)
-
-        players = table.players_between(sorted_players[2], sorted_players[2])
-        self.assertEqual([sorted_players[2]], players)
-
-    def test_players_between_different_models(self):
-        all_players = [Mock(position=1), Mock(position=2)]
-        table = Table(table_id=1, name='a table', config=Mock(), players=all_players)
-
-        players = table.players_between(all_players[0], Mock(position=1))
-        self.assertEqual(1, len(players))
-        self.assertEqual(1, players[0].position)
+        self.assertEqual([2], table.player_positions_between(2, 2))
+        self.assertEqual([3, 5, 6], table.player_positions_between(3, 6))
+        self.assertEqual([6, 7, 2, 3], table.player_positions_between(6, 3))
