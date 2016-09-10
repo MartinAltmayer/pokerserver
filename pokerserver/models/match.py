@@ -197,7 +197,7 @@ class Match:
     def _has_made_turn(self, player, current_player):
         start_player = self.find_start_player(self.table.dealer, self.table.round)
         return player.position in self.table.player_positions_between(
-                start_player.position, current_player.position)
+            start_player.position, current_player.position)
 
     @staticmethod
     def log(player_or_name, message):
