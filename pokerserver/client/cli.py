@@ -20,6 +20,7 @@ class CliClient(BaseClient):
         try:
             while True:
                 self.load_table_and_players()
+                self.print_table_info()
                 self.print_player_info()
                 self.read_and_send_command()
         except EOFError:
@@ -96,6 +97,9 @@ class CliClient(BaseClient):
     @property
     def players(self):
         return self.table.players
+
+    def print_table_info(self):
+        print('Pot: {} | Cards: {}'.format(self.table.main_pot, self.table.open_cards))
 
     def print_player_info(self):
         parts = []

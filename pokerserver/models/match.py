@@ -94,6 +94,7 @@ class Match:
         # If a player cannot pay a blind, the pot should be split up.
         await self.table.small_blind_player.increase_bet(self.table.config.small_blind)
         await self.table.big_blind_player.increase_bet(self.table.config.big_blind)
+        await self.table.set_pot(self.table.config.small_blind + self.table.config.big_blind)
 
     async def distribute_cards(self):
         cards = get_all_cards()
@@ -149,6 +150,7 @@ class Match:
             raise InvalidTurnError('Cannot call without bet, use \'check\' instead')
         increase = min(player.balance, highest_bet - player.bet)
         await player.increase_bet(increase)
+        await self.table.increase_pot(increase)
         await self.next_player_or_round(player)
 
     async def check(self, player_name):
@@ -167,6 +169,7 @@ class Match:
         if amount > player.balance:
             raise InsufficientBalanceError('Balance too low')
         await player.increase_bet(amount)
+        await self.table.increase_pot(amount)
         await self.table.set_special_players(highest_bet_player=player)
         await self.next_player_or_round(player)
 

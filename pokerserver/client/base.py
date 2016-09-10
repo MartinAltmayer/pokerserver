@@ -28,11 +28,13 @@ class TableInfo:
 
 
 class Table:
-    def __init__(self, name, current_player, players, **_):
+    def __init__(self, name, current_player, players, **kwargs):
         self.name = name
         self.current_player = current_player
         self.players = [Player(**player_data) for player_data in players]
         self.players.sort(key=lambda p: p.position)
+        self.main_pot = kwargs['main_pot']
+        self.open_cards = kwargs['open_cards']
 
 
 class Player:

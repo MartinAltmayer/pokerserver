@@ -217,7 +217,7 @@ class BettingTestCase(IntegrationTestCase):
             Player(table_id=1, position=index + 1, name='John{}'.format(index), cards=[], balance=balance, bet=bet)
             for index, (balance, bet) in enumerate(zip(balances, bets))
         ]
-        self.table = await create_table(players=self.players)
+        self.table = await create_table(players=self.players, main_pot=sum(bets))
         await self.table.set_special_players(
             dealer=self.players[0],
             small_blind_player=self.players[1 % len(self.players)],
@@ -299,6 +299,15 @@ class TestCall(BettingTestCase):
         await self.async_setup(balances=[2, 2], bets=[0, 0])
         with self.assertRaises(NotYourTurnError):
             await self.match.call(self.players[0].name)
+
+    @gen_test
+    async def test_call_increases_pot(self):
+        await self.async_setup(balances=[0, 1, 2, 12], bets=[0, 1, 5, 0])
+        self.assertEqual(6, self.table.main_pot)
+
+        await self.match.call(self.players[3].name)
+        table = await Table.load_by_name(self.table.name)
+        self.assertEqual(11, table.main_pot)
 
 
 class TestCheck(BettingTestCase):
@@ -397,6 +406,24 @@ class TestRaise(BettingTestCase):
         await self.async_setup(balances=[2, 2], bets=[0, 0])
         with self.assertRaises(NotYourTurnError):
             await self.match.raise_bet(self.players[0].name, 1)
+
+    @gen_test
+    async def test_raise_sets_highest_bet_player(self):
+        await self.async_setup(balances=[0, 0, 0, 10])
+        self.assertIsNone(self.table.highest_bet_player)
+
+        await self.match.raise_bet(self.players[3].name, 9)
+        table = await Table.load_by_name(self.table.name)
+        self.assertEqual(self.players[3].name, table.highest_bet_player.name)
+
+    @gen_test
+    async def test_raise_increases_pot(self):
+        await self.async_setup(balances=[0, 0, 0, 10])
+        self.assertEqual(0, self.table.main_pot)
+
+        await self.match.raise_bet(self.players[3].name, 10)
+        table = await Table.load_by_name(self.table.name)
+        self.assertEqual(10, table.main_pot)
 
 
 class TestFindNextPlayer(TestCase):

@@ -188,3 +188,9 @@ class Table:
 
     async def check_and_unset_current_player(self, player_name):
         return await TablesRelation.check_and_unset_current_player(self.table_id, player_name)
+
+    async def set_pot(self, amount):
+        await TablesRelation.set_pot(self.table_id, amount)
+
+    async def increase_pot(self, amount):
+        await TablesRelation.set_pot(self.table_id, self.main_pot + amount)

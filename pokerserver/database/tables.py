@@ -92,6 +92,10 @@ class TablesRelation:
         WHERE table_id=? AND current_player=?
     """
 
+    SET_POT_QUERY = """
+        UPDATE tables SET main_pot = ? WHERE table_id = ?
+    """
+
     @classmethod
     async def load_all(cls):
         table_data = []
@@ -172,3 +176,7 @@ class TablesRelation:
         db = Database.instance()
         async with db.execute(cls.CHECK_CURRENT_PLAYER_QUERY, table_id, current_player) as cursor:
             return cursor.rowcount > 0
+
+    @classmethod
+    async def set_pot(cls, table_id, amount):
+        await Database.instance().execute(cls.SET_POT_QUERY, amount, table_id)

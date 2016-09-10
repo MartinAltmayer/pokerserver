@@ -162,6 +162,17 @@ class TestTablesRelation(IntegrationTestCase):
         self.assertEqual(remaining_deck, table['remaining_deck'])
         self.assertEqual(open_cards, table['open_cards'])
 
+    @gen_test
+    async def test_set_pot(self):
+        table_data = TABLES[0]
+        await TablesRelation.create_table(**table_data)
+        amount = table_data['main_pot'] + 10
+
+        await TablesRelation.set_pot(table_data['table_id'], amount)
+
+        table = await TablesRelation.load_table_by_name(table_data['name'])
+        self.assertEqual(amount, table['main_pot'])
+
 
 class TestCheckAndUnsetCurrentPlayer(IntegrationTestCase):
     async def async_setup(self):
