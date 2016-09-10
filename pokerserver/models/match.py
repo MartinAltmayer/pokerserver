@@ -159,8 +159,12 @@ class Match:
         if highest_bet == 0:
             raise InvalidTurnError('Cannot call without bet, use \'check\' instead')
         increase = min(player.balance, highest_bet - player.bet)
-        await player.increase_bet(increase)
-        await self.table.increase_pot(increase)
+        if increase > 0:
+            await player.increase_bet(increase)
+            await self.table.increase_pot(increase)
+        else:
+            # This happens if both the small blind and the big blind call at the beginning of a hand.
+            assert len(self.table.players) == 2
         await self.next_player_or_round(player)
 
     async def check(self, player_name):

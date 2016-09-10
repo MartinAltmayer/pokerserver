@@ -297,11 +297,23 @@ class TestCall(BettingTestCase):
 
     @gen_test
     async def test_call_heads_up(self):
-        await self.async_setup(balances=[2, 2], bets=[0, 2])
+        await self.async_setup(balances=[1, 0], bets=[1, 2])
         await self.match.call(self.players[0].name)
         player = await Player.load_by_name(self.players[0].name)
         self.assertEqual(2, player.bet)
         self.assertEqual(0, player.balance)
+
+    @patch('pokerserver.models.match.Match.next_round', side_effect=return_done_future())
+    @gen_test
+    async def test_call_heads_up_big_blind(self, next_round_mock):
+        await self.async_setup(balances=[1, 0], bets=[2, 2])
+        await self.match.call(self.players[0].name)
+        await self.match.call(self.players[1].name)
+
+        player = await Player.load_by_name(self.players[1].name)
+        self.assertEqual(2, player.bet)
+        self.assertEqual(0, player.balance)
+        next_round_mock.assert_called_once_with()
 
     @gen_test
     async def test_call_invalid_player_heads_up(self):
