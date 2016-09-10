@@ -110,3 +110,11 @@ class TestTable(AsyncTestCase):
 
         players = table.players_between(sorted_players[2], sorted_players[2])
         self.assertEqual([sorted_players[2]], players)
+
+    def test_players_between_different_models(self):
+        all_players = [Mock(position=1), Mock(position=2)]
+        table = Table(table_id=1, name='a table', config=Mock(), players=all_players)
+
+        players = table.players_between(all_players[0], Mock(position=1))
+        self.assertEqual(1, len(players))
+        self.assertEqual(1, players[0].position)

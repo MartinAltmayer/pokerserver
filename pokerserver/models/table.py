@@ -15,7 +15,7 @@ class Round(Enum):
     river = 4
 
 
-# pylint: disable=too-many-instance-attributes
+# pylint: disable=too-many-instance-attributes, too-many-public-methods
 class Table:
     # pylint: disable=too-many-arguments, too-many-locals
     def __init__(self, table_id, name, config, players=None, remaining_deck=None,
@@ -144,7 +144,7 @@ class Table:
             players.sort(key=lambda p: p.position)
             return players
 
-        if player1 == player2:
+        if player1.position == player2.position:
             return [player1]
         if player1.position < player2.position:
             return sorted_by_position(
@@ -212,3 +212,9 @@ class Table:
 
     async def increase_pot(self, amount):
         await TablesRelation.set_pot(self.table_id, self.main_pot + amount)
+
+    async def draw_cards(self, number):
+        assert number <= len(self.remaining_deck)
+        self.remaining_deck, cards = self.remaining_deck[:-number], self.remaining_deck[-number:]
+        self.open_cards.extend(cards)
+        await TablesRelation.set_cards(self.table_id, self.remaining_deck, self.open_cards)

@@ -130,11 +130,11 @@ class TestStartRound(IntegrationTestCase):
 
     def test_find_blind_players_heads_up(self):
         match = self.create_match({1: 'a', 4: 'b'})
-        small_blind, big_blind, start = match.find_blind_players(match.table.get_player_at(1))
-        self.check_blind_players('abb', small_blind, big_blind, start)
+        small_blind, big_blind, start = match.find_blind_players(dealer=match.table.get_player_at(1))
+        self.check_blind_players('aba', small_blind, big_blind, start)
 
-        small_blind, big_blind, start = match.find_blind_players(match.table.get_player_at(4))
-        self.check_blind_players('baa', small_blind, big_blind, start)
+        small_blind, big_blind, start = match.find_blind_players(dealer=match.table.get_player_at(4))
+        self.check_blind_players('bab', small_blind, big_blind, start)
 
     @patch('random.shuffle')
     @gen_test
@@ -218,11 +218,20 @@ class BettingTestCase(IntegrationTestCase):
             for index, (balance, bet) in enumerate(zip(balances, bets))
         ]
         self.table = await create_table(players=self.players, main_pot=sum(bets))
-        await self.table.set_special_players(
-            dealer=self.players[0],
-            small_blind_player=self.players[1 % len(self.players)],
-            big_blind_player=self.players[2 % len(self.players)],
-            current_player=self.players[3 % len(self.players)])
+        if len(bets) == 2:
+            await self.table.set_special_players(
+                dealer=self.players[0],
+                small_blind_player=self.players[0],
+                big_blind_player=self.players[1],
+                current_player=self.players[0]
+            )
+        else:
+            await self.table.set_special_players(
+                dealer=self.players[0],
+                small_blind_player=self.players[1 % len(self.players)],
+                big_blind_player=self.players[2 % len(self.players)],
+                current_player=self.players[3 % len(self.players)]
+            )
         self.match = Match(self.table)
 
 
@@ -288,9 +297,9 @@ class TestCall(BettingTestCase):
 
     @gen_test
     async def test_call_heads_up(self):
-        await self.async_setup(balances=[2, 2], bets=[2, 0])
-        await self.match.call(self.players[1].name)
-        player = await Player.load_by_name(self.players[1].name)
+        await self.async_setup(balances=[2, 2], bets=[0, 2])
+        await self.match.call(self.players[0].name)
+        player = await Player.load_by_name(self.players[0].name)
         self.assertEqual(2, player.bet)
         self.assertEqual(0, player.balance)
 
@@ -298,7 +307,7 @@ class TestCall(BettingTestCase):
     async def test_call_invalid_player_heads_up(self):
         await self.async_setup(balances=[2, 2], bets=[0, 0])
         with self.assertRaises(NotYourTurnError):
-            await self.match.call(self.players[0].name)
+            await self.match.call(self.players[1].name)
 
     @gen_test
     async def test_call_increases_pot(self):
@@ -341,8 +350,8 @@ class TestCheck(BettingTestCase):
     @gen_test
     async def test_check_heads_up(self):
         await self.async_setup(balances=[2, 2], bets=[0, 0])
-        await self.match.check(self.players[1].name)
-        player = await Player.load_by_name(self.players[1].name)
+        await self.match.check(self.players[0].name)
+        player = await Player.load_by_name(self.players[0].name)
         self.assertEqual(0, player.bet)
         self.assertEqual(2, player.balance)
 
@@ -350,7 +359,7 @@ class TestCheck(BettingTestCase):
     async def test_check_invalid_player_heads_up(self):
         await self.async_setup(balances=[2, 2], bets=[0, 0])
         with self.assertRaises(NotYourTurnError):
-            await self.match.check(self.players[0].name)
+            await self.match.check(self.players[1].name)
 
 
 class TestRaise(BettingTestCase):
@@ -395,9 +404,9 @@ class TestRaise(BettingTestCase):
 
     @gen_test
     async def test_raise_heads_up(self):
-        await self.async_setup(balances=[0, 10], bets=[0, 0])
-        await self.match.raise_bet(self.players[1].name, 9)
-        player = await Player.load_by_name(self.players[1].name)
+        await self.async_setup(balances=[10, 0], bets=[0, 0])
+        await self.match.raise_bet(self.players[0].name, 9)
+        player = await Player.load_by_name(self.players[0].name)
         self.assertEqual(9, player.bet)
         self.assertEqual(1, player.balance)
 
@@ -405,7 +414,7 @@ class TestRaise(BettingTestCase):
     async def test_raise_invalid_player_heads_up(self):
         await self.async_setup(balances=[2, 2], bets=[0, 0])
         with self.assertRaises(NotYourTurnError):
-            await self.match.raise_bet(self.players[0].name, 1)
+            await self.match.raise_bet(self.players[1].name, 1)
 
     @gen_test
     async def test_raise_sets_highest_bet_player(self):
@@ -484,8 +493,8 @@ class TestFindNextPlayer(TestCase):
         self.table.players = players = self.create_players(2)
         self.table.dealer = players[0]
 
-        self.assertEqual(players[0], self.match.find_next_player(players[1]))
-        self.assertIsNone(self.match.find_next_player(players[0]))
+        self.assertEqual(players[1], self.match.find_next_player(players[0]))
+        self.assertIsNone(self.match.find_next_player(players[1]))
 
         self.table.highest_bet_player = players[0]
         self.assertEqual(players[1], self.match.find_next_player(players[0]))

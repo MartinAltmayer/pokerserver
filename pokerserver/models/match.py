@@ -2,6 +2,7 @@ import logging
 import random
 
 from pokerserver.database import DuplicateKeyError
+from pokerserver.models.table import Round
 from .card import get_all_cards
 from .player import Player
 
@@ -82,7 +83,7 @@ class Match:
         if len(self.table.players) == 2:
             small_blind = dealer
             big_blind = self.table.player_left_of(small_blind)
-            under_the_gun = big_blind
+            under_the_gun = small_blind
         else:
             small_blind = self.table.player_left_of(dealer)
             big_blind = self.table.player_left_of(small_blind)
@@ -119,7 +120,7 @@ class Match:
 
     def find_next_player(self, current_player):
         active_players = [player for player in self.table.players if not player.has_folded]
-        if len(active_players) == 0 or active_players == [current_player]:
+        if len(active_players) <= 1:
             return None
 
         next_player = self.table.player_left_of(current_player, active_players)
@@ -136,8 +137,17 @@ class Match:
 
     async def next_round(self):
         await self.reset_bets()
+        if self.table.round is Round.preflop:
+            await self.table.draw_cards(3)
+        elif self.table.round in [Round.flop, Round.turn]:
+            await self.table.draw_cards(1)
+
+        if len(self.table.players) > 2:
+            next_player = self.table.small_blind_player
+        else:
+            next_player = self.table.big_blind_player
         await self.table.set_special_players(
-            current_player=self.table.small_blind_player,
+            current_player=next_player,
             highest_bet_player=None
         )
         self.log(self.table.small_blind_player, 'Starts new round')
