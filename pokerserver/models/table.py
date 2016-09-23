@@ -1,6 +1,6 @@
 from enum import Enum
 
-from pokerserver.database import TablesRelation
+from pokerserver.database import TablesRelation, PlayersRelation
 from .player import Player
 
 
@@ -221,17 +221,21 @@ class Table:
         self.players.append(player)
         await TablesRelation.add_joined_player(self.table_id, player.name)
 
+    async def remove_player(self, player):
+        self.players.remove(player)
+        await PlayersRelation.delete_player(self.table_id, player.position)
+
     async def draw_cards(self, number):
         assert number <= len(self.remaining_deck)
         self.remaining_deck, cards = self.remaining_deck[:-number], self.remaining_deck[-number:]
         self.open_cards.extend(cards)
         await TablesRelation.set_cards(self.table_id, self.remaining_deck, self.open_cards)
 
-    async def reset_after_hand(self, new_dealer):
+    async def reset_after_hand(self):
         await self.set_cards([], [])
         await self.set_pot(0)
         await self.set_special_players(
-            dealer=new_dealer,
+            dealer=None,
             small_blind_player=None,
             big_blind_player=None,
             highest_bet_player=None,

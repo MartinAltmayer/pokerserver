@@ -53,10 +53,30 @@ class TestPlayersRelation(IntegrationTestCase):
         self.assertCountEqual(self.PLAYER_DATA[:2], players)
 
     @gen_test
+    async def test_load_by_position(self):
+        await self.create_players()
+        player = await PlayersRelation.load_by_position(2, 3)
+        self.assertEqual(self.PLAYER_DATA[2], player)
+
+    @gen_test
+    async def test_load_by_position_not_found(self):
+        await self.create_players()
+        player = await PlayersRelation.load_by_position(1, 3)
+        self.assertIsNone(player)
+
+    @gen_test
     async def test_add_player(self):
         await PlayersRelation.add_player(**self.PLAYER_DATA[0])
         player = await PlayersRelation.load_by_name('player1')
         self.assertEqual(self.PLAYER_DATA[0], player)
+
+    @gen_test
+    async def test_delete_player(self):
+        player_data = self.PLAYER_DATA[0]
+        await PlayersRelation.add_player(**player_data)
+        self.assertIsNotNone(await PlayersRelation.load_by_name(player_data['name']))
+        await PlayersRelation.delete_player(player_data['table_id'], player_data['position'])
+        self.assertIsNone(await PlayersRelation.load_by_name(player_data['name']))
 
     @gen_test
     async def test_set_balance(self):

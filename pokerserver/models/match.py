@@ -163,9 +163,24 @@ class Match:
     async def show_down(self):
         await self.distribute_pot()
         await Player.reset_after_hand(self.table.table_id)
-        await self.table.reset_after_hand(new_dealer=self.table.player_left_of(self.table.dealer))
+        old_dealer = self.table.dealer
+        await self.table.reset_after_hand()
 
-        await self.start_hand()
+        dealer = self.table.player_left_of(old_dealer)
+        bankrupt_players = self.find_bankrupt_players(dealer)
+        while len(bankrupt_players) > 0 and len(self.table.players) > 1:
+            for player in bankrupt_players:
+                self.log(player, 'leaves the game')
+                await self.table.remove_player(player)
+            if dealer in bankrupt_players:
+                dealer = self.table.player_left_of(dealer)
+            bankrupt_players = self.find_bankrupt_players(dealer)
+
+        if len(self.table.players) > 1:
+            await self.start_hand()
+        else:
+            # TODO: Finish table
+            pass
 
     async def distribute_pot(self):
         active_players = self.table.active_players()
@@ -176,6 +191,22 @@ class Match:
         if rest != 0:
             player = self.table.player_left_of(self.table.dealer, player_filter=active_players)
             await player.increase_balance(rest)
+
+    def find_bankrupt_players(self, dealer):
+        small_blind_player, big_blind_player, _ = self.find_blind_players(dealer)
+        bankrupt_players = []
+        for player in self.table.players:
+            if player == small_blind_player:
+                required_balance = self.table.config.small_blind
+            elif player == big_blind_player:
+                required_balance = self.table.config.big_blind
+            else:
+                required_balance = 1
+
+            if player.balance < required_balance:
+                bankrupt_players.append(player)
+
+        return bankrupt_players
 
     async def call(self, player_name):
         await self.check_and_unset_current_player(player_name)

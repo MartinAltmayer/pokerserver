@@ -31,6 +31,10 @@ class PlayersRelation:
         VALUES ({})
     """.format(','.join(FIELDS), ','.join(['?'] * len(FIELDS)))
 
+    DELETE_QUERY = """
+        DELETE FROM players WHERE table_id = ? AND position = ?
+    """
+
     LOAD_BY_NAME_QUERY = """
         SELECT {}
         FROM players
@@ -41,6 +45,12 @@ class PlayersRelation:
         SELECT {}
         FROM players
         ORDER BY table_id
+    """.format(','.join(FIELDS))
+
+    LOAD_BY_POSITION_QUERY = """
+        SELECT {}
+        FROM players
+        WHERE table_id = ? AND position = ?
     """.format(','.join(FIELDS))
 
     LOAD_BY_TABLE_ID_QUERY = """
@@ -116,12 +126,24 @@ class PlayersRelation:
         return player_data
 
     @classmethod
+    async def load_by_position(cls, table_id, position):
+        row = await Database.instance().find_row(cls.LOAD_BY_POSITION_QUERY, table_id, position)
+        if row is not None:
+            return cls._from_db(row)
+        else:
+            return None
+
+    @classmethod
     async def add_player(cls, table_id, position, name, balance, cards, bet,  # pylint: disable=too-many-arguments
                          last_seen, has_folded):
         assert position > 0
         cards = make_card_list(cards)
         await Database.instance().execute(cls.INSERT_QUERY, table_id, position, name, balance, cards, bet,
                                           last_seen, has_folded)
+
+    @classmethod
+    async def delete_player(cls, table_id, position):
+        await Database.instance().execute(cls.DELETE_QUERY, table_id, position)
 
     @classmethod
     async def set_balance(cls, name, balance):

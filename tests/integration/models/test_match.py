@@ -665,3 +665,62 @@ class TestShowDown(IntegrationTestCase):
         for player in table.players:
             self.assertEqual(0, player.bet)
             self.assertFalse(player.has_folded)
+
+    @patch('pokerserver.models.match.determine_winning_players')
+    @patch('pokerserver.models.match.Match.start_hand', side_effect=return_done_future())
+    @patch('pokerserver.models.match.Match.find_bankrupt_players')
+    @gen_test
+    async def test_remove_bankrupt_players(self, bankrupt_players_mock, _, winning_players_mock):
+        match = await self.create_match()
+        players = match.table.players.copy()
+        winning_players_mock.return_value = [players[0]]
+        bankrupt_players_mock.side_effect = [[players[1]], [players[2]], []]
+
+        await match.show_down()
+
+        self.assertEqual(3, bankrupt_players_mock.call_count)
+        table = await Table.load_by_name(match.table.name)
+        self.assertEqual([players[0].name, players[3].name], [player.name for player in table.players])
+
+        self.assertIsNone(await PlayersRelation.load_by_position(match.table.table_id, players[1].position))
+        self.assertIsNone(await PlayersRelation.load_by_position(match.table.table_id, players[2].position))
+
+
+class TestFindBankruptPlayers(IntegrationTestCase):
+    async def create_match(self, *balances):
+        table_id = 1
+        players = [
+            Player(table_id, 1, 'a', balances[0], [], 0),
+            Player(table_id, 2, 'b', balances[1], [], 0),
+            Player(table_id, 3, 'c', balances[2], [], 0),
+            Player(table_id, 4, 'd', balances[3], [], 0)
+        ]
+
+        table = await create_table(table_id=table_id, players=players, small_blind=10, big_blind=20)
+        return Match(table)
+
+    @gen_test
+    async def test_bankrupt_players(self):
+        match = await self.create_match(0, 20, 20, 0)
+        players = match.table.players
+        bankrupt_players = match.find_bankrupt_players(dealer=match.table.players[0])
+        self.assertEqual([players[0], players[3]], bankrupt_players)
+
+    @gen_test
+    async def test_small_blind_bankrupt(self):
+        match = await self.create_match(20, 9, 20, 20)
+        players = match.table.players
+        bankrupt_players = match.find_bankrupt_players(dealer=match.table.players[0])
+        self.assertEqual([players[1]], bankrupt_players)
+
+    @gen_test
+    async def test_big_blind_bankrupt(self):
+        match = await self.create_match(20, 10, 19, 20)
+        players = match.table.players
+        bankrupt_players = match.find_bankrupt_players(dealer=match.table.players[0])
+        self.assertEqual([players[2]], bankrupt_players)
+
+    @gen_test
+    async def test_noone_bankrupt(self):
+        match = await self.create_match(1, 10, 20, 1)
+        self.assertEqual([], match.find_bankrupt_players(dealer=match.table.players[0]))
