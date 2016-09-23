@@ -19,7 +19,8 @@ TABLES = [
         'small_blind_player': 'c',
         'big_blind_player': 'd',
         'highest_bet_player': 'e',
-        'is_closed': False
+        'is_closed': False,
+        'joined_players': ['a', 'b', 'c', 'd']
     }, {
         'table_id': 2,
         'name': 'table2',
@@ -33,7 +34,8 @@ TABLES = [
         'small_blind_player': 'g',
         'big_blind_player': 'h',
         'highest_bet_player': None,
-        'is_closed': False
+        'is_closed': False,
+        'joined_players': ['e', 'f', 'g', 'h']
     }, {
         'table_id': 3,
         'name': 'empty table',
@@ -47,7 +49,8 @@ TABLES = [
         'small_blind_player': None,
         'big_blind_player': None,
         'highest_bet_player': None,
-        'is_closed': False
+        'is_closed': False,
+        'joined_players': []
     }
 ]
 
@@ -57,7 +60,7 @@ class TestTablesRelation(IntegrationTestCase):
     async def test_create_table(self):
         config = TableConfig(4, 30, 12, 24)
         await TablesRelation.create_table(42, 'Game of Thrones', config, ['2s', 'Jc', '4h'], [], 1000, [],
-                                          "Eddard", "John", "Arya", "Bran", None, False)
+                                          "Eddard", "John", "Arya", "Bran", None, False, '')
         tables = await TablesRelation.load_all()
         self.assertEqual(
             tables,
@@ -74,7 +77,8 @@ class TestTablesRelation(IntegrationTestCase):
                 'small_blind_player': 'Arya',
                 'big_blind_player': 'Bran',
                 'highest_bet_player': None,
-                'is_closed': False
+                'is_closed': False,
+                'joined_players': []
             }]
         )
 
@@ -172,6 +176,18 @@ class TestTablesRelation(IntegrationTestCase):
 
         table = await TablesRelation.load_table_by_name(table_data['name'])
         self.assertEqual(amount, table['main_pot'])
+
+    @gen_test
+    async def test_add_joined_player(self):
+        table_data = TABLES[0]
+        await TablesRelation.create_table(**table_data)
+        joined_players = table_data['joined_players']
+        assert len(joined_players) > 0
+
+        await TablesRelation.add_joined_player(table_data['table_id'], 'xyzabc')
+
+        table = await TablesRelation.load_table_by_name(table_data['name'])
+        self.assertEqual(joined_players + ['xyzabc'], table['joined_players'])
 
 
 class TestCheckAndUnsetCurrentPlayer(IntegrationTestCase):

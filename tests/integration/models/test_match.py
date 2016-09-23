@@ -7,6 +7,7 @@ from tornado.testing import gen_test
 
 from pokerserver.database import Database, TableConfig
 from pokerserver.database.players import PlayersRelation
+from pokerserver.database.tables import TablesRelation
 from pokerserver.models import (
     Player, get_all_cards, Match, Table, NotYourTurnError, PositionOccupiedError,
     InsufficientBalanceError, InvalidBetError, InvalidTurnError
@@ -45,6 +46,14 @@ class TestJoin(IntegrationTestCase):
         self.assertEqual(start_balance, self.table.players[0].balance)
 
     @gen_test
+    async def test_joined_players(self):
+        await self.async_setup()
+        await self.match.join(self.player_name, 1, start_balance=10)
+
+        table = await Table.load_by_name(self.table.name)
+        self.assertEqual([self.player_name], table.joined_players)
+
+    @gen_test
     async def test_join_closed(self):
         await self.async_setup()
         await Database.instance().execute("UPDATE tables SET is_closed = 1 WHERE table_id = ?", self.table.table_id)
@@ -72,12 +81,20 @@ class TestJoin(IntegrationTestCase):
         await self.check_players({1: self.player_name})
 
     @gen_test
-    async def test_join_already_joined(self):
+    async def test_join_already_at_table(self):
         await self.async_setup()
         await self.match.join(self.player_name, 1, 0)
         with self.assertRaises(ValueError):
             await self.match.join(self.player_name, 2, 0)
         await self.check_players({1: self.player_name})
+
+    @gen_test
+    async def test_join_already_joined_in_the_past(self):
+        await self.async_setup()
+        await TablesRelation.add_joined_player(self.table.table_id, self.player_name)
+        await self.load_match()
+        with self.assertRaises(ValueError):
+            await self.match.join(self.player_name, 2, 0)
 
     @gen_test
     async def test_join_and_start(self):

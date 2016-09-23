@@ -46,7 +46,7 @@ class Match:
             raise ValueError('Invalid position')
         if not self.table.is_position_free(position):
             raise PositionOccupiedError()
-        if self.table.is_player_at_table(player_name):
+        if self.table.is_player_at_table(player_name) or player_name in self.table.joined_players:
             raise ValueError('Player has already joined')
 
         try:
@@ -55,7 +55,7 @@ class Match:
             raise PositionOccupiedError()
 
         player = await Player.load_by_name(player_name)
-        self.table.players.append(player)
+        await self.table.add_player(player)
 
         self.log(player_name, 'Joined table {} at {}'.format(self.table.name, position))
 

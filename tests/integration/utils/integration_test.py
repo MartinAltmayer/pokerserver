@@ -83,7 +83,7 @@ def return_done_future(result=None, exception=None):
 async def create_table(table_id=1, name='Table', min_player_count=2, max_player_count=10, small_blind=1, big_blind=2,
                        remaining_deck=None, open_cards=None, main_pot=0, side_pots=None, current_player=None,
                        dealer=None, small_blind_player=None, big_blind_player=None, highest_bet_player=None,
-                       is_closed=False, players=None):
+                       is_closed=False, joined_players=None, players=None):
     # pylint: disable=too-many-locals, too-many-arguments
     remaining_deck = remaining_deck or []
     open_cards = open_cards or []
@@ -102,7 +102,8 @@ async def create_table(table_id=1, name='Table', min_player_count=2, max_player_
         small_blind_player=small_blind_player,
         big_blind_player=big_blind_player,
         highest_bet_player=highest_bet_player,
-        is_closed=is_closed
+        is_closed=is_closed,
+        joined_players=joined_players
     )
     for player in players or []:
         await PlayersRelation.add_player(

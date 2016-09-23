@@ -25,11 +25,11 @@ class TestTablesController(IntegrationHttpTestCase):
         config2 = TableConfig(8, 15, 1, 2)
         await TablesRelation.create_table(
             table_1_id, 'table1', config1, ['2s', '3s', '4s'], [], 0, [],
-            "frodo", "pippin", "pippin", "frodo", None, False
+            "frodo", "pippin", "pippin", "frodo", None, False, ''
         )
         await TablesRelation.create_table(
             table_2_id, 'table2', config2, ['7c', '8s', '9h'], [], 0, [],
-            "gandalf", "bilbo", "bilbo", "gandalf", None, False
+            "gandalf", "bilbo", "bilbo", "gandalf", None, False, ''
         )
         timestamp = datetime.now()
         await PlayersRelation.add_player(table_1_id, 1, "frodo", 10, ['Ac', 'Ad'], 0, timestamp, False)

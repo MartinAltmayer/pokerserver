@@ -25,7 +25,8 @@ class TablesRelation:
         'small_blind_player',
         'big_blind_player',
         'highest_bet_player',
-        'is_closed'
+        'is_closed',
+        'joined_players'
     ]
 
     CREATE_QUERY = """
@@ -45,7 +46,8 @@ class TablesRelation:
             small_blind_player VARCHAR,
             big_blind_player VARCHAR,
             highest_bet_player VARCHAR,
-            is_closed BOOLEAN NOT NULL
+            is_closed BOOLEAN NOT NULL,
+            joined_players VARCHAR
         )
     """
 
@@ -96,6 +98,10 @@ class TablesRelation:
         UPDATE tables SET main_pot = ? WHERE table_id = ?
     """
 
+    ADD_JOINED_PLAYER_QUERY = """
+        UPDATE tables SET joined_players = joined_players || ' ' || ? WHERE table_id = ?
+    """
+
     @classmethod
     async def load_all(cls):
         table_data = []
@@ -133,21 +139,23 @@ class TablesRelation:
         data['remaining_deck'] = from_card_list(data['remaining_deck'])
         data['open_cards'] = from_card_list(data['open_cards'])
         data['side_pots'] = from_int_list(data['side_pots'])
+        data['joined_players'] = data['joined_players'].split()
         return data
 
     # pylint: disable=too-many-arguments, too-many-locals
     @classmethod
     async def create_table(cls, table_id, name, config, remaining_deck, open_cards, main_pot, side_pots,
                            current_player, dealer, small_blind_player, big_blind_player, highest_bet_player,
-                           is_closed):
+                           is_closed, joined_players):
         db = Database.instance()
         remaining_deck = make_card_list(remaining_deck)
         open_cards = make_card_list(open_cards)
         side_pots = make_int_list(side_pots)
+        joined_players = ' '.join(joined_players or [])
         await db.execute(
             cls.INSERT_QUERY, table_id, name, config.min_player_count, config.max_player_count, remaining_deck,
             config.small_blind, config.big_blind, open_cards, main_pot, side_pots, current_player,
-            dealer, small_blind_player, big_blind_player, highest_bet_player, is_closed
+            dealer, small_blind_player, big_blind_player, highest_bet_player, is_closed, joined_players
         )
 
     @classmethod
@@ -180,3 +188,7 @@ class TablesRelation:
     @classmethod
     async def set_pot(cls, table_id, amount):
         await Database.instance().execute(cls.SET_POT_QUERY, amount, table_id)
+
+    @classmethod
+    async def add_joined_player(cls, table_id, player_name):
+        await Database.instance().execute(cls.ADD_JOINED_PLAYER_QUERY, player_name, table_id)

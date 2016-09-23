@@ -20,7 +20,8 @@ class Table:
     # pylint: disable=too-many-arguments, too-many-locals
     def __init__(self, table_id, name, config, players=None, remaining_deck=None,
                  open_cards=None, main_pot=0, side_pots=None, current_player=None, dealer=None,
-                 small_blind_player=None, big_blind_player=None, highest_bet_player=None, is_closed=False):
+                 small_blind_player=None, big_blind_player=None, highest_bet_player=None, is_closed=False,
+                 joined_players=None):
         self.table_id = table_id
         self.name = name
         self.config = config
@@ -35,6 +36,7 @@ class Table:
         self.big_blind_player = big_blind_player
         self.highest_bet_player = highest_bet_player
         self.is_closed = is_closed
+        self.joined_players = joined_players or []
 
     @classmethod
     async def load_all(cls):
@@ -72,11 +74,17 @@ class Table:
             await TablesRelation.create_table(
                 table_id=table_id, name=table_name, config=table_config, remaining_deck=[], open_cards=[],
                 main_pot=0, side_pots=[], current_player=None, dealer=None,
-                small_blind_player=None, big_blind_player=None, highest_bet_player=None, is_closed=False
+                small_blind_player=None, big_blind_player=None, highest_bet_player=None, is_closed=False,
+                joined_players=None
             )
 
     def to_dict(self, player_name):
         player_names = {player.name for player in self.players}
+        can_join = (
+            player_name not in player_names and
+            player_name not in self.joined_players and
+            len(self.players) < self.config.max_player_count
+        )
         result = {
             'players': [player.to_dict(show_cards=player_name == player.name) for player in self.players],
             'small_blind': self.config.small_blind,
@@ -88,7 +96,7 @@ class Table:
             'current_player': self.current_player.name if self.current_player else None,
             'dealer': self.dealer.name if self.dealer else None,
             'is_closed': self.is_closed,
-            'can_join': player_name not in player_names and len(self.players) < self.config.max_player_count
+            'can_join': can_join
         }
 
         return result
@@ -208,6 +216,10 @@ class Table:
 
     async def increase_pot(self, amount):
         await TablesRelation.set_pot(self.table_id, self.main_pot + amount)
+
+    async def add_player(self, player):
+        self.players.append(player)
+        await TablesRelation.add_joined_player(self.table_id, player.name)
 
     async def draw_cards(self, number):
         assert number <= len(self.remaining_deck)
