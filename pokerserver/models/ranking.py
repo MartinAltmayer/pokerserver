@@ -89,6 +89,7 @@ RANKING_FUNCTIONS = [
     find_straight_flush
 ]
 
+# Reverse after adding indexes: [(8, find_straight_flush), ..., (0, find_high_card)]
 _RANKING_FUNCTIONS_WITH_INDEX = list(reversed(list(enumerate(RANKING_FUNCTIONS))))
 
 
@@ -103,5 +104,5 @@ def rank(cards_strings):
 
 def determine_winning_players(active_players, open_cards):
     ranks = {player: rank(player.cards + open_cards) for player in active_players}
-    max_rank = max(ranks)
+    max_rank = max(ranks.values())
     return [player for player in active_players if ranks[player] == max_rank]

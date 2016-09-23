@@ -1,10 +1,11 @@
 # pylint: disable=no-self-use
 from unittest import TestCase
+from unittest.mock import Mock
 
 from pokerserver.models.card import parse_card
 from pokerserver.models.ranking import (
     find_high_card, find_n_of_a_kind, find_two_pairs, find_straight, find_flush,
-    find_full_house, find_straight_flush, rank as rank_function
+    find_full_house, find_straight_flush, rank as rank_function, determine_winning_players
 )
 
 
@@ -131,3 +132,17 @@ class TestRanking(TestCase):
 
         sorted_card_sets = sorted(card_sets, key=rank_function, reverse=True)
         self.assertListEqual(card_sets, sorted_card_sets)
+
+    def test_determine_winning_players_single(self):
+        open_cards = ['2c', '3c', '5c', '6d', '7d']
+        active_players = [Mock(cards=['Ac', 'Kc']), Mock(cards=['Kh', 'Qh'])]
+
+        winning_players = determine_winning_players(active_players, open_cards)
+        self.assertEqual([active_players[0]], winning_players)
+
+    def test_determine_winning_players_multiple(self):
+        open_cards = ['2c', '3c', '5c', '6c', '7d']
+        active_players = [Mock(cards=['As', 'Ks']), Mock(cards=['Ah', 'Kh'])]
+
+        winning_players = determine_winning_players(active_players, open_cards)
+        self.assertEqual(set(active_players), set(winning_players))
