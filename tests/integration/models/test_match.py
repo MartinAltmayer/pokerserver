@@ -108,7 +108,7 @@ class TestJoin(IntegrationTestCase):
             )
 
 
-class TestStartRound(IntegrationTestCase):
+class TestStartHand(IntegrationTestCase):
     @staticmethod
     def create_match(positions):
         table_id = 1
@@ -195,9 +195,9 @@ class TestStartRound(IntegrationTestCase):
     async def test_start(self, choice_mock):
         table_id = 1
         players = [
-            Player(table_id, 1, 'a', 10, [], 0),
-            Player(table_id, 2, 'b', 10, [], 0),
-            Player(table_id, 3, 'c', 10, [], 0)
+            Player(table_id, 1, 'a', 10, [], 10),
+            Player(table_id, 2, 'b', 10, [], 20),
+            Player(table_id, 3, 'c', 10, [], 30)
         ]
 
         table = await create_table(table_id=table_id, players=players)
@@ -214,6 +214,9 @@ class TestStartRound(IntegrationTestCase):
         self.assertEqual(10, table.dealer.balance)
         self.assertEqual(9, table.small_blind_player.balance)
         self.assertEqual(8, table.big_blind_player.balance)
+        self.assertEqual(0, table.dealer.bet)
+        self.assertEqual(1, table.small_blind_player.bet)
+        self.assertEqual(2, table.big_blind_player.bet)
         for player in table.players:
             self.assertEqual(2, len(player.cards))
         self.assertEqual(46, len(table.remaining_deck))
@@ -521,3 +524,127 @@ class TestFindNextPlayer(TestCase):
 
         self.table.highest_bet_player = players[0]
         self.assertEqual(players[1], self.match.find_next_player(players[0]))
+
+
+class TestNextRound(IntegrationTestCase):
+    async def create_match(self, **kwargs):
+        table_id = 1
+        players = [
+            Player(table_id, 1, 'a', 10, [], 30),
+            Player(table_id, 2, 'b', 10, [], 20),
+            Player(table_id, 3, 'c', 10, [], 10),
+            Player(table_id, 4, 'd', 10, [], 0)
+        ]
+
+        table = await create_table(
+            table_id=table_id, players=players, remaining_deck=['2c'] * 52,
+            dealer=players[0].name, small_blind_player=players[1].name, big_blind_player=players[2].name,
+            highest_bet_player=players[0].name,
+            **kwargs
+        )
+        return Match(table)
+
+    @gen_test
+    async def test_draw_open_cards(self):
+        expected_card_count = {
+            Round.preflop: 0,
+            Round.flop: 3,
+            Round.turn: 4,
+            Round.river: 5
+        }
+        rounds = list(Round)
+        for i, round_of_match in enumerate(rounds[:-1]):
+            with self.subTest(round=round_of_match):
+                await Database.instance().clear_tables()
+                open_cards = ['2h'] * expected_card_count[round_of_match]
+                match = await self.create_match(open_cards=open_cards)
+
+                await match.next_round()
+
+                self.assertEqual(rounds[i + 1], match.table.round)
+                self.assertEqual(expected_card_count[match.table.round], len(match.table.open_cards))
+
+    @gen_test
+    async def test_reset_bets(self):
+        match = await self.create_match()
+        await match.next_round()
+
+        table = await Table.load_by_name(match.table.name)
+        for player in table.players:
+            self.assertEqual(0, player.bet)
+
+    @gen_test
+    async def test_reset_highest_bet_player(self):
+        match = await self.create_match()
+        await match.next_round()
+        table = await Table.load_by_name(match.table.name)
+        self.assertIsNone(table.highest_bet_player)
+
+    @gen_test
+    async def test_switch_to_start_player(self):
+        match = await self.create_match()
+        await match.table.set_current_player(match.table.players[1])
+        await match.next_round()
+        table = await Table.load_by_name(match.table.name)
+        self.assertEqual(match.table.players[3].name, table.current_player.name)
+
+    @patch('pokerserver.models.match.Match.show_down', side_effect=return_done_future())
+    @gen_test
+    async def test_trigger_showdown(self, show_down_mock):
+        match = await self.create_match(open_cards=['2h'] * 5)
+        await match.next_round()
+        show_down_mock.assert_called_once_with()
+
+
+class TestShowDown(IntegrationTestCase):
+    async def create_match(self, **kwargs):
+        table_id = 1
+        players = [
+            Player(table_id, 1, 'a', 10, ['Ac', '2c'], 4),
+            Player(table_id, 2, 'b', 10, ['Ah', '2h'], 2),
+            Player(table_id, 3, 'c', 10, ['As', '2s'], 1),
+            Player(table_id, 4, 'd', 10, ['Ad', '2d'], 0)
+        ]
+
+        table = await create_table(
+            table_id=table_id, players=players,
+            dealer=players[0].name, small_blind_player=players[1].name, big_blind_player=players[2].name,
+            **kwargs
+        )
+        return Match(table)
+
+    @patch('pokerserver.models.match.determine_winning_players')
+    @patch('pokerserver.models.match.Match.start_hand', side_effect=return_done_future())
+    @gen_test
+    async def test_distribute_pot_single_winner(self, start_hand_mock, winning_players_mock):
+        match = await self.create_match(main_pot=7)
+        winning_players_mock.return_value = [match.table.players[1]]
+        await match.show_down()
+        table = await Table.load_by_name(match.table.name)
+        self.assertEqual([10, 17, 10, 10], [player.balance for player in table.players])
+        start_hand_mock.assert_called_once_with()
+
+    @patch('pokerserver.models.match.determine_winning_players')
+    @patch('pokerserver.models.match.Match.start_hand', side_effect=return_done_future())
+    @gen_test
+    async def test_distribute_pot_several_winners(self, start_hand_mock, winning_players_mock):
+        match = await self.create_match(main_pot=7)
+        winning_players_mock.return_value = match.table.players[1:]
+        await match.show_down()
+        table = await Table.load_by_name(match.table.name)
+        self.assertEqual([10, 13, 12, 12], [player.balance for player in table.players])
+        start_hand_mock.assert_called_once_with()
+
+    @patch('pokerserver.models.match.determine_winning_players')
+    @patch('pokerserver.models.match.Match.start_hand', side_effect=return_done_future())
+    @gen_test
+    async def test_reset(self, _, winning_players_mock):
+        match = await self.create_match(main_pot=2)
+        winning_players_mock.return_value = [match.table.players[1]]
+        await match.show_down()
+
+        table = await Table.load_by_name(match.table.name)
+        self.assertEqual(0, table.main_pot)
+        for player in table.players:
+            self.assertEqual(0, player.bet)
+            self.assertFalse(player.has_folded)
