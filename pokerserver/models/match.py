@@ -5,6 +5,7 @@ from pokerserver.database import DuplicateKeyError
 from pokerserver.models.table import Round
 from .card import get_all_cards
 from .player import Player
+from .ranking import determine_winning_players
 
 LOG = logging.getLogger(__name__)
 
@@ -91,9 +92,9 @@ class Match:
 
         return small_blind, big_blind, under_the_gun
 
-    def find_start_player(self, dealer, round):
-        small_blind, big_blind, start_player = self.find_blind_players(dealer)
-        if round is not Round.preflop and len(self.table.players) == 2:
+    def find_start_player(self, dealer, round_of_match):
+        _, big_blind, start_player = self.find_blind_players(dealer)
+        if round_of_match is not Round.preflop and len(self.table.players) == 2:
             start_player = big_blind
         return start_player
 
@@ -148,6 +149,9 @@ class Match:
             await self.table.draw_cards(3)
         elif self.table.round in [Round.flop, Round.turn]:
             await self.table.draw_cards(1)
+        else:
+            await self.show_down()
+            return
 
         next_player = self.find_start_player(self.table.dealer, self.table.round)
         await self.table.set_special_players(
@@ -155,6 +159,23 @@ class Match:
             highest_bet_player=None
         )
         self.log(next_player, 'Starts new round')
+
+    async def show_down(self):
+        await self.distribute_pot()
+        await Player.reset_after_hand(self.table.table_id)
+        await self.table.reset_after_hand(new_dealer=self.table.player_left_of(self.table.dealer))
+
+        await self.start_hand()
+
+    async def distribute_pot(self):
+        active_players = self.table.active_players()
+        winning_players = determine_winning_players(active_players, self.table.open_cards)
+        for player in winning_players:
+            await player.increase_balance(self.table.main_pot // len(winning_players))
+        rest = self.table.main_pot % len(winning_players)
+        if rest != 0:
+            player = self.table.player_left_of(self.table.dealer, player_filter=active_players)
+            await player.increase_balance(rest)
 
     async def call(self, player_name):
         await self.check_and_unset_current_player(player_name)

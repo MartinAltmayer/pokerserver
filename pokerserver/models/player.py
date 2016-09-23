@@ -68,6 +68,10 @@ class Player:
     async def reset_bets(cls, table_id):
         await PlayersRelation.reset_bets(table_id)
 
+    @classmethod
+    async def reset_after_hand(cls, table_id):
+        await PlayersRelation.reset_bets_and_has_folded(table_id)
+
     async def increase_bet(self, amount):
         assert amount > 0, 'Need to increase bet by more than 0.'
         assert amount <= self.balance, 'Trying to bet more than remaining balance.'
@@ -79,6 +83,10 @@ class Player:
         assert balance >= 0, 'Insufficient balance.'
         await PlayersRelation.set_balance(self.name, balance)
         self.balance = balance
+
+    async def increase_balance(self, increase):
+        await PlayersRelation.set_balance(self.name, self.balance + increase)
+        self.balance += increase
 
     async def set_cards(self, cards):
         assert len(cards) <= 2

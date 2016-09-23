@@ -111,3 +111,15 @@ class TestPlayersRelation(IntegrationTestCase):
         players = await PlayersRelation.load_by_table_id(1)
         for player in players:
             self.assertEqual(0, player['bet'])
+
+    @gen_test
+    async def test_reset_bets_and_has_folded(self):
+        assert any(data['bet'] != 0 and data['table_id'] == 2 for data in self.PLAYER_DATA)
+        assert any(data['has_folded'] and data['table_id'] == 2 for data in self.PLAYER_DATA)
+        await self.create_players()
+        await PlayersRelation.reset_bets_and_has_folded(2)
+
+        players = await PlayersRelation.load_by_table_id(2)
+        for player in players:
+            self.assertEqual(0, player['bet'])
+            self.assertFalse(player['has_folded'])

@@ -99,3 +99,9 @@ def rank(cards_strings):
         if ranking is not None:
             return i, ranking
     # the last ranking function never returns None
+
+
+def determine_winning_players(active_players, open_cards):
+    ranks = {player: rank(player.cards + open_cards) for player in active_players}
+    max_rank = max(ranks)
+    return [player for player in active_players if ranks[player] == max_rank]

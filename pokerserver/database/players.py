@@ -77,6 +77,10 @@ class PlayersRelation:
         UPDATE players SET bet = 0 WHERE table_id = ?
     """
 
+    RESET_BETS_AND_HAS_FOLDED_QUERY = """
+        UPDATE players SET bet = 0, has_folded = 0 WHERE table_id = ?
+    """
+
     @classmethod
     async def load_all(cls):
         player_data = []
@@ -141,3 +145,7 @@ class PlayersRelation:
     @classmethod
     async def reset_bets(cls, table_id):
         await Database.instance().execute(cls.RESET_BETS_QUERY, table_id)
+
+    @classmethod
+    async def reset_bets_and_has_folded(cls, table_id):
+        await Database.instance().execute(cls.RESET_BETS_AND_HAS_FOLDED_QUERY, table_id)

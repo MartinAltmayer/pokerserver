@@ -214,3 +214,14 @@ class Table:
         self.remaining_deck, cards = self.remaining_deck[:-number], self.remaining_deck[-number:]
         self.open_cards.extend(cards)
         await TablesRelation.set_cards(self.table_id, self.remaining_deck, self.open_cards)
+
+    async def reset_after_hand(self, new_dealer):
+        await self.set_cards([], [])
+        await self.set_pot(0)
+        await self.set_special_players(
+            dealer=new_dealer,
+            small_blind_player=None,
+            big_blind_player=None,
+            highest_bet_player=None,
+            current_player=None
+        )
