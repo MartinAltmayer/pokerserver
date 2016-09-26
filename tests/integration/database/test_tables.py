@@ -9,7 +9,7 @@ TABLES = [
     {
         'table_id': 1,
         'name': 'table1',
-        'config': TableConfig(4, 9, 12, 24),
+        'config': TableConfig(4, 9, 12, 24, 10),
         'remaining_deck': ['2s', 'Jc', '4h'],
         'open_cards': [],
         'main_pot': 1000,
@@ -24,7 +24,7 @@ TABLES = [
     }, {
         'table_id': 2,
         'name': 'table2',
-        'config': TableConfig(4, 9, 12, 24),
+        'config': TableConfig(4, 9, 12, 24, 10),
         'remaining_deck': ['2s', 'Jc', '4h'],
         'open_cards': [],
         'main_pot': 1000,
@@ -39,7 +39,7 @@ TABLES = [
     }, {
         'table_id': 3,
         'name': 'empty table',
-        'config': TableConfig(4, 9, 12, 24),
+        'config': TableConfig(4, 9, 12, 24, 10),
         'remaining_deck': ['2s', 'Jc', '4h'],
         'open_cards': [],
         'main_pot': 1000,
@@ -58,7 +58,7 @@ TABLES = [
 class TestTablesRelation(IntegrationTestCase):
     @gen_test
     async def test_create_table(self):
-        config = TableConfig(4, 30, 12, 24)
+        config = TableConfig(4, 30, 12, 24, 10)
         await TablesRelation.create_table(42, 'Game of Thrones', config, ['2s', 'Jc', '4h'], [], 1000, [],
                                           "Eddard", "John", "Arya", "Bran", None, False, '')
         tables = await TablesRelation.load_all()
@@ -222,3 +222,10 @@ class TestCheckAndUnsetCurrentPlayer(IntegrationTestCase):
             loop=self.get_asyncio_loop()
         )
         self.assertEqual({True, False}, set(results))
+
+    @gen_test
+    async def test_close_table(self):
+        table_id = await self.async_setup()
+        await TablesRelation.close_table(table_id)
+        table = await TablesRelation.load_table_by_id(table_id)
+        self.assertTrue(table['is_closed'])

@@ -1,7 +1,10 @@
 import logging
 import random
 
+from asyncio.tasks import gather
+
 from pokerserver.database import DuplicateKeyError
+from pokerserver.database.stats import StatsRelation
 from pokerserver.models.table import Round
 from .card import get_all_cards
 from .player import Player
@@ -30,7 +33,7 @@ class InvalidBetError(InvalidTurnError):
     pass
 
 
-class Match:
+class Match:  # pylint: disable=too-many-public-methods
     def __init__(self, table):
         self.table = table
 
@@ -39,7 +42,7 @@ class Match:
         if not is_current_player:
             raise NotYourTurnError('It\'s not your turn')
 
-    async def join(self, player_name, position, start_balance):
+    async def join(self, player_name, position):
         if self.table.is_closed:
             raise ValueError('Table is closed')
         if not self.table.is_position_valid(position):
@@ -50,7 +53,7 @@ class Match:
             raise ValueError('Player has already joined')
 
         try:
-            await Player.add_player(self.table, position, player_name, start_balance)
+            await Player.add_player(self.table, position, player_name, self.table.config.start_balance)
         except DuplicateKeyError:
             raise PositionOccupiedError()
 
@@ -171,6 +174,7 @@ class Match:
         while len(bankrupt_players) > 0 and len(self.table.players) > 1:
             for player in bankrupt_players:
                 self.log(player, 'leaves the game')
+                await self.increment_stats_for_player(player)
                 await self.table.remove_player(player)
             if dealer in bankrupt_players:
                 dealer = self.table.player_left_of(dealer)
@@ -179,8 +183,7 @@ class Match:
         if len(self.table.players) > 1:
             await self.start_hand()
         else:
-            # TODO: Finish table
-            pass
+            await self.close_table()
 
     async def distribute_pot(self):
         active_players = self.table.active_players()
@@ -207,6 +210,14 @@ class Match:
                 bankrupt_players.append(player)
 
         return bankrupt_players
+
+    async def close_table(self):
+        await gather(*[self.increment_stats_for_player(player) for player in self.table.players])
+        await self.table.close()
+
+    async def increment_stats_for_player(self, player):
+        await StatsRelation.increment_stats(
+            player.name, matches=1, buy_in=self.table.config.start_balance, gain=player.balance)
 
     async def call(self, player_name):
         await self.check_and_unset_current_player(player_name)

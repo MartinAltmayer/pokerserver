@@ -3,7 +3,8 @@ from collections import namedtuple
 from .database import Database
 from .utils import from_card_list, make_card_list, make_int_list, from_int_list
 
-TableConfig = namedtuple('TableConfig', ['min_player_count', 'max_player_count', 'small_blind', 'big_blind'])
+TableConfig = namedtuple(
+    'TableConfig', ['min_player_count', 'max_player_count', 'small_blind', 'big_blind', 'start_balance'])
 
 
 class TablesRelation:
@@ -17,6 +18,7 @@ class TablesRelation:
         'remaining_deck',
         'small_blind',
         'big_blind',
+        'start_balance',
         'open_cards',
         'main_pot',
         'side_pots',
@@ -38,6 +40,7 @@ class TablesRelation:
             remaining_deck VARCHAR NOT NULL,
             small_blind INT NOT NULL,
             big_blind INT NOT NULL,
+            start_balance INT NOT NULL,
             open_cards VARCHAR NOT NULL ,
             main_pot INT NOT NULL,
             side_pots VARCHAR NOT NULL,
@@ -102,6 +105,10 @@ class TablesRelation:
         UPDATE tables SET joined_players = joined_players || ' ' || ? WHERE table_id = ?
     """
 
+    CLOSE_TABLE_QUERY = """
+        UPDATE tables SET is_closed = 1 WHERE table_id = ?
+    """
+
     @classmethod
     async def load_all(cls):
         table_data = []
@@ -133,8 +140,13 @@ class TablesRelation:
     def _from_db(cls, row):
         data = cls.TABLES_RELATION_ROW(*row)._asdict()
         data['config'] = TableConfig(
-            data['min_player_count'], data['max_player_count'], data['small_blind'], data['big_blind'])
-        for key in 'min_player_count', 'max_player_count', 'small_blind', 'big_blind':
+            data['min_player_count'],
+            data['max_player_count'],
+            data['small_blind'],
+            data['big_blind'],
+            data['start_balance']
+        )
+        for key in 'min_player_count', 'max_player_count', 'small_blind', 'big_blind', 'start_balance':
             del data[key]
         data['remaining_deck'] = from_card_list(data['remaining_deck'])
         data['open_cards'] = from_card_list(data['open_cards'])
@@ -154,8 +166,9 @@ class TablesRelation:
         joined_players = ' '.join(joined_players or [])
         await db.execute(
             cls.INSERT_QUERY, table_id, name, config.min_player_count, config.max_player_count, remaining_deck,
-            config.small_blind, config.big_blind, open_cards, main_pot, side_pots, current_player,
-            dealer, small_blind_player, big_blind_player, highest_bet_player, is_closed, joined_players
+            config.small_blind, config.big_blind, config.start_balance, open_cards, main_pot, side_pots,
+            current_player, dealer, small_blind_player, big_blind_player, highest_bet_player, is_closed,
+            joined_players
         )
 
     @classmethod
@@ -192,3 +205,7 @@ class TablesRelation:
     @classmethod
     async def add_joined_player(cls, table_id, player_name):
         await Database.instance().execute(cls.ADD_JOINED_PLAYER_QUERY, player_name, table_id)
+
+    @classmethod
+    async def close_table(cls, table_id):
+        await Database.instance().execute(cls.CLOSE_TABLE_QUERY, table_id)

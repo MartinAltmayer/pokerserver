@@ -17,9 +17,10 @@ from tests.integration.utils.integration_test import IntegrationTestCase, create
 
 
 class TestJoin(IntegrationTestCase):
-    async def async_setup(self, table_count=1):
+    async def async_setup(self, table_count=1, start_balance=10):
         self.player_name = 'player'
-        config = TableConfig(min_player_count=2, max_player_count=2, small_blind=1, big_blind=2)
+        config = TableConfig(min_player_count=2, max_player_count=2, small_blind=1, big_blind=2,
+                             start_balance=start_balance)
         await Table.create_tables(table_count, config)
         await self.load_match()
 
@@ -35,20 +36,19 @@ class TestJoin(IntegrationTestCase):
 
     @gen_test
     async def test_join(self):
-        start_balance = 13
-        await self.async_setup()
+        await self.async_setup(start_balance=13)
 
-        await self.match.join(self.player_name, 1, start_balance)
+        await self.match.join(self.player_name, 1)
 
         await self.check_players({1: self.player_name})
         self.assertEqual(self.player_name, self.table.players[0].name)
         self.assertEqual(1, self.table.players[0].position)
-        self.assertEqual(start_balance, self.table.players[0].balance)
+        self.assertEqual(13, self.table.players[0].balance)
 
     @gen_test
     async def test_joined_players(self):
-        await self.async_setup()
-        await self.match.join(self.player_name, 1, start_balance=10)
+        await self.async_setup(start_balance=10)
+        await self.match.join(self.player_name, 1)
 
         table = await Table.load_by_name(self.table.name)
         self.assertEqual([self.player_name], table.joined_players)
@@ -60,32 +60,32 @@ class TestJoin(IntegrationTestCase):
         await self.load_match()
 
         with self.assertRaises(ValueError):
-            await self.match.join(self.player_name, 1, 0)
+            await self.match.join(self.player_name, 1)
         await self.check_players({})
 
     @gen_test
     async def test_join_invalid_position(self):
         await self.async_setup()
         with self.assertRaises(ValueError):
-            await self.match.join(self.player_name, 0, 0)
+            await self.match.join(self.player_name, 0)
         with self.assertRaises(ValueError):
-            await self.match.join(self.player_name, 3, 0)
+            await self.match.join(self.player_name, 3)
         await self.check_players({})
 
     @gen_test
     async def test_join_occupied_position(self):
         await self.async_setup()
-        await self.match.join(self.player_name, 1, 0)
+        await self.match.join(self.player_name, 1)
         with self.assertRaises(PositionOccupiedError):
-            await self.match.join(self.player_name + '2', 1, 0)
+            await self.match.join(self.player_name + '2', 1)
         await self.check_players({1: self.player_name})
 
     @gen_test
     async def test_join_already_at_table(self):
         await self.async_setup()
-        await self.match.join(self.player_name, 1, 0)
+        await self.match.join(self.player_name, 1)
         with self.assertRaises(ValueError):
-            await self.match.join(self.player_name, 2, 0)
+            await self.match.join(self.player_name, 2)
         await self.check_players({1: self.player_name})
 
     @gen_test
@@ -94,15 +94,15 @@ class TestJoin(IntegrationTestCase):
         await TablesRelation.add_joined_player(self.table.table_id, self.player_name)
         await self.load_match()
         with self.assertRaises(ValueError):
-            await self.match.join(self.player_name, 2, 0)
+            await self.match.join(self.player_name, 2)
 
     @gen_test
     async def test_join_and_start(self):
         await self.async_setup()
         self.match.start = Mock(side_effect=return_done_future())
-        await self.match.join(self.player_name, 1, 0)
+        await self.match.join(self.player_name, 1)
         self.match.start.assert_not_called()
-        await self.match.join(self.player_name + ' II.', 2, 0)
+        await self.match.join(self.player_name + ' II.', 2)
         self.match.start.assert_called_once_with()
 
     @gen_test
@@ -112,15 +112,15 @@ class TestJoin(IntegrationTestCase):
         self.assertEqual(len(tables), 2)
         for table in tables:
             match = Match(table)
-            await match.join(self.player_name, 1, 0)
+            await match.join(self.player_name, 1)
 
     @gen_test
     async def test_join_concurrent(self):
         await self.async_setup()
         with self.assertRaises(PositionOccupiedError):
             await gather(
-                self.match.join(self.player_name, 1, 0),
-                self.match.join('other player', 1, 0),
+                self.match.join(self.player_name, 1),
+                self.match.join('other player', 1),
                 loop=self.get_asyncio_loop()
             )
 
@@ -130,7 +130,8 @@ class TestStartHand(IntegrationTestCase):
     def create_match(positions):
         table_id = 1
         players = [Player(table_id, position, name, 0, '', 0) for position, name in positions.items()]
-        config = TableConfig(min_player_count=2, max_player_count=10, small_blind=1, big_blind=2)
+        config = TableConfig(
+            min_player_count=2, max_player_count=10, small_blind=1, big_blind=2, start_balance=10)
         return Match(Table(table_id, 'a table', config, players))
 
     def check_blind_players(self, players, small_blind, big_blind, start):
@@ -481,7 +482,8 @@ class TestRaise(BettingTestCase):
 class TestFindNextPlayer(TestCase):
     def setUp(self):
         super().setUp()
-        config = TableConfig(min_player_count=2, max_player_count=4, big_blind=2, small_blind=1)
+        config = TableConfig(
+            min_player_count=2, max_player_count=4, big_blind=2, small_blind=1, start_balance=10)
         self.table = Table(1, 'test', config)
         self.table.players = self.create_players(6)
         self.sorted_players = sorted(self.table.players, key=lambda p: p.position)
@@ -614,6 +616,8 @@ class TestNextRound(IntegrationTestCase):
 
 
 class TestShowDown(IntegrationTestCase):
+    start_balance = 30
+
     async def create_match(self, **kwargs):
         table_id = 1
         players = [
@@ -624,7 +628,7 @@ class TestShowDown(IntegrationTestCase):
         ]
 
         table = await create_table(
-            table_id=table_id, players=players,
+            table_id=table_id, players=players, start_balance=self.start_balance,
             dealer=players[0].name, small_blind_player=players[1].name, big_blind_player=players[2].name,
             **kwargs
         )
@@ -669,12 +673,15 @@ class TestShowDown(IntegrationTestCase):
     @patch('pokerserver.models.match.determine_winning_players')
     @patch('pokerserver.models.match.Match.start_hand', side_effect=return_done_future())
     @patch('pokerserver.models.match.Match.find_bankrupt_players')
+    @patch('pokerserver.database.stats.StatsRelation.increment_stats', side_effect=return_done_future())
     @gen_test
-    async def test_remove_bankrupt_players(self, bankrupt_players_mock, _, winning_players_mock):
+    async def test_remove_bankrupt_players(self, increment_stats_mock, bankrupt_players_mock, _,
+                                           winning_players_mock):
         match = await self.create_match()
         players = match.table.players.copy()
         winning_players_mock.return_value = [players[0]]
         bankrupt_players_mock.side_effect = [[players[1]], [players[2]], []]
+        players[1].balance = players[2].balance = 0
 
         await match.show_down()
 
@@ -684,6 +691,25 @@ class TestShowDown(IntegrationTestCase):
 
         self.assertIsNone(await PlayersRelation.load_by_position(match.table.table_id, players[1].position))
         self.assertIsNone(await PlayersRelation.load_by_position(match.table.table_id, players[2].position))
+
+        increment_stats_mock.assert_has_calls([
+            call(players[1].name, matches=1, buy_in=self.start_balance, gain=0),
+            call(players[2].name, matches=1, buy_in=self.start_balance, gain=0),
+        ], any_order=True)
+
+    @patch('pokerserver.models.match.determine_winning_players')
+    @patch('pokerserver.models.match.Match.close_table', side_effect=return_done_future())
+    @patch('pokerserver.models.match.Match.find_bankrupt_players')
+    @gen_test
+    async def test_close_table(self, bankrupt_players_mock, close_mock, winning_players_mock):
+        match = await self.create_match()
+        players = match.table.players.copy()
+        winning_players_mock.return_value = [players[0]]
+        bankrupt_players_mock.side_effect = [players[1:], []]
+
+        await match.show_down()
+
+        close_mock.assert_called_once_with()
 
 
 class TestFindBankruptPlayers(IntegrationTestCase):

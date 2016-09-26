@@ -1,6 +1,7 @@
 import os
-import tempfile
+import asyncio
 from asyncio.futures import Future
+import tempfile
 from unittest.mock import Mock
 
 from tornado.platform.asyncio import AsyncIOLoop
@@ -45,6 +46,7 @@ class IntegrationTestCase(AsyncTestCase):
     def get_new_ioloop(self):
         assert self._tornado_loop is None, 'get_new_ioloop must not be called twice in one test case'
         self._tornado_loop = AsyncIOLoop()
+        asyncio.set_event_loop(self._tornado_loop.asyncio_loop)
         return self._tornado_loop
 
     def get_asyncio_loop(self):
@@ -80,7 +82,8 @@ def return_done_future(result=None, exception=None):
     return future_creator
 
 
-async def create_table(table_id=1, name='Table', min_player_count=2, max_player_count=10, small_blind=1, big_blind=2,
+async def create_table(table_id=1, name='Table', min_player_count=2, max_player_count=10, small_blind=1,
+                       big_blind=2, start_balance=10,
                        remaining_deck=None, open_cards=None, main_pot=0, side_pots=None, current_player=None,
                        dealer=None, small_blind_player=None, big_blind_player=None, highest_bet_player=None,
                        is_closed=False, joined_players=None, players=None):
@@ -88,7 +91,7 @@ async def create_table(table_id=1, name='Table', min_player_count=2, max_player_
     remaining_deck = remaining_deck or []
     open_cards = open_cards or []
     side_pots = side_pots or []
-    config = TableConfig(min_player_count, max_player_count, small_blind, big_blind)
+    config = TableConfig(min_player_count, max_player_count, small_blind, big_blind, start_balance)
     await TablesRelation.create_table(
         table_id=table_id,
         name=name,

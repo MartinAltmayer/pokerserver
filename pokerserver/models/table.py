@@ -1,4 +1,5 @@
 from enum import Enum
+from asyncio import gather
 
 from pokerserver.database import TablesRelation, PlayersRelation
 from .player import Player
@@ -241,3 +242,7 @@ class Table:
             highest_bet_player=None,
             current_player=None
         )
+
+    async def close(self):
+        await gather(*[self.remove_player(player) for player in self.players.copy()])
+        await TablesRelation.close_table(self.table_id)

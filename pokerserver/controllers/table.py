@@ -24,7 +24,7 @@ class JoinController(BaseController):
         position = self._get_position()
         match = await self.load_match(table_name)
         try:
-            await match.join(self.player_name, position, self.settings['args'].start_balance)
+            await match.join(self.player_name, position)
         except PositionOccupiedError:
             raise HTTPError(HTTPStatus.CONFLICT, 'Position occupied')
         except ValueError as error:

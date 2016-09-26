@@ -181,7 +181,7 @@ class TestJoinController(IntegrationHttpTestCase):
 
         self.assertEqual(response.code, HTTPStatus.OK.value)
         load_mock.assert_called_once_with(self.table_name)
-        match_mock.join.assert_called_once_with(self.player_name, 1, self.args.start_balance)
+        match_mock.join.assert_called_once_with(self.player_name, 1)
 
     @patch('pokerserver.controllers.base.BaseController.load_match')
     @gen_test

@@ -21,8 +21,8 @@ class TestTablesController(IntegrationHttpTestCase):
     async def create_tables(self):
         table_1_id = 1
         table_2_id = 2
-        config1 = TableConfig(4, 9, 1, 2)
-        config2 = TableConfig(8, 15, 1, 2)
+        config1 = TableConfig(4, 9, 1, 2, 10)
+        config2 = TableConfig(8, 15, 1, 2, 10)
         await TablesRelation.create_table(
             table_1_id, 'table1', config1, ['2s', '3s', '4s'], [], 0, [],
             "frodo", "pippin", "pippin", "frodo", None, False, ''
@@ -63,7 +63,8 @@ class TestTablesController(IntegrationHttpTestCase):
     @patch('pokerserver.models.table.Table.create_tables', side_effect=return_done_future())
     @gen_test
     async def test_ensure_free_tables(self, create_tables, load_all):
-        config = TableConfig(min_player_count=2, max_player_count=4, small_blind=12, big_blind=24)
+        config = TableConfig(
+            min_player_count=2, max_player_count=4, small_blind=12, big_blind=24, start_balance=10)
         existing_tables = [Table(i, 'name', config) for i in range(5)]
         load_all.side_effect = return_done_future(existing_tables)
 

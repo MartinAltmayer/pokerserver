@@ -13,7 +13,7 @@ class TestTable(AsyncTestCase):
         self.table = Table(
             42,
             "Table1",
-            TableConfig(min_player_count=4, max_player_count=8, small_blind=1, big_blind=10)
+            TableConfig(min_player_count=4, max_player_count=8, small_blind=1, big_blind=10, start_balance=10)
         )
 
     def test_to_dict_without_players_and_unauthorized(self):
