@@ -25,6 +25,9 @@ class Player:
             return False
         return self.__dict__ == other.__dict__
 
+    def __hash__(self):
+        return hash(self.name)
+
     def to_dict(self, show_cards=False):
         return {
             'table_id': self.table_id,

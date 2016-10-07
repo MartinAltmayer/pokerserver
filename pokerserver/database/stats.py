@@ -13,6 +13,10 @@ class StatsRelation:
         )
     """
 
+    INIT_STATS_QUERY = """
+        INSERT INTO stats (player_name, matches, buy_in, gain) VALUES (?, 0, 0, 0)
+    """
+
     INCREMENT_STATS_QUERY = """
         UPDATE stats
         SET matches = matches + ?, buy_in = buy_in + ?, gain = gain + ?
@@ -30,6 +34,10 @@ class StatsRelation:
                 stats[player_name] = tuple(values)
 
         return stats
+
+    @classmethod
+    async def init_stats(cls, player_name):
+        Database.instance().execute(cls.INCREMENT_STATS_QUERY, player_name)
 
     @classmethod
     async def increment_stats(cls, player_name, matches, buy_in, gain):

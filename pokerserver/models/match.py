@@ -66,13 +66,15 @@ class Match:  # pylint: disable=too-many-public-methods
             await self.start()
 
     async def start(self, dealer=None):
-        await self.table.set_special_players(dealer=dealer or random.choice(self.table.players))
-        await self.start_hand()
+        if dealer is None:
+            dealer = random.choice(self.table.players)
+        await self.start_hand(dealer)
 
-    async def start_hand(self):
+    async def start_hand(self, dealer):
         assert len(self.table.players) >= 2
-        small_blind_player, big_blind_player, under_the_gun = self.find_blind_players(self.table.dealer)
+        small_blind_player, big_blind_player, under_the_gun = self.find_blind_players(dealer)
         await self.table.set_special_players(
+            dealer=dealer,
             small_blind_player=small_blind_player,
             big_blind_player=big_blind_player,
             current_player=under_the_gun,
@@ -170,18 +172,20 @@ class Match:  # pylint: disable=too-many-public-methods
         await self.table.reset_after_hand()
 
         dealer = self.table.player_left_of(old_dealer)
-        bankrupt_players = self.find_bankrupt_players(dealer)
-        while len(bankrupt_players) > 0 and len(self.table.players) > 1:
+        while len(self.table.players) > 1:
+            bankrupt_players = self.find_bankrupt_players(dealer)
+            if len(bankrupt_players) == 0:
+                break
+
             for player in bankrupt_players:
                 self.log(player, 'leaves the game')
                 await self.increment_stats_for_player(player)
                 await self.table.remove_player(player)
             if dealer in bankrupt_players:
                 dealer = self.table.player_left_of(dealer)
-            bankrupt_players = self.find_bankrupt_players(dealer)
 
         if len(self.table.players) > 1:
-            await self.start_hand()
+            await self.start_hand(dealer)
         else:
             await self.close_table()
 
@@ -227,11 +231,11 @@ class Match:  # pylint: disable=too-many-public-methods
             raise InvalidTurnError('Cannot call without bet, use \'check\' instead')
         increase = min(player.balance, highest_bet - player.bet)
         if increase > 0:
+            # If the big blind calls in his first turn after all other players have called, this condition
+            # is false.
             await player.increase_bet(increase)
             await self.table.increase_pot(increase)
-        else:
-            # This happens if both the small blind and the big blind call at the beginning of a hand.
-            assert len(self.table.players) == 2
+
         await self.next_player_or_round(player)
 
     async def check(self, player_name):

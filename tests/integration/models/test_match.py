@@ -1,7 +1,7 @@
 # pylint: disable=no-self-use
 from asyncio.tasks import gather
 from unittest import TestCase
-from unittest.mock import patch, Mock, call
+from unittest.mock import patch, Mock, call, ANY
 
 from tornado.testing import gen_test
 
@@ -643,7 +643,7 @@ class TestShowDown(IntegrationTestCase):
         await match.show_down()
         table = await Table.load_by_name(match.table.name)
         self.assertEqual([10, 17, 10, 10], [player.balance for player in table.players])
-        start_hand_mock.assert_called_once_with()
+        start_hand_mock.assert_called_once_with(ANY)
 
     @patch('pokerserver.models.match.determine_winning_players')
     @patch('pokerserver.models.match.Match.start_hand', side_effect=return_done_future())
@@ -654,7 +654,7 @@ class TestShowDown(IntegrationTestCase):
         await match.show_down()
         table = await Table.load_by_name(match.table.name)
         self.assertEqual([10, 13, 12, 12], [player.balance for player in table.players])
-        start_hand_mock.assert_called_once_with()
+        start_hand_mock.assert_called_once_with(ANY)
 
     @patch('pokerserver.models.match.determine_winning_players')
     @patch('pokerserver.models.match.Match.start_hand', side_effect=return_done_future())
