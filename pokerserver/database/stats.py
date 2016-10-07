@@ -14,7 +14,7 @@ class StatsRelation:
     """
 
     INIT_STATS_QUERY = """
-        INSERT INTO stats (player_name, matches, buy_in, gain) VALUES (?, 0, 0, 0)
+        INSERT INTO stats (player_name, matches, buy_in, gain) VALUES (?, ?, ?, ?)
     """
 
     INCREMENT_STATS_QUERY = """
@@ -37,9 +37,11 @@ class StatsRelation:
 
     @classmethod
     async def init_stats(cls, player_name):
-        Database.instance().execute(cls.INCREMENT_STATS_QUERY, player_name)
+        Database.instance().execute(cls.INCREMENT_STATS_QUERY, player_name, 0, 0, 0)
 
     @classmethod
     async def increment_stats(cls, player_name, matches, buy_in, gain):
         db = Database.instance()
-        await db.execute(cls.INCREMENT_STATS_QUERY, matches, buy_in, gain, player_name)
+        result = await db.execute(cls.INCREMENT_STATS_QUERY, matches, buy_in, gain, player_name)
+        if result.rowcount == 0:
+            await db.execute(cls.INIT_STATS_QUERY, player_name, matches, buy_in, gain)

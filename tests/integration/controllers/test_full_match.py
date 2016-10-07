@@ -108,10 +108,10 @@ class TestFullMatch(IntegrationHttpTestCase):
 
         stats = await StatsRelation.get_stats()
         self.assertEqual({
-            'Player0': 40,
-            'Player1': 0,
-            'Player2': 0,
-            'Player3': 0
+            'Player0': (1, 10, 40),
+            'Player1': (1, 10, 0),
+            'Player2': (1, 10, 0),
+            'Player3': (1, 10, 0)
         }, stats)
 
     async def everyone_calls(self, player_order, balances):

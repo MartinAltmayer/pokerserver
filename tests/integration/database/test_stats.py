@@ -31,3 +31,10 @@ class TestStatsRelation(IntegrationTestCase):
         expected_stats = self.STATS.copy()
         expected_stats['player1'] = (2, 4, 6)
         self.assertDictEqual(expected_stats, stats)
+
+    @gen_test
+    async def test_increment_stats_initializes(self):
+        await StatsRelation.increment_stats('player1', 1, 2, 3)
+        stats = await StatsRelation.get_stats()
+        expected_stats = {'player1': (1, 2, 3)}
+        self.assertDictEqual(expected_stats, stats)
