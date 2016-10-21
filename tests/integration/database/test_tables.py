@@ -214,11 +214,28 @@ class TestCheckAndUnsetCurrentPlayer(IntegrationTestCase):
 
         table = await TablesRelation.load_table_by_id(table_id)
         self.assertIsNone(table['current_player'])
+        self.assertIsNone(table['current_player_token'])
+
+    @gen_test
+    async def test_success_with_token(self):
+        table_id = await self.async_setup()
+        result = await TablesRelation.check_and_unset_current_player(table_id, 'Scrooge', 'lotsofmoney')
+        self.assertTrue(result)
+
+        table = await TablesRelation.load_table_by_id(table_id)
+        self.assertIsNone(table['current_player'])
+        self.assertIsNone(table['current_player_token'])
 
     @gen_test
     async def test_wrong_player(self):
         table_id = await self.async_setup()
         result = await TablesRelation.check_and_unset_current_player(table_id, 'Dagobert')
+        self.assertFalse(result)
+
+    @gen_test
+    async def test_wrong_token(self):
+        table_id = await self.async_setup()
+        result = await TablesRelation.check_and_unset_current_player(table_id, 'Scrooge', 'nomoney')
         self.assertFalse(result)
 
     @gen_test

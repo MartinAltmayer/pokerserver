@@ -1,5 +1,7 @@
 # pylint: disable=no-self-use
+import asyncio
 from asyncio.tasks import gather
+from uuid import uuid4
 from unittest import TestCase
 from unittest.mock import patch, Mock, call, ANY
 
@@ -750,3 +752,61 @@ class TestFindBankruptPlayers(IntegrationTestCase):
     async def test_noone_bankrupt(self):
         match = await self.create_match(1, 10, 20, 1)
         self.assertEqual([], match.find_bankrupt_players(dealer=match.table.players[0]))
+
+
+class TestSetPlayerActive(IntegrationTestCase):
+    async def create_match(self):
+        table_id = 1
+        players = [
+            Player(table_id, 1, 'a', 10, [], 0),
+            Player(table_id, 2, 'b', 10, [], 0),
+            Player(table_id, 3, 'c', 10, [], 0),
+            Player(table_id, 4, 'd', 10, [], 0)
+        ]
+
+        table = await create_table(table_id=table_id, players=players, small_blind=10, big_blind=20)
+
+        match = Match(table)
+        # setattr instead of assignment because I wasn't able to silence pylint oO
+        setattr(match, 'PLAYER_TIMEOUT', 0.001)
+        match.kick_current_player = Mock(side_effect=return_done_future())
+        return match
+
+    @gen_test
+    async def test_sets_player_and_token(self):
+        match = await self.create_match()
+        uuid = uuid4()
+
+        with patch('pokerserver.models.match.uuid4', return_value=uuid):
+            await match.set_player_active(match.table.players[0])
+
+        table = await TablesRelation.load_table_by_id(match.table.table_id)
+        self.assertEqual(match.table.players[0].name, table['current_player'])
+        self.assertEqual(str(uuid), table['current_player_token'])
+
+        await asyncio.sleep(10 * match.PLAYER_TIMEOUT)  # wait for abort task to finish
+
+    @gen_test
+    async def test_kicks_player_after_timeout(self):
+        match = await self.create_match()
+
+        await match.set_player_active(match.table.players[0])
+        await asyncio.sleep(10 * match.PLAYER_TIMEOUT)
+
+        match.kick_current_player.assert_called_once_with(match.table.players[0])
+
+    @gen_test
+    async def test_does_not_kick_other_player(self):
+        match = await self.create_match()
+        await match.set_player_active(match.table.players[0])
+        await match.table.set_current_player(None, None)
+        await asyncio.sleep(10 * match.PLAYER_TIMEOUT)
+        match.kick_current_player.assert_not_called()
+
+    @gen_test
+    async def test_does_not_kick_same_player_if_token_differs(self):
+        match = await self.create_match()
+        await match.set_player_active(match.table.players[0])
+        await match.table.set_current_player(match.table.players[0], 'someothertoken')
+        await asyncio.sleep(2 * match.PLAYER_TIMEOUT)
+        match.kick_current_player.assert_not_called()

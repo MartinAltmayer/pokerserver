@@ -101,8 +101,14 @@ class TablesRelation:
 
     CHECK_CURRENT_PLAYER_QUERY = """
         UPDATE tables
-        SET current_player=NULL
+        SET current_player=NULL, current_player_token=NULL
         WHERE table_id=? AND current_player=?
+    """
+
+    CHECK_CURRENT_PLAYER_AND_TOKEN_QUERY = """
+        UPDATE tables
+        SET current_player=NULL, current_player_token=NULL
+        WHERE table_id=? AND current_player=? AND current_player_token=?
     """
 
     SET_POT_QUERY = """
@@ -201,13 +207,19 @@ class TablesRelation:
             cls.SET_CARDS_QUERY, remaining_deck, open_cards, table_id)
 
     @classmethod
-    async def check_and_unset_current_player(cls, table_id, current_player):
-        """In one atomic operation, check whether the given name coincides with the current player and if that is the
-        case, set current_player to None. This is used to make sure that even the current player cannot play more
-        than one turn.
+    async def check_and_unset_current_player(cls, table_id, current_player, token=None):
+        """In one atomic operation, check whether the given name (and optionally the token) coincides with
+        the current player and if that is the case, set current_player and token to None.
+        This is used to make sure that even the current player cannot play more than one turn.
         """
         db = Database.instance()
-        async with db.execute(cls.CHECK_CURRENT_PLAYER_QUERY, table_id, current_player) as cursor:
+        if token is not None:
+            context_manager = db.execute(
+                cls.CHECK_CURRENT_PLAYER_AND_TOKEN_QUERY, table_id, current_player, token)
+        else:
+            context_manager = db.execute(cls.CHECK_CURRENT_PLAYER_QUERY, table_id, current_player)
+
+        async with context_manager as cursor:
             return cursor.rowcount > 0
 
     @classmethod
