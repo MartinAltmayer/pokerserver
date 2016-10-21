@@ -254,16 +254,16 @@ class BettingTestCase(IntegrationTestCase):
             await self.table.set_special_players(
                 dealer=self.players[0],
                 small_blind_player=self.players[0],
-                big_blind_player=self.players[1],
-                current_player=self.players[0]
+                big_blind_player=self.players[1]
             )
+            await self.table.set_current_player(self.players[0], 'sometoken')
         else:
             await self.table.set_special_players(
                 dealer=self.players[0],
                 small_blind_player=self.players[1 % len(self.players)],
-                big_blind_player=self.players[2 % len(self.players)],
-                current_player=self.players[3 % len(self.players)]
+                big_blind_player=self.players[2 % len(self.players)]
             )
+            await self.table.set_current_player(self.players[3 % len(self.players)], 'sometoken')
         self.match = Match(self.table)
 
 
@@ -602,7 +602,7 @@ class TestNextRound(IntegrationTestCase):
     @gen_test
     async def test_switch_to_start_player(self):
         match = await self.create_match()
-        await match.table.set_current_player(match.table.players[1])
+        await match.table.set_current_player(match.table.players[1], 'sometoken')
         await match.next_round()
         table = await Table.load_by_name(match.table.name)
         self.assertEqual(match.table.players[3].name, table.current_player.name)

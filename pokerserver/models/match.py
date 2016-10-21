@@ -1,5 +1,6 @@
 import logging
 import random
+from uuid import uuid4
 
 from asyncio.tasks import gather
 
@@ -42,6 +43,11 @@ class Match:  # pylint: disable=too-many-public-methods
         if not is_current_player:
             raise NotYourTurnError('It\'s not your turn')
 
+    async def set_player_active(self, player):
+        token = str(uuid4())
+        await self.table.set_current_player(player, token)
+        # TODO #24: Start timeout task
+
     async def join(self, player_name, position):
         if self.table.is_closed:
             raise ValueError('Table is closed')
@@ -77,13 +83,13 @@ class Match:  # pylint: disable=too-many-public-methods
             dealer=dealer,
             small_blind_player=small_blind_player,
             big_blind_player=big_blind_player,
-            current_player=under_the_gun,
             highest_bet_player=None
         )
         await self.reset_bets()
         await self.pay_blinds()
         await self.distribute_cards()
         self.log(under_the_gun, "Started table {}".format(self.table.name))
+        await self.set_player_active(under_the_gun)
 
     def find_blind_players(self, dealer):
         if len(self.table.players) == 2:
@@ -128,7 +134,7 @@ class Match:  # pylint: disable=too-many-public-methods
         if next_player is None:
             await self.next_round()
         else:
-            await self.table.set_current_player(next_player)
+            await self.set_player_active(next_player)
 
     def find_next_player(self, current_player):
         active_players = [player for player in self.table.players if not player.has_folded]
@@ -159,11 +165,9 @@ class Match:  # pylint: disable=too-many-public-methods
             return
 
         next_player = self.find_start_player(self.table.dealer, self.table.round)
-        await self.table.set_special_players(
-            current_player=next_player,
-            highest_bet_player=None
-        )
+        await self.table.set_special_players(highest_bet_player=None)
         self.log(next_player, 'Starts new round')
+        await self.set_player_active(next_player)
 
     async def show_down(self):
         await self.distribute_pot()

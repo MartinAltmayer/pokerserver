@@ -20,9 +20,9 @@ class Round(Enum):
 class Table:
     # pylint: disable=too-many-arguments, too-many-locals
     def __init__(self, table_id, name, config, players=None, remaining_deck=None,
-                 open_cards=None, main_pot=0, side_pots=None, current_player=None, dealer=None,
-                 small_blind_player=None, big_blind_player=None, highest_bet_player=None, is_closed=False,
-                 joined_players=None):
+                 open_cards=None, main_pot=0, side_pots=None, current_player=None, current_player_token=None,   # pylint: disable=unused-argument
+                 dealer=None, small_blind_player=None, big_blind_player=None, highest_bet_player=None,
+                 is_closed=False, joined_players=None):
         self.table_id = table_id
         self.name = name
         self.config = config
@@ -74,7 +74,7 @@ class Table:
         for table_id, table_name in table_ids_and_names:
             await TablesRelation.create_table(
                 table_id=table_id, name=table_name, config=table_config, remaining_deck=[], open_cards=[],
-                main_pot=0, side_pots=[], current_player=None, dealer=None,
+                main_pot=0, side_pots=[], current_player=None, current_player_token=None, dealer=None,
                 small_blind_player=None, big_blind_player=None, highest_bet_player=None, is_closed=False,
                 joined_players=None
             )
@@ -191,14 +191,14 @@ class Table:
 
     async def set_special_players(self, **kwargs):
         assert set(kwargs.keys()) <= {
-            'dealer', 'small_blind_player', 'big_blind_player', 'current_player', 'highest_bet_player'}
+            'dealer', 'small_blind_player', 'big_blind_player', 'highest_bet_player'}
         self.__dict__.update(kwargs)
         updates = {key: player.name if player is not None else None for key, player in kwargs.items()}
         await TablesRelation.set_special_players(self.table_id, **updates)
 
-    async def set_current_player(self, current_player):
-        await TablesRelation.set_special_players(
-            self.table_id, current_player=current_player.name if current_player else None)
+    async def set_current_player(self, current_player, token):
+        player_name = current_player.name if current_player else None
+        await TablesRelation.set_current_player(self.table_id, player_name, token)
 
     async def set_cards(self, remaining_deck=None, open_cards=None):
         if remaining_deck is not None:
@@ -239,8 +239,7 @@ class Table:
             dealer=None,
             small_blind_player=None,
             big_blind_player=None,
-            highest_bet_player=None,
-            current_player=None
+            highest_bet_player=None
         )
 
     async def close(self):
