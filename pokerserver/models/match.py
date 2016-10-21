@@ -93,12 +93,10 @@ class Match:  # pylint: disable=too-many-public-methods
         small_blind_player, big_blind_player, under_the_gun = self.find_blind_players(dealer)
         await self.table.set_special_players(
             dealer=dealer,
-            small_blind_player=small_blind_player,
-            big_blind_player=big_blind_player,
             highest_bet_player=None
         )
         await self.reset_bets()
-        await self.pay_blinds()
+        await self.pay_blinds(small_blind_player, big_blind_player)
         await self.distribute_cards()
         self.log(under_the_gun, "Started table {}".format(self.table.name))
         await self.set_player_active(under_the_gun)
@@ -121,10 +119,10 @@ class Match:  # pylint: disable=too-many-public-methods
             start_player = big_blind
         return start_player
 
-    async def pay_blinds(self):
+    async def pay_blinds(self, small_blind_player, big_blind_player):
         # If a player cannot pay a blind, the pot should be split up.
-        await self.table.small_blind_player.increase_bet(self.table.config.small_blind)
-        await self.table.big_blind_player.increase_bet(self.table.config.big_blind)
+        await small_blind_player.increase_bet(self.table.config.small_blind)
+        await big_blind_player.increase_bet(self.table.config.big_blind)
         await self.table.set_pot(self.table.config.small_blind + self.table.config.big_blind)
 
     async def distribute_cards(self):

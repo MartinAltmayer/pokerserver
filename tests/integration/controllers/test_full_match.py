@@ -71,8 +71,7 @@ class TestFullMatch(IntegrationHttpTestCase):
     async def test_all_call_and_check(self):
         await self.async_setup()
 
-        await self.assert_special_players(
-            dealer='Player0', small_blind='Player1', big_blind='Player2', current_player='Player3')
+        await self.assert_special_players(dealer='Player0', current_player='Player3')
         await self.assert_round_and_pot(Round.preflop, 3)
         await self.assert_balances_and_bets([10, 9, 8, 10], [0, 1, 2, 0])
 
@@ -137,15 +136,10 @@ class TestFullMatch(IntegrationHttpTestCase):
         for index in player_order:
             await self.fetch_with_uuid('/table/{}/check'.format(self.table.name), self.player_data[index])
 
-    async def assert_special_players(self, dealer=None, small_blind=None,
-                                     big_blind=None, current_player=None):
+    async def assert_special_players(self, dealer=None, current_player=None):
         table = await TablesRelation.load_table_by_id(self.table.table_id)
         if dealer is not None:
             self.assertEqual(dealer, table['dealer'])
-        if small_blind is not None:
-            self.assertEqual(small_blind, table['small_blind_player'])
-        if big_blind is not None:
-            self.assertEqual(big_blind, table['big_blind_player'])
         if current_player is not None:
             self.assertEqual(current_player, table['current_player'])
 

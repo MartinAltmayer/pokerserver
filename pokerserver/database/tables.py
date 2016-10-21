@@ -25,8 +25,6 @@ class TablesRelation:
         'current_player',
         'current_player_token',
         'dealer',
-        'small_blind_player',
-        'big_blind_player',
         'highest_bet_player',
         'is_closed',
         'joined_players'
@@ -48,8 +46,6 @@ class TablesRelation:
             current_player VARCHAR,
             current_player_token VARCHAR,
             dealer VARCHAR,
-            small_blind_player VARCHAR,
-            big_blind_player VARCHAR,
             highest_bet_player VARCHAR,
             is_closed BOOLEAN NOT NULL,
             joined_players VARCHAR
@@ -171,8 +167,8 @@ class TablesRelation:
     # pylint: disable=too-many-arguments, too-many-locals
     @classmethod
     async def create_table(cls, table_id, name, config, remaining_deck, open_cards, main_pot, side_pots,
-                           current_player, current_player_token, dealer, small_blind_player,
-                           big_blind_player, highest_bet_player, is_closed, joined_players):
+                           current_player, current_player_token, dealer,
+                           highest_bet_player, is_closed, joined_players):
         db = Database.instance()
         remaining_deck = make_card_list(remaining_deck)
         open_cards = make_card_list(open_cards)
@@ -181,14 +177,12 @@ class TablesRelation:
         await db.execute(
             cls.INSERT_QUERY, table_id, name, config.min_player_count, config.max_player_count, remaining_deck,
             config.small_blind, config.big_blind, config.start_balance, open_cards, main_pot, side_pots,
-            current_player, current_player_token, dealer, small_blind_player, big_blind_player,
-            highest_bet_player, is_closed, joined_players
+            current_player, current_player_token, dealer, highest_bet_player, is_closed, joined_players
         )
 
     @classmethod
     async def set_special_players(cls, table_id, **kwargs):
-        assert set(kwargs.keys()) <= {
-            'dealer', 'small_blind_player', 'big_blind_player', 'highest_bet_player'}
+        assert set(kwargs.keys()) <= {'dealer', 'highest_bet_player'}
         if len(kwargs) == 0:
             return
         set_clause = ', '.join('{}=?'.format(key) for key in kwargs)

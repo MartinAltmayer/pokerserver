@@ -199,11 +199,10 @@ class TestStartHand(IntegrationTestCase):
             Player(table_id, 2, 'big_blind', balance, [], 0),
             Player(table_id, 3, 'no_blind', balance, [], 0)
         ]
-        table = await create_table(table_id=table_id, players=players,
-                                   small_blind_player='small_blind', big_blind_player='big_blind')
+        table = await create_table(table_id=table_id, players=players)
         match = Match(table)
 
-        await match.pay_blinds()
+        await match.pay_blinds(players[0], players[1])
 
         set_balance_and_bet_mock.assert_has_calls([
             call('small_blind', balance - table.config.small_blind, table.config.small_blind),
@@ -227,16 +226,17 @@ class TestStartHand(IntegrationTestCase):
         await match.start()
 
         table = await Table.load_by_name(table.name)
-        self.assertEqual(table.get_player_at(2), table.dealer)
-        self.assertEqual(table.get_player_at(3), table.small_blind_player)
-        self.assertEqual(table.get_player_at(1), table.big_blind_player)
-        self.assertEqual(table.get_player_at(2), table.current_player)
-        self.assertEqual(10, table.dealer.balance)
-        self.assertEqual(9, table.small_blind_player.balance)
-        self.assertEqual(8, table.big_blind_player.balance)
-        self.assertEqual(0, table.dealer.bet)
-        self.assertEqual(1, table.small_blind_player.bet)
-        self.assertEqual(2, table.big_blind_player.bet)
+        expected_dealer = table.get_player_at(2)
+        expected_small_blind = table.get_player_at(3)
+        expected_big_blind = table.get_player_at(1)
+        self.assertEqual(expected_dealer, table.dealer)
+        self.assertEqual(expected_dealer, table.current_player)
+        self.assertEqual(10, expected_dealer.balance)
+        self.assertEqual(9, expected_small_blind.balance)
+        self.assertEqual(8, expected_big_blind.balance)
+        self.assertEqual(0, expected_dealer.bet)
+        self.assertEqual(1, expected_small_blind.bet)
+        self.assertEqual(2, expected_big_blind.bet)
         for player in table.players:
             self.assertEqual(2, len(player.cards))
         self.assertEqual(46, len(table.remaining_deck))
@@ -252,19 +252,10 @@ class BettingTestCase(IntegrationTestCase):
             for index, (balance, bet) in enumerate(zip(balances, bets))
         ]
         self.table = await create_table(players=self.players, main_pot=sum(bets))
+        await self.table.set_special_players(dealer=self.players[0])
         if len(bets) == 2:
-            await self.table.set_special_players(
-                dealer=self.players[0],
-                small_blind_player=self.players[0],
-                big_blind_player=self.players[1]
-            )
             await self.table.set_current_player(self.players[0], 'sometoken')
         else:
-            await self.table.set_special_players(
-                dealer=self.players[0],
-                small_blind_player=self.players[1 % len(self.players)],
-                big_blind_player=self.players[2 % len(self.players)]
-            )
             await self.table.set_current_player(self.players[3 % len(self.players)], 'sometoken')
         self.match = Match(self.table)
 
@@ -559,8 +550,7 @@ class TestNextRound(IntegrationTestCase):
 
         table = await create_table(
             table_id=table_id, players=players, remaining_deck=['2c'] * 52,
-            dealer=players[0].name, small_blind_player=players[1].name, big_blind_player=players[2].name,
-            highest_bet_player=players[0].name,
+            dealer=players[0].name, highest_bet_player=players[0].name,
             **kwargs
         )
         return Match(table)
@@ -631,7 +621,7 @@ class TestShowDown(IntegrationTestCase):
 
         table = await create_table(
             table_id=table_id, players=players, start_balance=self.start_balance,
-            dealer=players[0].name, small_blind_player=players[1].name, big_blind_player=players[2].name,
+            dealer=players[0].name,
             **kwargs
         )
         return Match(table)

@@ -86,7 +86,7 @@ async def create_table(table_id=1, name='Table', min_player_count=2, max_player_
                        big_blind=2, start_balance=10,
                        remaining_deck=None, open_cards=None, main_pot=0, side_pots=None, current_player=None,
                        current_player_token=None,
-                       dealer=None, small_blind_player=None, big_blind_player=None, highest_bet_player=None,
+                       dealer=None, highest_bet_player=None,
                        is_closed=False, joined_players=None, players=None):
     # pylint: disable=too-many-locals, too-many-arguments
     remaining_deck = remaining_deck or []
@@ -104,8 +104,6 @@ async def create_table(table_id=1, name='Table', min_player_count=2, max_player_
         current_player=current_player,
         current_player_token=current_player_token,
         dealer=dealer,
-        small_blind_player=small_blind_player,
-        big_blind_player=big_blind_player,
         highest_bet_player=highest_bet_player,
         is_closed=is_closed,
         joined_players=joined_players

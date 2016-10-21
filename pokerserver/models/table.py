@@ -20,8 +20,8 @@ class Round(Enum):
 class Table:
     # pylint: disable=too-many-arguments, too-many-locals
     def __init__(self, table_id, name, config, players=None, remaining_deck=None,
-                 open_cards=None, main_pot=0, side_pots=None, current_player=None, current_player_token=None,   # pylint: disable=unused-argument
-                 dealer=None, small_blind_player=None, big_blind_player=None, highest_bet_player=None,
+                 open_cards=None, main_pot=0, side_pots=None, current_player=None, current_player_token=None,  # pylint: disable=unused-argument
+                 dealer=None, highest_bet_player=None,
                  is_closed=False, joined_players=None):
         self.table_id = table_id
         self.name = name
@@ -33,8 +33,6 @@ class Table:
         self.side_pots = side_pots or []
         self.current_player = current_player
         self.dealer = dealer
-        self.small_blind_player = small_blind_player
-        self.big_blind_player = big_blind_player
         self.highest_bet_player = highest_bet_player
         self.is_closed = is_closed
         self.joined_players = joined_players or []
@@ -57,8 +55,7 @@ class Table:
             raise TableNotFoundError()
 
         players = await Player.load_by_table_id(table_data['table_id'])
-        for player_attribute in ['dealer', 'small_blind_player', 'big_blind_player', 'current_player',
-                                 'highest_bet_player']:
+        for player_attribute in ['dealer', 'current_player', 'highest_bet_player']:
             if table_data[player_attribute] is not None:
                 for player in players:
                     if player.name == table_data[player_attribute]:
@@ -75,8 +72,7 @@ class Table:
             await TablesRelation.create_table(
                 table_id=table_id, name=table_name, config=table_config, remaining_deck=[], open_cards=[],
                 main_pot=0, side_pots=[], current_player=None, current_player_token=None, dealer=None,
-                small_blind_player=None, big_blind_player=None, highest_bet_player=None, is_closed=False,
-                joined_players=None
+                highest_bet_player=None, is_closed=False, joined_players=None
             )
 
     def to_dict(self, player_name):
@@ -190,8 +186,7 @@ class Table:
         return zip(found_ids, found_names)
 
     async def set_special_players(self, **kwargs):
-        assert set(kwargs.keys()) <= {
-            'dealer', 'small_blind_player', 'big_blind_player', 'highest_bet_player'}
+        assert set(kwargs.keys()) <= {'dealer', 'highest_bet_player'}
         self.__dict__.update(kwargs)
         updates = {key: player.name if player is not None else None for key, player in kwargs.items()}
         await TablesRelation.set_special_players(self.table_id, **updates)
@@ -237,8 +232,6 @@ class Table:
         await self.set_pot(0)
         await self.set_special_players(
             dealer=None,
-            small_blind_player=None,
-            big_blind_player=None,
             highest_bet_player=None
         )
 
