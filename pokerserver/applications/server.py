@@ -21,7 +21,7 @@ def make_app(args):
 
 
 async def setup(args):
-    await ServerConfig.set(timeout=args.timeout or None)
+    ServerConfig.set(timeout=args.timeout or None)
     await Database.connect(args.db)
     await TablesController.ensure_free_tables(args.free_tables, TableConfig(
         args.min_player_count, args.max_player_count, args.small_blind, args.big_blind, args.start_balance))
