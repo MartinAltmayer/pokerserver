@@ -17,7 +17,6 @@ TABLES = [
         'current_player': 'a',
         'current_player_token': None,
         'dealer': 'b',
-        'highest_bet_player': 'e',
         'is_closed': False,
         'joined_players': ['a', 'b', 'c', 'd']
     }, {
@@ -31,7 +30,6 @@ TABLES = [
         'current_player': 'e',
         'current_player_token': None,
         'dealer': 'f',
-        'highest_bet_player': None,
         'is_closed': False,
         'joined_players': ['e', 'f', 'g', 'h']
     }, {
@@ -45,7 +43,6 @@ TABLES = [
         'current_player': None,
         'current_player_token': None,
         'dealer': None,
-        'highest_bet_player': None,
         'is_closed': False,
         'joined_players': []
     }
@@ -57,7 +54,7 @@ class TestTablesRelation(IntegrationTestCase):
     async def test_create_table(self):
         config = TableConfig(4, 30, 12, 24, 10)
         await TablesRelation.create_table(42, 'Game of Thrones', config, ['2s', 'Jc', '4h'], [], 1000, [],
-                                          "Eddard", "123", "John", None, False, '')
+                                          "Eddard", "123", "John", False, '')
         tables = await TablesRelation.load_all()
         self.assertEqual(
             tables,
@@ -72,7 +69,6 @@ class TestTablesRelation(IntegrationTestCase):
                 'current_player': 'Eddard',
                 'current_player_token': "123",
                 'dealer': 'John',
-                'highest_bet_player': None,
                 'is_closed': False,
                 'joined_players': []
             }]
@@ -93,45 +89,24 @@ class TestTablesRelation(IntegrationTestCase):
         self.assertEqual(TABLES[1], table2)
 
     @gen_test
-    async def test_set_special_players(self):
+    async def test_set_dealer(self):
         table_data = TABLES[0]
         await TablesRelation.create_table(**table_data)
 
-        await TablesRelation.set_special_players(
-            table_data['table_id'],
-            dealer='Donald',
-            highest_bet_player='Scrooge'
-        )
+        await TablesRelation.set_dealer(table_data['table_id'], 'Donald')
 
         table = await TablesRelation.load_table_by_name(table_data['name'])
         self.assertEqual('Donald', table['dealer'])
-        self.assertEqual('Scrooge', table['highest_bet_player'])
 
     @gen_test
-    async def test_set_special_players_none(self):
+    async def test_set_dealer_to_none(self):
         table_data = TABLES[0]
         await TablesRelation.create_table(**table_data)
 
-        await TablesRelation.set_special_players(
-            table_data['table_id'],
-            dealer=None,
-            highest_bet_player=None
-        )
+        await TablesRelation.set_dealer(table_data['table_id'], None)
 
         table = await TablesRelation.load_table_by_name(table_data['name'])
         self.assertIsNone(table['dealer'])
-        self.assertIsNone(table['highest_bet_player'])
-
-    @gen_test
-    async def test_set_special_players_partial(self):
-        table_data = TABLES[0]
-        await TablesRelation.create_table(**table_data)
-
-        await TablesRelation.set_special_players(table_data['table_id'], dealer='John')
-
-        table = await TablesRelation.load_table_by_name(table_data['name'])
-        self.assertEqual('John', table['dealer'])
-        self.assertEqual(table_data['highest_bet_player'], table['highest_bet_player'])
 
     @gen_test
     async def test_set_current_player(self):

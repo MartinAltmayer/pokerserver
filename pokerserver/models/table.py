@@ -21,8 +21,7 @@ class Table:
     # pylint: disable=too-many-arguments, too-many-locals
     def __init__(self, table_id, name, config, players=None, remaining_deck=None,
                  open_cards=None, main_pot=0, side_pots=None, current_player=None, current_player_token=None,  # pylint: disable=unused-argument
-                 dealer=None, highest_bet_player=None,
-                 is_closed=False, joined_players=None):
+                 dealer=None, is_closed=False, joined_players=None):
         self.table_id = table_id
         self.name = name
         self.config = config
@@ -33,7 +32,6 @@ class Table:
         self.side_pots = side_pots or []
         self.current_player = current_player
         self.dealer = dealer
-        self.highest_bet_player = highest_bet_player
         self.is_closed = is_closed
         self.joined_players = joined_players or []
 
@@ -55,7 +53,7 @@ class Table:
             raise TableNotFoundError()
 
         players = await Player.load_by_table_id(table_data['table_id'])
-        for player_attribute in ['dealer', 'current_player', 'highest_bet_player']:
+        for player_attribute in ['dealer', 'current_player']:
             if table_data[player_attribute] is not None:
                 for player in players:
                     if player.name == table_data[player_attribute]:
@@ -72,7 +70,7 @@ class Table:
             await TablesRelation.create_table(
                 table_id=table_id, name=table_name, config=table_config, remaining_deck=[], open_cards=[],
                 main_pot=0, side_pots=[], current_player=None, current_player_token=None, dealer=None,
-                highest_bet_player=None, is_closed=False, joined_players=None
+                is_closed=False, joined_players=None
             )
 
     def to_dict(self, player_name):
@@ -185,11 +183,9 @@ class Table:
 
         return zip(found_ids, found_names)
 
-    async def set_special_players(self, **kwargs):
-        assert set(kwargs.keys()) <= {'dealer', 'highest_bet_player'}
-        self.__dict__.update(kwargs)
-        updates = {key: player.name if player is not None else None for key, player in kwargs.items()}
-        await TablesRelation.set_special_players(self.table_id, **updates)
+    async def set_dealer(self, dealer):
+        self.dealer = dealer
+        await TablesRelation.set_dealer(self.table_id, dealer.name if dealer is not None else None)
 
     async def set_current_player(self, current_player, token):
         player_name = current_player.name if current_player else None
@@ -230,10 +226,7 @@ class Table:
     async def reset_after_hand(self):
         await self.set_cards([], [])
         await self.set_pot(0)
-        await self.set_special_players(
-            dealer=None,
-            highest_bet_player=None
-        )
+        await self.set_dealer(None)
 
     async def close(self):
         await gather(*[self.remove_player(player) for player in self.players.copy()])

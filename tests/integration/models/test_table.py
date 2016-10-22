@@ -40,7 +40,6 @@ class TestTable(AsyncTestCase):
                 'side_pots': '',
                 'current_player': 'Arthur',
                 'dealer': 'Percival',
-                'highest_bet_player': None,
                 'is_closed': False
             }
             for table_id, name in enumerate(existing_table_names)
@@ -53,12 +52,12 @@ class TestTable(AsyncTestCase):
             call(
                 table_id=3, name='Table2', config=config, remaining_deck=[], open_cards=[], main_pot=0,
                 side_pots=[], current_player=None, current_player_token=None, dealer=None,
-                highest_bet_player=None, is_closed=False, joined_players=None
+                is_closed=False, joined_players=None
             ),
             call(
                 table_id=4, name='Table4', config=config, remaining_deck=[], open_cards=[], main_pot=0,
                 side_pots=[], current_player=None, current_player_token=None, dealer=None,
-                highest_bet_player=None, is_closed=False, joined_players=None
+                is_closed=False, joined_players=None
             )
         ])
 

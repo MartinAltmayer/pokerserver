@@ -252,7 +252,7 @@ class BettingTestCase(IntegrationTestCase):
             for index, (balance, bet) in enumerate(zip(balances, bets))
         ]
         self.table = await create_table(players=self.players, main_pot=sum(bets))
-        await self.table.set_special_players(dealer=self.players[0])
+        await self.table.set_dealer(self.players[0])
         if len(bets) == 2:
             await self.table.set_current_player(self.players[0], 'sometoken')
         else:
@@ -454,15 +454,6 @@ class TestRaise(BettingTestCase):
             await self.match.raise_bet(self.players[1].name, 1)
 
     @gen_test
-    async def test_raise_sets_highest_bet_player(self):
-        await self.async_setup(balances=[0, 0, 0, 10])
-        self.assertIsNone(self.table.highest_bet_player)
-
-        await self.match.raise_bet(self.players[3].name, 9)
-        table = await Table.load_by_name(self.table.name)
-        self.assertEqual(self.players[3].name, table.highest_bet_player.name)
-
-    @gen_test
     async def test_raise_increases_pot(self):
         await self.async_setup(balances=[0, 0, 0, 10])
         self.assertEqual(0, self.table.main_pot)
@@ -485,7 +476,8 @@ class TestFindNextPlayer(TestCase):
 
     def create_players(self, count):
         # make sure that the positional order differs from the order in the list
-        players = [Mock(spec=Player, position=count - position, has_folded=False) for position in range(count)]
+        players = [Mock(spec=Player, position=count - position, bet=0, has_folded=False)
+                   for position in range(count)]
         for player in players:
             player.name = 'p{}'.format(player.position)
         return players
@@ -512,20 +504,20 @@ class TestFindNextPlayer(TestCase):
             player.has_folded = True
         self.assertIsNone(self.match.find_next_player(players[0]))
 
-    def test_find_next_player_has_highest_bet(self):
+    def test_find_next_player_has_already_played_and_highest_bet(self):
         players = self.sorted_players
-        self.assertEqual(players[1], self.match.find_next_player(players[0]))
+        self.assertIs(players[5], self.table.dealer)
+        self.assertIs(players[2], self.match.find_start_player(self.table.dealer, self.table.round))
 
-        self.table.highest_bet_player = players[1]
-        self.assertIsNone(self.match.find_next_player(players[0]))
+        self.assertIsNone(self.match.find_next_player(players[1]))
 
-    def test_find_next_player_has_already_played(self):
+    def test_find_next_player_has_already_played_but_not_highest_bet(self):
         players = self.sorted_players
+        self.assertIs(players[5], self.table.dealer)
+        self.assertIs(players[2], self.match.find_start_player(self.table.dealer, self.table.round))
+        players[3].bet = 10
 
-        next_player = self.match.find_next_player(players[2])
-        self.assertEqual(players[3], next_player)
-        next_player = self.match.find_next_player(players[1])
-        self.assertIsNone(next_player)
+        self.assertIs(players[2], self.match.find_next_player(players[1]))
 
     def test_find_next_player_heads_up(self):
         self.table.players = players = self.create_players(2)
@@ -534,7 +526,6 @@ class TestFindNextPlayer(TestCase):
         self.assertEqual(players[1], self.match.find_next_player(players[0]))
         self.assertIsNone(self.match.find_next_player(players[1]))
 
-        self.table.highest_bet_player = players[0]
         self.assertEqual(players[1], self.match.find_next_player(players[0]))
 
 
@@ -549,8 +540,7 @@ class TestNextRound(IntegrationTestCase):
         ]
 
         table = await create_table(
-            table_id=table_id, players=players, remaining_deck=['2c'] * 52,
-            dealer=players[0].name, highest_bet_player=players[0].name,
+            table_id=table_id, players=players, remaining_deck=['2c'] * 52, dealer=players[0].name,
             **kwargs
         )
         return Match(table)
@@ -583,13 +573,6 @@ class TestNextRound(IntegrationTestCase):
         table = await Table.load_by_name(match.table.name)
         for player in table.players:
             self.assertEqual(0, player.bet)
-
-    @gen_test
-    async def test_reset_highest_bet_player(self):
-        match = await self.create_match()
-        await match.next_round()
-        table = await Table.load_by_name(match.table.name)
-        self.assertIsNone(table.highest_bet_player)
 
     @gen_test
     async def test_switch_to_start_player(self):

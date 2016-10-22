@@ -91,10 +91,7 @@ class Match:  # pylint: disable=too-many-public-methods
     async def start_hand(self, dealer):
         assert len(self.table.players) >= 2
         small_blind_player, big_blind_player, under_the_gun = self.find_blind_players(dealer)
-        await self.table.set_special_players(
-            dealer=dealer,
-            highest_bet_player=None
-        )
+        await self.table.set_dealer(dealer)
         await self.reset_bets()
         await self.pay_blinds(small_blind_player, big_blind_player)
         await self.distribute_cards()
@@ -152,10 +149,8 @@ class Match:  # pylint: disable=too-many-public-methods
             return None
 
         next_player = self.table.player_left_of(current_player, active_players)
-        if next_player == self.table.highest_bet_player:
-            return None
-
-        if self.table.highest_bet_player is None and self._has_made_turn(next_player, current_player):
+        highest_bet = max(player.bet for player in self.table.players)
+        if next_player.bet == highest_bet and self._has_made_turn(next_player, current_player):
             return None
         return next_player
 
@@ -175,7 +170,6 @@ class Match:  # pylint: disable=too-many-public-methods
             return
 
         next_player = self.find_start_player(self.table.dealer, self.table.round)
-        await self.table.set_special_players(highest_bet_player=None)
         self.log(next_player, 'Starts new round')
         await self.set_player_active(next_player)
 
@@ -269,7 +263,6 @@ class Match:  # pylint: disable=too-many-public-methods
             raise InsufficientBalanceError('Balance too low')
         await player.increase_bet(amount)
         await self.table.increase_pot(amount)
-        await self.table.set_special_players(highest_bet_player=player)
         await self.next_player_or_round(player)
 
     def _get_highest_bet(self):
