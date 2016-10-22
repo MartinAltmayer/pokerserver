@@ -8,6 +8,7 @@ from tornado.platform.asyncio import AsyncIOLoop
 from tornado.testing import AsyncTestCase, AsyncHTTPTestCase
 from tornado.web import Application
 
+from pokerserver.configuration import ServerConfig
 from pokerserver.controllers import HANDLERS
 from pokerserver.database import Database, PlayersRelation, TablesRelation, TableConfig
 from pokerserver.models.table import Table
@@ -32,6 +33,7 @@ class IntegrationTestCase(AsyncTestCase):
     def setUp(self):
         self._tornado_loop = None
         super().setUp()
+        ServerConfig.clear()
         if self.SETUP_DB_CONNECTION:
             self.db = self.get_asyncio_loop().run_until_complete(self.connect_database())
             self.get_asyncio_loop().run_until_complete(self.db.create_tables())

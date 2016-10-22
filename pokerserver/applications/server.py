@@ -9,7 +9,7 @@ from tornado.ioloop import IOLoop
 from tornado.platform.asyncio import AsyncIOMainLoop
 from tornado.web import Application
 
-from pokerserver.configuration import LOGGING
+from pokerserver.configuration import LOGGING, ServerConfig
 from pokerserver.controllers import HANDLERS, TablesController
 from pokerserver.database import Database, TableConfig
 
@@ -21,6 +21,7 @@ def make_app(args):
 
 
 async def setup(args):
+    await ServerConfig.set(timeout=args.timeout or None)
     await Database.connect(args.db)
     await TablesController.ensure_free_tables(args.free_tables, TableConfig(
         args.min_player_count, args.max_player_count, args.small_blind, args.big_blind, args.start_balance))
@@ -46,8 +47,8 @@ def main():
     parser.add_argument('--max-player-count', default=8, type=int, help='Maximum number of players per table.')
     parser.add_argument('--small-blind', default=1, type=int, help='Small blind for every game.')
     parser.add_argument('--big-blind', default=2, type=int, help='Big blind for every game.')
-    parser.add_argument('--answer-timeout', default=0.5, type=float,
-                        help='Interval during which a client has to send a reply in seconds.')
+    parser.add_argument('--timeout', default=0, type=float,
+                        help='Interval during which a client has to send a reply in seconds. Use 0 to disable.')
     parser.add_argument('--turn-interval', default=2, type=float, help='Time each turn takes in seconds.')
     args = parser.parse_args()
 

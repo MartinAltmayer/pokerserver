@@ -4,6 +4,7 @@ from uuid import uuid4
 import asyncio
 from asyncio.tasks import gather
 
+from pokerserver.configuration import ServerConfig
 from pokerserver.database import DuplicateKeyError
 from pokerserver.database.stats import StatsRelation
 from pokerserver.models.table import Round
@@ -35,8 +36,6 @@ class InvalidBetError(InvalidTurnError):
 
 
 class Match:  # pylint: disable=too-many-public-methods
-    PLAYER_TIMEOUT = 1
-
     def __init__(self, table):
         self.table = table
 
@@ -49,16 +48,18 @@ class Match:  # pylint: disable=too-many-public-methods
         token = str(uuid4())
         await self.table.set_current_player(player, token)
 
-        asyncio.get_event_loop().create_task(self.current_player_timeout(player, token))
+        timeout = ServerConfig.get('timeout')
+        if timeout:
+            asyncio.get_event_loop().create_task(self.current_player_timeout(timeout, player, token))
 
-    async def current_player_timeout(self, player, token):
-        await asyncio.sleep(self.PLAYER_TIMEOUT)
+    async def current_player_timeout(self, timeout, player, token):
+        await asyncio.sleep(timeout)
         aborted = await self.table.check_and_unset_current_player(player.name, token)
         if aborted:
-            await self.kick_current_player(player)
+            await self.kick_current_player(player, "timeout")
 
-    async def kick_current_player(self, player):
-        pass
+    async def kick_current_player(self, player, reason):
+        self.log(player, "Kicked due to: " + reason)
 
     async def join(self, player_name, position):
         if self.table.is_closed:

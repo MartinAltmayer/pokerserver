@@ -7,6 +7,7 @@ from unittest.mock import patch, Mock, call, ANY
 
 from tornado.testing import gen_test
 
+from pokerserver.configuration import ServerConfig
 from pokerserver.database import Database, TableConfig
 from pokerserver.database.players import PlayersRelation
 from pokerserver.database.tables import TablesRelation
@@ -728,6 +729,9 @@ class TestFindBankruptPlayers(IntegrationTestCase):
 
 
 class TestSetPlayerActive(IntegrationTestCase):
+    timeout = 0.001
+    wait_timeout = 10 * timeout
+
     async def create_match(self):
         table_id = 1
         players = [
@@ -740,8 +744,7 @@ class TestSetPlayerActive(IntegrationTestCase):
         table = await create_table(table_id=table_id, players=players, small_blind=10, big_blind=20)
 
         match = Match(table)
-        # setattr instead of assignment because I wasn't able to silence pylint oO
-        setattr(match, 'PLAYER_TIMEOUT', 0.001)
+        ServerConfig.set(timeout=self.timeout)
         match.kick_current_player = Mock(side_effect=return_done_future())
         return match
 
@@ -757,23 +760,23 @@ class TestSetPlayerActive(IntegrationTestCase):
         self.assertEqual(match.table.players[0].name, table['current_player'])
         self.assertEqual(str(uuid), table['current_player_token'])
 
-        await asyncio.sleep(10 * match.PLAYER_TIMEOUT)  # wait for abort task to finish
+        await asyncio.sleep(self.wait_timeout)  # wait for timeout task to finish
 
     @gen_test
     async def test_kicks_player_after_timeout(self):
         match = await self.create_match()
 
         await match.set_player_active(match.table.players[0])
-        await asyncio.sleep(10 * match.PLAYER_TIMEOUT)
+        await asyncio.sleep(10 * ServerConfig.get('timeout'))
 
-        match.kick_current_player.assert_called_once_with(match.table.players[0])
+        match.kick_current_player.assert_called_once_with(match.table.players[0], 'timeout')
 
     @gen_test
     async def test_does_not_kick_other_player(self):
         match = await self.create_match()
         await match.set_player_active(match.table.players[0])
         await match.table.set_current_player(None, None)
-        await asyncio.sleep(10 * match.PLAYER_TIMEOUT)
+        await asyncio.sleep(self.wait_timeout)
         match.kick_current_player.assert_not_called()
 
     @gen_test
@@ -781,5 +784,13 @@ class TestSetPlayerActive(IntegrationTestCase):
         match = await self.create_match()
         await match.set_player_active(match.table.players[0])
         await match.table.set_current_player(match.table.players[0], 'someothertoken')
-        await asyncio.sleep(2 * match.PLAYER_TIMEOUT)
+        await asyncio.sleep(self.wait_timeout)
+        match.kick_current_player.assert_not_called()
+
+    @gen_test
+    async def test_does_not_kick_if_disabled(self):
+        match = await self.create_match()
+        ServerConfig.set(timeout=None)
+        await match.set_player_active(match.table.players[0])
+        await asyncio.sleep(self.wait_timeout)
         match.kick_current_player.assert_not_called()
