@@ -7,7 +7,7 @@ set -ex
 
 . $(which virtualenvwrapper.sh)
 
-mkvirtualenv --python=$(which python3.5) "${VIRTUAL_ENVIRONMENT}" || true
+mkvirtualenv --python=$(which python3.6) "${VIRTUAL_ENVIRONMENT}" || true
 
 workon "${VIRTUAL_ENVIRONMENT}"
 pip install -r requirements.txt
