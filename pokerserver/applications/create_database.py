@@ -14,9 +14,9 @@ async def create_tables(db_path):
 
 def main():
     parser = ArgumentParser(description='Create necessary database tables')
-    parser.add_argument(type=str, default='poker.db', help='Path to SQLite database file.', dest='db')
+    parser.add_argument(type=str, default='poker.db', help='Path to SQLite database file.', dest='dbpath')
     args = parser.parse_args()
-    asyncio.get_event_loop().run_until_complete(create_tables(args.db))
+    asyncio.get_event_loop().run_until_complete(create_tables(args.dbpath))
 
 
 if __name__ == "__main__":

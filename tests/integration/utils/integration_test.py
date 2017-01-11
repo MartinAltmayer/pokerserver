@@ -36,7 +36,7 @@ class IntegrationTestCase(AsyncTestCase):
         ServerConfig.clear()
         if self.SETUP_DB_CONNECTION:
             self.db = self.get_asyncio_loop().run_until_complete(self.connect_database())
-            self.get_asyncio_loop().run_until_complete(self.db.create_tables())
+            self.get_asyncio_loop().run_until_complete(self.db.create_relations())
 
     def tearDown(self):
         if self.db is not None:

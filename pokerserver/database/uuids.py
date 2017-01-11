@@ -2,9 +2,10 @@ from collections import namedtuple
 from uuid import UUID
 
 from .database import Database
+from .relation import Relation
 
 
-class UUIDsRelation:
+class UUIDsRelation(Relation):
     NAME = 'uuids'
 
     FIELDS = ['uuid', 'player_name']
@@ -16,6 +17,14 @@ class UUIDsRelation:
             uuid VARCHAR PRIMARY KEY,
             player_name VARCHAR NOT NULL UNIQUE
         )
+    """
+
+    DROP_QUERY = """
+        DROP TABLE uuids;
+    """
+
+    CLEAR_QUERY = """
+        DELETE FROM uuids
     """
 
     LOAD_BY_UUID_QUERY = "SELECT uuid, player_name FROM uuids WHERE uuid = ?"

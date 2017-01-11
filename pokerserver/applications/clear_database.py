@@ -14,11 +14,11 @@ async def clear_tables(db_path, exclude_uuids):
 
 def main():
     parser = ArgumentParser(description='Clear all database tables')
-    parser.add_argument(type=str, help='Path to SQLite database file.', dest='db')
+    parser.add_argument(type=str, help='Path to SQLite database file.', dest='dbpath')
     parser.add_argument('-u', '--uuids', help='Exclude the uuids table', action='store_true')
     args = parser.parse_args()
 
-    asyncio.get_event_loop().run_until_complete(clear_tables(args.db, args.uuids))
+    asyncio.get_event_loop().run_until_complete(clear_tables(args.dbpath, args.uuids))
 
 
 if __name__ == "__main__":

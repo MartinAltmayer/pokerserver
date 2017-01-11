@@ -2,10 +2,11 @@ from collections import namedtuple
 
 from pokerserver.database.database import convert_datetime
 from .database import Database
+from .relation import Relation
 from .utils import make_card_list, from_card_list
 
 
-class PlayersRelation:
+class PlayersRelation(Relation):
     NAME = 'players'
 
     FIELDS = ['table_id', 'position', 'name', 'balance', 'cards', 'bet', 'last_seen', 'has_folded']
@@ -22,6 +23,14 @@ class PlayersRelation:
             has_folded INT NOT NULL,
             PRIMARY KEY (table_id, position)
         )
+    """
+
+    DROP_QUERY = """
+        DROP TABLE players
+    """
+
+    CLEAR_QUERY = """
+        DELETE FROM players
     """
 
     PLAYERS_RELATION_ROW = namedtuple('PlayersRelationRow', FIELDS)

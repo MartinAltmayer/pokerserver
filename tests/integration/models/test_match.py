@@ -1,9 +1,9 @@
 # pylint: disable=no-self-use
 import asyncio
 from asyncio.tasks import gather
-from uuid import uuid4
 from unittest import TestCase
 from unittest.mock import patch, Mock, call, ANY
+from uuid import uuid4
 
 from tornado.testing import gen_test
 
@@ -478,7 +478,7 @@ class TestFindNextPlayer(TestCase):
     def create_players(self, count):
         # make sure that the positional order differs from the order in the list
         players = [Mock(spec=Player, position=count - position, bet=0, has_folded=False)
-                   for position in range(count)]
+            for position in range(count)]
         for player in players:
             player.name = 'p{}'.format(player.position)
         return players

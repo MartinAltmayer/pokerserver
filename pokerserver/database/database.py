@@ -1,12 +1,12 @@
 import asyncio
-from asyncio.tasks import gather
-from datetime import datetime
 import logging
-from functools import partial
 import sqlite3
-from queue import Queue
 import threading
+from asyncio.tasks import gather
 from collections import namedtuple
+from datetime import datetime
+from functools import partial
+from queue import Queue
 
 LOG = logging.getLogger(__name__)
 
@@ -99,19 +99,20 @@ class Database:
         finally:
             connection.close()
 
-    async def create_table(self, table_class):
-        await self.execute(table_class.CREATE_QUERY)
-
-    async def create_tables(self):
-        from ..database import RELATIONS
+    async def create_relations(self):
+        from . import RELATIONS
         for table_class in RELATIONS:
-            await self.create_table(table_class)
+            await table_class.create_relation()
 
     async def clear_tables(self, exclude=tuple()):
         from ..database import RELATIONS
         for table_class in RELATIONS:
             if table_class.NAME not in exclude:
-                await self.execute('DELETE FROM {}'.format(table_class.NAME))
+                try:
+                    await table_class.clear_relation()
+                except DbException as e:
+                    if not str(e).startswith('no such table'):
+                        raise e
 
 
 class Task:

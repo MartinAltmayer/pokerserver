@@ -139,14 +139,14 @@ class TestDatabase(IntegrationTestCase):
     @gen_test
     async def test_create_tables(self):
         db = await self.connect_database()
-        await db.create_tables()
+        await db.create_relations()
         for table_class in RELATIONS:
             self.assertTrue(await self.check_table_exists(db, table_class.NAME))
 
     @gen_test
     async def test_clear_tables(self):
         db = await self.connect_database()
-        await db.create_tables()
+        await db.create_relations()
         await db.execute(PlayersRelation.INSERT_QUERY, *([1] * len(PlayersRelation.FIELDS)))
         await db.execute(TablesRelation.INSERT_QUERY, *([1] * len(TablesRelation.FIELDS)))
         await db.execute(UUIDsRelation.INSERT_QUERY, *([1] * len(UUIDsRelation.FIELDS)))
@@ -154,6 +154,19 @@ class TestDatabase(IntegrationTestCase):
         await db.clear_tables(exclude=['uuids'])
 
         self.assertEqual(0, await db.find_one('SELECT COUNT(*) FROM players'))
+        self.assertEqual(0, await db.find_one('SELECT COUNT(*) FROM tables'))
+        self.assertEqual(1, await db.find_one('SELECT COUNT(*) FROM uuids'))
+
+    @gen_test
+    async def test_clear_tables_with_missing_relation(self):
+        db = await self.connect_database()
+        await db.create_relations()
+        await db.execute(TablesRelation.INSERT_QUERY, *([1] * len(TablesRelation.FIELDS)))
+        await db.execute(UUIDsRelation.INSERT_QUERY, *([1] * len(UUIDsRelation.FIELDS)))
+        await PlayersRelation.drop_relation()
+
+        await db.clear_tables(exclude=['uuids'])
+
         self.assertEqual(0, await db.find_one('SELECT COUNT(*) FROM tables'))
         self.assertEqual(1, await db.find_one('SELECT COUNT(*) FROM uuids'))
 

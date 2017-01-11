@@ -2,12 +2,13 @@ from collections import namedtuple
 
 from .database import Database
 from .utils import from_card_list, make_card_list, make_int_list, from_int_list
+from .relation import Relation
 
 TableConfig = namedtuple(
     'TableConfig', ['min_player_count', 'max_player_count', 'small_blind', 'big_blind', 'start_balance'])
 
 
-class TablesRelation:
+class TablesRelation(Relation):
     NAME = 'tables'
 
     FIELDS = [
@@ -48,6 +49,14 @@ class TablesRelation:
             is_closed BOOLEAN NOT NULL,
             joined_players VARCHAR
         )
+    """
+
+    DROP_QUERY = """
+        DROP TABLE tables
+    """
+
+    CLEAR_QUERY = """
+        DELETE FROM tables
     """
 
     TABLES_RELATION_ROW = namedtuple('TablesRelationRow', FIELDS)

@@ -1,7 +1,8 @@
 from .database import Database
+from .relation import Relation
 
 
-class StatsRelation:
+class StatsRelation(Relation):
     NAME = 'stats'
     CREATE_QUERY = """
         CREATE TABLE stats (
@@ -11,6 +12,14 @@ class StatsRelation:
             gain INT,
             PRIMARY KEY (player_name)
         )
+    """
+
+    DROP_QUERY = """
+        DROP TABLE stats;
+    """
+
+    CLEAR_QUERY = """
+        DELETE FROM stats
     """
 
     INIT_STATS_QUERY = """
