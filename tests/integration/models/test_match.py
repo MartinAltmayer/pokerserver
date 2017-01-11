@@ -477,8 +477,10 @@ class TestFindNextPlayer(TestCase):
 
     def create_players(self, count):
         # make sure that the positional order differs from the order in the list
-        players = [Mock(spec=Player, position=count - position, bet=0, has_folded=False)
-            for position in range(count)]
+        players = [
+            Mock(spec=Player, position=count - position, bet=0, has_folded=False)
+            for position in range(count)
+        ]
         for player in players:
             player.name = 'p{}'.format(player.position)
         return players
