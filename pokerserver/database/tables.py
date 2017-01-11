@@ -1,8 +1,8 @@
 from collections import namedtuple
 
 from .database import Database
-from .utils import from_card_list, make_card_list, make_int_list, from_int_list
 from .relation import Relation
+from .utils import from_card_list, make_card_list, make_int_list, from_int_list
 
 TableConfig = namedtuple(
     'TableConfig', ['min_player_count', 'max_player_count', 'small_blind', 'big_blind', 'start_balance'])
@@ -139,19 +139,13 @@ class TablesRelation(Relation):
     async def load_table_by_id(cls, table_id):
         db = Database.instance()
         row = await db.find_row(cls.LOAD_BY_ID_QUERY, table_id)
-        if row is not None:
-            return cls._from_db(row)
-        else:
-            return None
+        return cls._from_db(row) if row is not None else None
 
     @classmethod
     async def load_table_by_name(cls, name):
         db = Database.instance()
         row = await db.find_row(cls.LOAD_BY_NAME_QUERY, name)
-        if row is not None:
-            return cls._from_db(row)
-        else:
-            return None
+        return cls._from_db(row) if row is not None else None
 
     @classmethod
     def _from_db(cls, row):

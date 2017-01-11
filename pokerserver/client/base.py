@@ -1,6 +1,6 @@
+import json
 import urllib.request
 from urllib.error import HTTPError
-import json as mod_json
 
 POLL_INTERVAL = 1
 
@@ -16,12 +16,11 @@ class TableInfo:
         return len(self.players) < self.max_player_count and player_name not in self.players.values()
 
     def find_free_positions(self):
-        return [position for position in range(1, self.max_player_count + 1)
-                if position not in self.players]
+        return [position for position in range(1, self.max_player_count + 1) if position not in self.players]
 
     def find_free_position(self):
         positions = self.find_free_positions()
-        if len(positions) > 0:
+        if positions:
             return positions[0]
         else:
             raise ValueError("No free position found")
@@ -56,7 +55,7 @@ class BaseClient:
         self.port = port
 
     def receive_uuid(self, player_name):
-        return self.fetch('/uuid?player_name=' + player_name, json=False)
+        return self.fetch('/uuid?player_name=' + player_name, as_json=False)
 
     def fetch_table(self, name, uuid=None):
         if uuid:
@@ -82,7 +81,7 @@ class BaseClient:
         self.fetch('/table/{}/join?player_name={}&position={}&uuid={}'.format(
             table.name, player_name, position, uuid))
 
-    def fetch(self, url, json=True):
+    def fetch(self, url, as_json=True):
         url = 'http://{}:{}{}'.format(self.host, self.port, url)
         self.log("Fetching from {}... ".format(url), new_line=False)
         try:
@@ -96,10 +95,8 @@ class BaseClient:
         if not data:
             return None
         data = data.decode('utf-8')
-        if json:
-            return mod_json.loads(data)
-        else:
-            return data
+
+        return json.loads(data) if as_json else data
 
     def log(self, message, new_line=True):  # pylint: disable=no-self-use
         print(message, end='\n' if new_line else '')

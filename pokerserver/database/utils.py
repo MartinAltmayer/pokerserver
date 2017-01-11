@@ -3,10 +3,7 @@ def make_card_list(cards):
 
 
 def from_card_list(card_list_string):
-    if len(card_list_string) > 0:
-        return card_list_string.split(',')
-    else:
-        return []
+    return card_list_string.split(',') if card_list_string else []
 
 
 def make_int_list(ints):
@@ -14,7 +11,4 @@ def make_int_list(ints):
 
 
 def from_int_list(int_list_string):
-    if len(int_list_string) > 0:
-        return [int(s) for s in int_list_string.split(',')]
-    else:
-        return []
+    return [int(s) for s in int_list_string.split(',')] if int_list_string else []

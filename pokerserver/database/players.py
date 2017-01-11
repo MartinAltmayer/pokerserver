@@ -120,10 +120,7 @@ class PlayersRelation(Relation):
     @classmethod
     async def load_by_name(cls, name):
         row = await Database.instance().find_row(cls.LOAD_BY_NAME_QUERY, name)
-        if row is not None:
-            return cls._from_db(row)
-        else:
-            return None
+        return cls._from_db(row) if row is not None else None
 
     @classmethod
     async def load_by_table_id(cls, table_id):
@@ -137,10 +134,7 @@ class PlayersRelation(Relation):
     @classmethod
     async def load_by_position(cls, table_id, position):
         row = await Database.instance().find_row(cls.LOAD_BY_POSITION_QUERY, table_id, position)
-        if row is not None:
-            return cls._from_db(row)
-        else:
-            return None
+        return cls._from_db(row) if row is not None else None
 
     @classmethod
     async def add_player(cls, table_id, position, name, balance, cards, bet,  # pylint: disable=too-many-arguments

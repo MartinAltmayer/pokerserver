@@ -34,10 +34,7 @@ class UUIDsRelation(Relation):
     @classmethod
     async def load_by_uuid(cls, uuid):
         data = await Database.instance().find_row(cls.LOAD_BY_UUID_QUERY, str(uuid))
-        if data is not None:
-            return cls.UUIDS_RELATION_ROW(*data)._asdict()
-        else:
-            return None
+        return cls.UUIDS_RELATION_ROW(*data)._asdict() if data is not None else None
 
     @classmethod
     async def load_all(cls):

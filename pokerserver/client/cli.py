@@ -53,7 +53,7 @@ class CliClient(BaseClient):
     def find_suitable_table(self):
         tables = self.fetch_tables()
         for table in tables:
-            if len(table.players) == 0 and table.min_player_count <= len(self.player_names) <= table.max_player_count:
+            if not table.players and table.min_player_count <= len(self.player_names) <= table.max_player_count:
                 return table
         else:
             raise RuntimeError('No suitable table')
@@ -118,10 +118,7 @@ class Command:
 
     @property
     def argument_name(self):
-        if self.name == 'raise':
-            return 'amount'
-        else:
-            return None
+        return 'amount' if self.name == 'raise' else None
 
     @classmethod
     def parse(cls, string):

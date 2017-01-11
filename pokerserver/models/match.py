@@ -183,7 +183,7 @@ class Match:  # pylint: disable=too-many-public-methods
         dealer = self.table.player_left_of(old_dealer)
         while len(self.table.players) > 1:
             bankrupt_players = self.find_bankrupt_players(dealer)
-            if len(bankrupt_players) == 0:
+            if not bankrupt_players:
                 break
 
             for player in bankrupt_players:

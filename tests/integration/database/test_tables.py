@@ -1,4 +1,5 @@
 from asyncio.tasks import gather
+
 from tornado.testing import gen_test
 
 from pokerserver.database import TablesRelation
@@ -148,7 +149,7 @@ class TestTablesRelation(IntegrationTestCase):
         table_data = TABLES[0]
         await TablesRelation.create_table(**table_data)
         joined_players = table_data['joined_players']
-        assert len(joined_players) > 0
+        assert joined_players
 
         await TablesRelation.add_joined_player(table_data['table_id'], 'xyzabc')
 

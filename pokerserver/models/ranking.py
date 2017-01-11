@@ -60,10 +60,7 @@ def find_full_house(cards):
 
 def find_straight_flush(cards):
     flush_cards = _find_flush_cards(cards)
-    if flush_cards is not None:
-        return find_straight(flush_cards)
-    else:
-        return None
+    return find_straight(flush_cards) if flush_cards is not None else None
 
 
 def sort_counter(counter):

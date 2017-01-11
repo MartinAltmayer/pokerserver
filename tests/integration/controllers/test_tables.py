@@ -39,12 +39,13 @@ class TestTablesController(IntegrationHttpTestCase):
 
     @gen_test
     async def test_tables_response(self):
+        # pylint: disable=no-member
         await self.create_tables()
         response = await self.fetch_async('/tables')
         self.assertEqual(response.code, HTTPStatus.OK.value)
         response_body = response.body.decode('utf-8')
         response_data = json.loads(response_body)
-        self.assertEqual(list(response_data.keys()), ['tables'])
+        self.assertEqual(response_data.keys(), {'tables'})
         self.assertListEqual(response_data['tables'], [
             {
                 'name': 'table1',

@@ -148,15 +148,14 @@ class Table:
         all_positions = [player.position for player in self.players]
         if pos1 < pos2:
             return sorted([p for p in all_positions if pos1 <= p <= pos2])
-        else:
-            section1 = sorted([p for p in all_positions if p >= pos1])
-            section2 = sorted([p for p in all_positions if p <= pos2])
-            return section1 + section2
+        section1 = sorted([p for p in all_positions if p >= pos1])
+        section2 = sorted([p for p in all_positions if p <= pos2])
+        return section1 + section2
 
     def player_left_of(self, player, player_filter=None):
         players = player_filter if player_filter is not None else self.players
         players = [p for p in players if p != player]
-        if len(players) == 0:
+        if not players:
             raise ValueError('No player left of {}'.format(player.name))
         players.sort(key=lambda p: (p.position <= player.position, p.position))
         return players[0]
