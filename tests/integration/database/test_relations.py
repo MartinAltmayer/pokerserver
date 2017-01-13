@@ -1,9 +1,8 @@
 from tornado.testing import gen_test
 
-from tests.integration import IntegrationTestCase
-from pokerserver.database import Database
-from pokerserver.database import PlayersRelation, TablesRelation, UUIDsRelation
+from pokerserver.database import Database, PlayersRelation, TablesRelation, UUIDsRelation
 from pokerserver.database.relations import create_relations, clear_relations, RELATIONS
+from tests.utils import IntegrationTestCase
 
 
 class TestRelations(IntegrationTestCase):

@@ -3,7 +3,7 @@ from http import HTTPStatus
 
 from nose.tools import assert_equals
 
-from tests.integration.utils.integration_test import IntegrationHttpTestCase
+from tests.utils import IntegrationHttpTestCase
 
 
 class TestInfoController(IntegrationHttpTestCase):

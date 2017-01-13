@@ -4,7 +4,7 @@ from unittest.mock import patch
 from tornado.testing import gen_test
 
 from pokerserver.database.database import DuplicateKeyError
-from tests.integration.utils.integration_test import IntegrationHttpTestCase, return_done_future
+from tests.utils import IntegrationHttpTestCase, return_done_future
 
 
 class TestUUIDController(IntegrationHttpTestCase):

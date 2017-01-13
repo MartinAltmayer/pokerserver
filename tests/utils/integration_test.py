@@ -1,7 +1,6 @@
+import asyncio
 import os
 import tempfile
-import asyncio
-from asyncio.futures import Future
 from unittest.mock import Mock
 
 from tornado.platform.asyncio import AsyncIOLoop
@@ -80,18 +79,6 @@ class IntegrationHttpTestCase(IntegrationTestCase, AsyncHTTPTestCase):
     async def fetch_async(self, path, **kwargs):
         result = await self.http_client.fetch(self.get_url(path), **kwargs)
         return result
-
-
-def return_done_future(result=None, exception=None):
-    def future_creator(*args, **kwargs):  # pylint: disable=unused-argument
-        future = Future()
-        if exception is not None:
-            future.set_exception(exception)
-        else:
-            future.set_result(result)
-        return future
-
-    return future_creator
 
 
 async def create_table(table_id=1, name='Table', min_player_count=2, max_player_count=10, small_blind=1,

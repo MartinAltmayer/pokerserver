@@ -11,7 +11,7 @@ from pokerserver.controllers.tables import TablesController
 from pokerserver.database import TablesRelation, PlayersRelation
 from pokerserver.database.tables import TableConfig
 from pokerserver.models.table import Table
-from tests.integration.utils.integration_test import IntegrationHttpTestCase, return_done_future
+from tests.utils import IntegrationHttpTestCase, return_done_future
 
 
 class TestTablesController(IntegrationHttpTestCase):

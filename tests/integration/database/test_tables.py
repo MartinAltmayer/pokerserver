@@ -4,7 +4,7 @@ from tornado.testing import gen_test
 
 from pokerserver.database import TablesRelation
 from pokerserver.database.tables import TableConfig
-from tests.integration import IntegrationTestCase
+from tests.utils import IntegrationTestCase
 
 TABLES = [
     {

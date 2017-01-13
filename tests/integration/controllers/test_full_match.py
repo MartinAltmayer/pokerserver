@@ -1,10 +1,10 @@
 from unittest.mock import patch
+
 from tornado.testing import gen_test
 
 from pokerserver.database import TableConfig, TablesRelation, PlayersRelation, StatsRelation
 from pokerserver.models import Table, Round, get_all_cards
-
-from tests.integration.utils.integration_test import IntegrationHttpTestCase
+from tests.utils import IntegrationHttpTestCase
 
 
 class TestFullMatch(IntegrationHttpTestCase):

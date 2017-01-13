@@ -5,7 +5,7 @@ from tornado.testing import gen_test
 
 from pokerserver.database import Database, DbException, DuplicateKeyError
 from pokerserver.database.database import convert_datetime
-from tests.integration import IntegrationTestCase
+from tests.utils import IntegrationTestCase
 
 
 class TestDatabase(IntegrationTestCase):

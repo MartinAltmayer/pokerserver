@@ -1,9 +1,10 @@
 from unittest.mock import patch, call, Mock
+
 from tornado.testing import gen_test, AsyncTestCase
 
 from pokerserver.database.tables import TableConfig
 from pokerserver.models.table import Table, Player
-from tests.integration.utils.integration_test import return_done_future, create_table, IntegrationTestCase
+from tests.utils import return_done_future, create_table, IntegrationTestCase
 
 
 class TestTable(AsyncTestCase):

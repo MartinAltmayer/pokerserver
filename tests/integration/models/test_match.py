@@ -16,7 +16,7 @@ from pokerserver.models import (
     InsufficientBalanceError, InvalidBetError, InvalidTurnError
 )
 from pokerserver.models.table import Round
-from tests.integration import IntegrationTestCase, create_table, return_done_future
+from tests.utils import IntegrationTestCase, create_table, return_done_future
 
 
 class TestJoin(IntegrationTestCase):
