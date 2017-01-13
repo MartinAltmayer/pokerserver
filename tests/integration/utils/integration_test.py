@@ -1,7 +1,7 @@
 import os
+import tempfile
 import asyncio
 from asyncio.futures import Future
-import tempfile
 from unittest.mock import Mock
 
 from tornado.platform.asyncio import AsyncIOLoop
@@ -10,7 +10,7 @@ from tornado.web import Application
 
 from pokerserver.configuration import ServerConfig
 from pokerserver.controllers import HANDLERS
-from pokerserver.database import Database, PlayersRelation, TablesRelation, TableConfig
+from pokerserver.database import create_relations, Database, PlayersRelation, TablesRelation, TableConfig
 from pokerserver.models.table import Table
 
 
@@ -36,11 +36,11 @@ class IntegrationTestCase(AsyncTestCase):
         ServerConfig.clear()
         if self.SETUP_DB_CONNECTION:
             self.db = self.get_asyncio_loop().run_until_complete(self.connect_database())
-            self.get_asyncio_loop().run_until_complete(self.db.create_relations())
+            self.get_asyncio_loop().run_until_complete(create_relations())
 
     def tearDown(self):
         if self.db is not None:
-            self.get_asyncio_loop().run_until_complete(self.db.close())
+            self.get_asyncio_loop().run_until_complete(self.db.close_connection())
             self.db = None
             os.truncate(self._db_path, 0)
         super().tearDown()
@@ -57,6 +57,16 @@ class IntegrationTestCase(AsyncTestCase):
     async def connect_database(self):
         self.db = await Database.connect(self._db_path, loop=self.get_asyncio_loop())
         return self.db
+
+    @staticmethod
+    async def check_table_exists(name):
+        db = Database.instance()
+        exists = await db.find_one("""
+            SELECT 1
+            FROM sqlite_master
+            WHERE type="table" AND name="{}"
+            """.format(name))
+        return exists == 1
 
 
 class IntegrationHttpTestCase(IntegrationTestCase, AsyncHTTPTestCase):

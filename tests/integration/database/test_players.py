@@ -3,7 +3,7 @@ from tornado.testing import gen_test
 
 from pokerserver.database import PlayersRelation
 from pokerserver.database.utils import from_card_list
-from tests.integration.utils.integration_test import IntegrationTestCase
+from tests.integration import IntegrationTestCase
 
 
 class TestPlayersRelation(IntegrationTestCase):

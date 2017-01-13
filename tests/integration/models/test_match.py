@@ -8,7 +8,7 @@ from uuid import uuid4
 from tornado.testing import gen_test
 
 from pokerserver.configuration import ServerConfig
-from pokerserver.database import Database, TableConfig
+from pokerserver.database import clear_relations, Database, TableConfig
 from pokerserver.database.players import PlayersRelation
 from pokerserver.database.tables import TablesRelation
 from pokerserver.models import (
@@ -16,7 +16,7 @@ from pokerserver.models import (
     InsufficientBalanceError, InvalidBetError, InvalidTurnError
 )
 from pokerserver.models.table import Round
-from tests.integration.utils.integration_test import IntegrationTestCase, create_table, return_done_future
+from tests.integration import IntegrationTestCase, create_table, return_done_future
 
 
 class TestJoin(IntegrationTestCase):
@@ -559,7 +559,7 @@ class TestNextRound(IntegrationTestCase):
         rounds = list(Round)
         for i, round_of_match in enumerate(rounds[:-1]):
             with self.subTest(round=round_of_match):
-                await Database.instance().clear_tables()
+                await clear_relations()
                 open_cards = ['2h'] * expected_card_count[round_of_match]
                 match = await self.create_match(open_cards=open_cards)
 

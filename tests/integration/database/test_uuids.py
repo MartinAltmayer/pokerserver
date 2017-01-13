@@ -2,7 +2,7 @@ from uuid import uuid4
 from tornado.testing import gen_test
 
 from pokerserver.database import UUIDsRelation
-from tests.integration.utils.integration_test import IntegrationTestCase
+from tests.integration import IntegrationTestCase
 
 
 class TestUUIDsRelation(IntegrationTestCase):

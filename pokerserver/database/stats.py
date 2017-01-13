@@ -15,7 +15,7 @@ class StatsRelation(Relation):
     """
 
     DROP_QUERY = """
-        DROP TABLE stats;
+        DROP TABLE stats
     """
 
     CLEAR_QUERY = """

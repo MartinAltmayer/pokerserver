@@ -4,7 +4,7 @@ import time
 
 from pokerserver.client import BaseClient
 
-POLL_INTERVAL = 1
+POLL_INTERVAL_SECONDS = 1
 
 
 class SimpleClient(BaseClient):
@@ -21,7 +21,7 @@ class SimpleClient(BaseClient):
             table = self.fetch_table(table_info.name)
             if table.current_player == self.player_name:
                 self.make_turn(table, position)
-            time.sleep(POLL_INTERVAL)
+            time.sleep(POLL_INTERVAL_SECONDS)
 
     def make_turn(self, table, position):  # pylint: disable=unused-argument
         self.log("It's my turn")

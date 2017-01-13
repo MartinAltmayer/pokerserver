@@ -3,7 +3,7 @@
 -e git+https://github.com/PyCQA/astroid.git@7ec66f514de82b7a0b941dfb012403e92ee6e419#egg=astroid
 -e git+https://github.com/PyCQA/pylint.git@da1da56853380a5a387ad287f4398402b14ef123#egg=pylint
 
-coverage==4.1
+coverage==4.3.1
 nose==1.3.7
 pep8==1.7.0
 setuptools-lint==0.5.2

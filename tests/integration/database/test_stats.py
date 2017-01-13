@@ -1,7 +1,7 @@
 from tornado.testing import gen_test
 
 from pokerserver.database import StatsRelation
-from tests.integration.utils.integration_test import IntegrationTestCase
+from tests.integration import IntegrationTestCase
 
 
 class TestStatsRelation(IntegrationTestCase):

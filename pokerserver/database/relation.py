@@ -1,4 +1,4 @@
-from .database import Database
+from .database import Database, DbException
 
 
 class Relation:
@@ -12,8 +12,16 @@ class Relation:
 
     @classmethod
     async def drop_relation(cls):
-        await Database.instance().execute(cls.DROP_QUERY)
+        try:
+            await Database.instance().execute(cls.DROP_QUERY)
+        except DbException as exc:
+            if not str(exc).startswith('no such table'):
+                raise
 
     @classmethod
     async def clear_relation(cls):
-        await Database.instance().execute(cls.CLEAR_QUERY)
+        try:
+            await Database.instance().execute(cls.CLEAR_QUERY)
+        except DbException as exc:
+            if not str(exc).startswith('no such table'):
+                raise
