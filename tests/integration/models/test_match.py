@@ -842,6 +842,15 @@ class TestKickCurrentPlayer(IntegrationTestCase):
         self.assertEqual('a', match.table.current_player.name)
 
     @gen_test
+    async def test_kick_dealer(self):
+        match = await self.create_match()
+        await match.start(match.table.players[0])
+        await match.call('d')
+        token = await TablesRelation.get_current_player_token(match.table.table_id)
+        await match.kick_if_current_player(match.table.players[0], token, 'reason')
+        self.assertEqual('d', match.table.dealer.name)
+
+    @gen_test
     async def test_kick_starts_next_round(self):
         match = await self.create_match()
         await match.start(match.table.players[0])

@@ -63,6 +63,9 @@ class Match:  # pylint: disable=too-many-public-methods
 
         self.log(player, "Kicked due to: " + reason)
         next_player = self.find_next_player(player)
+        if self.table.dealer.name == player.name:
+            await self.table.set_dealer(self.table.player_right_of(self.table.dealer))
+
         await self.increment_stats_for_player(player)
         await self.table.remove_player(player)
 

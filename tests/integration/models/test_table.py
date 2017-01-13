@@ -94,6 +94,39 @@ class TestTable(AsyncTestCase):
         with self.assertRaises(ValueError):
             table.player_left_of(player, [player])
 
+    def test_player_right_of(self):
+        players = [Mock(position=position) for position in (1, 2, 5)]
+        for player in players:
+            player.name = 'p{}'.format(player.position)
+        table = Table(table_id=1, name='a table', config=Mock(), players=players)
+
+        for position, left_player_name in zip([1, 2, 5], ['p5', 'p1', 'p2']):
+            player = table.get_player_at(position)
+            self.assertEqual(left_player_name, table.player_right_of(player).name)
+
+    def test_player_right_of_with_filter(self):
+        players = [Mock(position=position) for position in (1, 2, 5)]
+        for player in players:
+            player.name = 'p{}'.format(player.position)
+        table = Table(table_id=1, name='a table', config=Mock(), players=players)
+
+        player_filter = [table.get_player_at(1), table.get_player_at(5)]
+        for position, left_player_name in zip([1, 2, 5], ['p5', 'p1', 'p1']):
+            player = table.get_player_at(position)
+            self.assertEqual(left_player_name, table.player_right_of(player, player_filter).name)
+
+    def test_player_right_of_fails(self):
+        players = [Mock(position=position) for position in (1, 2, 5)]
+        for player in players:
+            player.name = 'p{}'.format(player.position)
+        table = Table(table_id=1, name='a table', config=Mock(), players=players)
+
+        player = table.get_player_at(1)
+        with self.assertRaises(ValueError):
+            table.player_right_of(player, [])
+        with self.assertRaises(ValueError):
+            table.player_right_of(player, [player])
+
     def test_player_positions_between(self):
         all_players = [Mock(position=p) for p in [7, 3, 5, 2, 6]]
         table = Table(table_id=1, name='a table', config=Mock(), players=all_players)

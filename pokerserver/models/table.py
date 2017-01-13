@@ -160,6 +160,14 @@ class Table:
         players.sort(key=lambda p: (p.position <= player.position, p.position))
         return players[0]
 
+    def player_right_of(self, player, player_filter=None):
+        players = player_filter if player_filter is not None else self.players
+        players = [p for p in players if p != player]
+        if not players:
+            raise ValueError('No player right of {}'.format(player.name))
+        players.sort(key=lambda p: (p.position > player.position, -p.position))
+        return players[0]
+
     @classmethod
     async def _get_unused_table_names_and_ids(cls, number):
         tables = await cls.load_all()
