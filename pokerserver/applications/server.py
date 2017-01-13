@@ -28,7 +28,7 @@ async def setup(args):
 
 
 async def teardown():
-    await Database.instance().close()
+    await Database.instance().close_connection()
 
 
 def main():

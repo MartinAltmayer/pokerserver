@@ -4,7 +4,7 @@ from tornado.testing import AsyncTestCase, gen_test
 
 from pokerserver.database import TableConfig
 from pokerserver.models import Table, Player
-from tests.integration.utils.integration_test import return_done_future
+from tests.utils import return_done_future
 
 
 class TestTable(AsyncTestCase):

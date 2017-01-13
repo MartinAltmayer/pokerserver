@@ -38,15 +38,15 @@ class Database:
 
     @classmethod
     async def connect(cls, path, loop=None):
-        # pylint: disable=protected-access
         assert cls._instance is None, 'Must not connect to database twice'
         if loop is None:
             loop = get_event_loop()
         db = cls._instance = Database(path, loop)
-        db._connect()
+        db.open_connection()
         return db
 
-    def _connect(self):
+    def open_connection(self):
+        assert not self.connected, 'This database is already connected'
         for _ in range(self.POOL_SIZE):
             connection = sqlite3.connect(self.path, check_same_thread=False)
             self._threads.append(threading.Thread(target=partial(self._run_in_thread, connection, self._queue)))
@@ -54,7 +54,7 @@ class Database:
         for thread in self._threads:
             thread.start()
 
-    async def close(self):
+    async def close_connection(self):
         if not self.connected:
             return
         self.connected = False
@@ -92,21 +92,6 @@ class Database:
                     return
         finally:
             connection.close()
-
-    async def create_relations(self):
-        from . import RELATIONS
-        for table_class in RELATIONS:
-            await table_class.create_relation()
-
-    async def clear_tables(self, exclude=tuple()):
-        from ..database import RELATIONS
-        for table_class in RELATIONS:
-            if table_class.NAME not in exclude:
-                try:
-                    await table_class.clear_relation()
-                except DbException as exc:
-                    if not str(exc).startswith('no such table'):
-                        raise
 
 
 class Task:

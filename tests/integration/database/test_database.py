@@ -1,25 +1,15 @@
 from datetime import datetime
+
 from nose.tools import nottest
 from tornado.testing import gen_test
 
-from pokerserver.database import Database, RELATIONS, DbException, DuplicateKeyError
+from pokerserver.database import Database, DbException, DuplicateKeyError
 from pokerserver.database.database import convert_datetime
-from pokerserver.database.players import PlayersRelation
-from pokerserver.database.tables import TablesRelation
-from pokerserver.database.uuids import UUIDsRelation
-from tests.integration.utils.integration_test import IntegrationTestCase
+from tests.utils import IntegrationTestCase
 
 
 class TestDatabase(IntegrationTestCase):
     SETUP_DB_CONNECTION = False
-
-    async def check_table_exists(self, db, name):
-        exists = await db.find_one("""
-            SELECT 1
-            FROM sqlite_master
-            WHERE type="table" AND name="{}"
-            """.format(name))
-        return exists == 1
 
     @nottest
     async def create_test_table(self, db, row):
@@ -27,16 +17,16 @@ class TestDatabase(IntegrationTestCase):
         await db.execute('INSERT INTO test (name, value) VALUES (?, ?)', *row)
 
     @gen_test
-    async def test_connect(self):
+    async def test_open_connection(self):
         db = await self.connect_database()
         self.assertIsInstance(db, Database)
         self.assertTrue(db.connected)
 
     @gen_test
-    async def test_close(self):
+    async def test_close_connection(self):
         db = await self.connect_database()
         self.assertFalse(db.closed)
-        await db.close()
+        await db.close_connection()
         self.assertTrue(db.closed)
 
     @gen_test
@@ -49,7 +39,7 @@ class TestDatabase(IntegrationTestCase):
     async def test_execute(self):
         db = await self.connect_database()
         await db.execute("CREATE TABLE test ( an INT ) ")
-        self.assertTrue(await self.check_table_exists(db, 'test'))
+        self.assertTrue(await self.check_table_exists('test'))
 
     @gen_test
     async def test_execute_with_statement(self):
@@ -135,40 +125,6 @@ class TestDatabase(IntegrationTestCase):
         await db.execute('CREATE TABLE test ( name VARCHAR, value INT )')
         async with db.execute('INSERT INTO test (name, value) VALUES (?, ?)', 'abc', 2) as cursor:
             self.assertEqual(1, cursor.rowcount)
-
-    @gen_test
-    async def test_create_tables(self):
-        db = await self.connect_database()
-        await db.create_relations()
-        for table_class in RELATIONS:
-            self.assertTrue(await self.check_table_exists(db, table_class.NAME))
-
-    @gen_test
-    async def test_clear_tables(self):
-        db = await self.connect_database()
-        await db.create_relations()
-        await db.execute(PlayersRelation.INSERT_QUERY, *([1] * len(PlayersRelation.FIELDS)))
-        await db.execute(TablesRelation.INSERT_QUERY, *([1] * len(TablesRelation.FIELDS)))
-        await db.execute(UUIDsRelation.INSERT_QUERY, *([1] * len(UUIDsRelation.FIELDS)))
-
-        await db.clear_tables(exclude=['uuids'])
-
-        self.assertEqual(0, await db.find_one('SELECT COUNT(*) FROM players'))
-        self.assertEqual(0, await db.find_one('SELECT COUNT(*) FROM tables'))
-        self.assertEqual(1, await db.find_one('SELECT COUNT(*) FROM uuids'))
-
-    @gen_test
-    async def test_clear_tables_with_missing_relation(self):
-        db = await self.connect_database()
-        await db.create_relations()
-        await db.execute(TablesRelation.INSERT_QUERY, *([1] * len(TablesRelation.FIELDS)))
-        await db.execute(UUIDsRelation.INSERT_QUERY, *([1] * len(UUIDsRelation.FIELDS)))
-        await PlayersRelation.drop_relation()
-
-        await db.clear_tables(exclude=['uuids'])
-
-        self.assertEqual(0, await db.find_one('SELECT COUNT(*) FROM tables'))
-        self.assertEqual(1, await db.find_one('SELECT COUNT(*) FROM uuids'))
 
     def test_convert_datetime(self):
         expected = datetime(2016, 7, 8, 21, 0, 30, 141000)

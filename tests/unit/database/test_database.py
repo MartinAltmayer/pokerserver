@@ -7,7 +7,6 @@ from pokerserver.database import Database
 
 class TestDatabase(AsyncTestCase):
     async def async_setup(self):
-        # Database.POOL_SIZE = 1
         with patch('pokerserver.database.database.sqlite3') as sqlite3_mock:
             sqlite3_mock.connect.return_value = self.build_connection_mock()
             await Database.connect('any/path/to.db')
@@ -23,4 +22,4 @@ class TestDatabase(AsyncTestCase):
     @gen_test
     async def test_clear_database(self):
         await self.async_setup()
-        await Database.instance().clear_tables()
+        await Database.instance().clear_relations()

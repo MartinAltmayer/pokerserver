@@ -1,22 +1,22 @@
 import asyncio
 from argparse import ArgumentParser
 
-from pokerserver.database import Database
+from pokerserver.database import Database, create_relations
 
 
-async def create_tables(db_path):
+async def _create_relations(db_path):
     db = await Database.connect(db_path)
     try:
-        await db.create_tables()
+        await create_relations()
     finally:
-        await db.close()
+        await db.close_connection()
 
 
 def main():
     parser = ArgumentParser(description='Create necessary database tables')
     parser.add_argument(type=str, default='poker.db', help='Path to SQLite database file.', dest='dbpath')
     args = parser.parse_args()
-    asyncio.get_event_loop().run_until_complete(create_tables(args.dbpath))
+    asyncio.get_event_loop().run_until_complete(_create_relations(args.dbpath))
 
 
 if __name__ == "__main__":

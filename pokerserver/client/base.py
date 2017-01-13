@@ -1,8 +1,6 @@
 import json
-import urllib.request
 from urllib.error import HTTPError
-
-POLL_INTERVAL = 1
+from urllib.request import urlopen
 
 
 class TableInfo:
@@ -69,23 +67,29 @@ class BaseClient:
         return [TableInfo(**table_data) for table_data in response['tables']]
 
     @staticmethod
-    def find_free_table(tables, *player_names):
-        for table in tables:
+    def find_free_table(table_infos, *player_names):
+        for table in table_infos:
             if (len(table.find_free_positions()) >= len(player_names) and
                     all(table.is_free_for(name) for name in player_names)):
                 return table
         else:
             raise RuntimeError('No free table')
 
-    def join_table(self, table, player_name, position, uuid):
-        self.fetch('/table/{}/join?player_name={}&position={}&uuid={}'.format(
-            table.name, player_name, position, uuid))
+    def join_table(self, table_info, player_name, position, uuid):
+        self.fetch(
+            '/table/{}/join?player_name={}&position={}&uuid={}'.format(
+                table_info.name,
+                player_name,
+                position,
+                uuid
+            )
+        )
 
     def fetch(self, url, as_json=True):
         url = 'http://{}:{}{}'.format(self.host, self.port, url)
         self.log("Fetching from {}... ".format(url), new_line=False)
         try:
-            response = urllib.request.urlopen(url)
+            response = urlopen(url)
             self.log('{}'.format(response.code))
         except HTTPError as error:
             self.log('{}'.format(error.code))

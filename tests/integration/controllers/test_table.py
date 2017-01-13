@@ -7,7 +7,7 @@ from tornado.testing import gen_test
 
 from pokerserver.database.uuids import UUIDsRelation
 from pokerserver.models import Player, NotYourTurnError, PositionOccupiedError, InvalidTurnError
-from tests.integration.utils.integration_test import IntegrationHttpTestCase, return_done_future, create_table
+from tests.utils import IntegrationHttpTestCase, return_done_future, create_table
 
 
 class TestTableController(IntegrationHttpTestCase):
