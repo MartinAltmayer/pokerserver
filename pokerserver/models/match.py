@@ -54,12 +54,25 @@ class Match:  # pylint: disable=too-many-public-methods
 
     async def current_player_timeout(self, timeout, player, token):
         await asyncio.sleep(timeout)
-        aborted = await self.table.check_and_unset_current_player(player.name, token)
-        if aborted:
-            await self.kick_current_player(player, "timeout")
+        await self.kick_if_current_player(player, token, 'timeout')
 
-    async def kick_current_player(self, player, reason):
+    async def kick_if_current_player(self, player, current_player_token, reason):
+        is_current_player = await self.table.check_and_unset_current_player(player.name, current_player_token)
+        if not is_current_player:
+            return
+
         self.log(player, "Kicked due to: " + reason)
+        next_player = self.find_next_player(player)
+        await self.increment_stats_for_player(player)
+        await self.table.remove_player(player)
+
+        if len(self.table.players) > 1:
+            if next_player is None:
+                await self.next_round()
+            else:
+                await self.set_player_active(next_player)
+        else:
+            await self.close_table()
 
     async def join(self, player_name, position):
         if self.table.is_closed:
@@ -225,6 +238,7 @@ class Match:  # pylint: disable=too-many-public-methods
         return bankrupt_players
 
     async def close_table(self):
+        self.log('', 'Closing table {}'.format(self.table.table_id))
         await gather(*[self.increment_stats_for_player(player) for player in self.table.players])
         await self.table.close()
 

@@ -188,6 +188,7 @@ class Table:
 
     async def set_current_player(self, current_player, token):
         player_name = current_player.name if current_player else None
+        self.current_player = self.find_player(player_name)
         await TablesRelation.set_current_player(self.table_id, player_name, token)
 
     async def set_cards(self, remaining_deck=None, open_cards=None):
@@ -200,7 +201,11 @@ class Table:
             self.table_id, remaining_deck=self.remaining_deck, open_cards=self.open_cards)
 
     async def check_and_unset_current_player(self, player_name, token=None):
-        return await TablesRelation.check_and_unset_current_player(self.table_id, player_name, token)
+        is_current_player = await TablesRelation.check_and_unset_current_player(
+            self.table_id, player_name, token)
+        if is_current_player:
+            self.current_player = None
+        return is_current_player
 
     async def set_pot(self, amount):
         await TablesRelation.set_pot(self.table_id, amount)
@@ -229,4 +234,5 @@ class Table:
 
     async def close(self):
         await gather(*[self.remove_player(player) for player in self.players.copy()])
+        self.is_closed = True
         await TablesRelation.close_table(self.table_id)

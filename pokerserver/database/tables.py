@@ -102,6 +102,10 @@ class TablesRelation(Relation):
         WHERE table_id = ?
     """
 
+    GET_CURRENT_PLAYER_TOKEN_QUERY = """
+        SELECT current_player_token FROM tables WHERE table_id=?
+    """
+
     CHECK_CURRENT_PLAYER_QUERY = """
         UPDATE tables
         SET current_player=NULL, current_player_token=NULL
@@ -163,6 +167,7 @@ class TablesRelation(Relation):
         data['open_cards'] = from_card_list(data['open_cards'])
         data['side_pots'] = from_int_list(data['side_pots'])
         data['joined_players'] = data['joined_players'].split()
+        data['is_closed'] = bool(data['is_closed'])
         return data
 
     # pylint: disable=too-many-arguments, too-many-locals
@@ -187,6 +192,10 @@ class TablesRelation(Relation):
     @classmethod
     async def set_current_player(cls, table_id, current_player, token):
         await Database.instance().execute(cls.SET_CURRENT_PLAYER_QUERY, current_player, token, table_id)
+
+    @classmethod
+    async def get_current_player_token(cls, table_id):
+        return await Database.instance().find_one(cls.GET_CURRENT_PLAYER_TOKEN_QUERY, table_id)
 
     @classmethod
     async def set_cards(cls, table_id, remaining_deck, open_cards):
