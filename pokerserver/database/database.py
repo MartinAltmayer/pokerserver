@@ -181,7 +181,7 @@ class FakeCursor:
     def rowcount(self):
         return self._result.rowcount
 
-    async def __aiter__(self):  # Will give PendingDeprecationWarnings starting with Python 3.5.2 (should remove async)
+    def __aiter__(self):
         return self
 
     async def __anext__(self):
