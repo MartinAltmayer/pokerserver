@@ -3,16 +3,18 @@ from unittest.mock import patch, Mock
 
 from tornado.testing import AsyncTestCase, gen_test
 
-from pokerserver.database import Database
+from pokerserver.database import Database, clear_relations
 
 
 class TestDatabase(AsyncTestCase):
     async def async_setup(self):
         with patch('pokerserver.database.database.sqlite3') as sqlite3_mock:
+            # pylint: disable=no-member
             sqlite3_mock.connect.return_value = self.build_connection_mock()
             await Database.connect('any/path/to.db')
 
-    def build_connection_mock(self):
+    @staticmethod
+    def build_connection_mock():
         cursor_mock = Mock()
         cursor_mock.__iter__ = Mock(return_value=iter([]))
         cursor_mock.rowcount = 0
@@ -24,4 +26,4 @@ class TestDatabase(AsyncTestCase):
     @gen_test
     async def test_clear_database(self):
         await self.async_setup()
-        await Database.instance().clear_relations()
+        await clear_relations()
