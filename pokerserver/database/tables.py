@@ -51,8 +51,8 @@ class TablesRelation(Relation):
         )
     """
 
-    DROP_QUERY = """
-        DROP TABLE tables
+    DROP_IF_EXISTS_QUERY = """
+        DROP TABLE IF EXISTS tables
     """
 
     CLEAR_QUERY = """

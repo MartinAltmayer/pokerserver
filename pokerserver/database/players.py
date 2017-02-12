@@ -25,8 +25,8 @@ class PlayersRelation(Relation):
         )
     """
 
-    DROP_QUERY = """
-        DROP TABLE players
+    DROP_IF_EXISTS_QUERY = """
+        DROP TABLE IF EXISTS players
     """
 
     CLEAR_QUERY = """

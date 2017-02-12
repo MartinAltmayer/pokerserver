@@ -58,13 +58,13 @@ class IntegrationTestCase(AsyncTestCase):
         return self.db
 
     @staticmethod
-    async def check_table_exists(name):
+    async def check_relation_exists(name):
         db = Database.instance()
         exists = await db.find_one("""
             SELECT 1
             FROM sqlite_master
-            WHERE type="table" AND name="{}"
-            """.format(name))
+            WHERE type="table" AND name=?
+            """, name)
         return exists == 1
 
 

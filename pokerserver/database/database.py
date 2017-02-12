@@ -48,8 +48,7 @@ class Database:
     def open_connection(self):
         assert not self.connected, 'This database is already connected'
         for _ in range(self.POOL_SIZE):
-            connection = sqlite3.connect(self.path, check_same_thread=False)
-            self._threads.append(threading.Thread(target=partial(self._run_in_thread, connection, self._queue)))
+            self._threads.append(threading.Thread(target=partial(self._run_in_thread, self.path, self._queue)))
         self.connected = True
         for thread in self._threads:
             thread.start()
@@ -74,6 +73,11 @@ class Database:
         self._queue.put(task)
         return _ExecuteContextManager(task)
 
+    def executemany(self, query, *args):
+        task = QueryManyTask(self._loop, query, *args)
+        self._queue.put(task)
+        return _ExecuteContextManager(task)
+
     async def find_one(self, query, *args):
         result = await self.execute(query, *args)
         return result.rows[0][0] if result.rows else None
@@ -83,15 +87,13 @@ class Database:
         return result.rows[0] if result.rows else None
 
     @staticmethod
-    def _run_in_thread(connection, queue):
-        try:
+    def _run_in_thread(path, queue):
+        with sqlite3.connect(path) as connection:
             while True:
                 task = queue.get()
                 task.execute_and_resolve(connection)
                 if isinstance(task, CloseTask):
                     return
-        finally:
-            connection.close()
 
 
 class Task:
@@ -113,7 +115,7 @@ class Task:
 
 class CloseTask(Task):
     def execute(self, connection):
-        connection.close()
+        pass
 
 
 class QueryTask(Task):
@@ -132,13 +134,38 @@ class QueryTask(Task):
             connection.rollback()
             raise DbException(str(exc)) from exc
 
-        connection.commit()
         result = QueryResult(rows=list(cursor), rowcount=cursor.rowcount)
         cursor.close()
+        connection.commit()
         return result
 
     def __str__(self):
         return "<QUERY: {}, {}>".format(self.query, self.args)
+
+
+class QueryManyTask(Task):
+    def __init__(self, loop, query, *args):
+        super().__init__(loop)
+        self.query = query
+        self.args = args
+
+    def execute(self, connection):
+        try:
+            cursor = connection.executemany(self.query, *self.args)
+        except sqlite3.IntegrityError as exc:
+            connection.rollback()
+            raise DuplicateKeyError(str(exc))
+        except sqlite3.OperationalError as exc:
+            connection.rollback()
+            raise DbException(str(exc)) from exc
+
+        result = QueryResult(rows=list(cursor), rowcount=cursor.rowcount)
+        cursor.close()
+        connection.commit()
+        return result
+
+    def __str__(self):
+        return "<QUERY_MANY: {}, {}>".format(self.query, self.args)
 
 
 QueryResult = namedtuple('QueryResult', 'rows rowcount')
