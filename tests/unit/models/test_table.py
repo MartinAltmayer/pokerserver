@@ -2,7 +2,7 @@ from unittest.mock import patch
 
 from tornado.testing import AsyncTestCase, gen_test
 
-from pokerserver.database import TableConfig
+from pokerserver.database import TableConfig, PlayerState
 from pokerserver.models import Table, Player
 from tests.utils import return_done_future
 
@@ -68,7 +68,7 @@ class TestTable(AsyncTestCase):
                     'balance': 0,
                     'cards': [],
                     'bet': 0,
-                    'has_folded': False
+                    'state': PlayerState.PLAYING.value
                 }
                 for i in range(7)
             ],
@@ -96,7 +96,7 @@ class TestTable(AsyncTestCase):
                     'balance': 0,
                     'cards': [],
                     'bet': 0,
-                    'has_folded': False
+                    'state': PlayerState.PLAYING.value
                 }
                 for i in range(7)
             ],
@@ -124,7 +124,7 @@ class TestTable(AsyncTestCase):
                     'balance': 0,
                     'cards': [],
                     'bet': 0,
-                    'has_folded': False
+                    'state': PlayerState.PLAYING.value
                 }
                 for i in range(8)
             ],
@@ -152,7 +152,7 @@ class TestTable(AsyncTestCase):
                     'balance': 0,
                     'cards': [],
                     'bet': 0,
-                    'has_folded': False
+                    'state': PlayerState.PLAYING.value
                 }
                 for i in range(8)
             ],

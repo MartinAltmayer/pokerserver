@@ -2,17 +2,16 @@ from datetime import datetime
 
 from tornado.testing import gen_test
 
-from pokerserver.database import PlayersRelation
-from pokerserver.database.utils import from_card_list
+from pokerserver.database import PlayersRelation, PlayerState, from_card_list
 from tests.utils import IntegrationTestCase
 
 
 class TestPlayersRelation(IntegrationTestCase):
     PLAYER_ROWS = [
-        (1, 1, 'player1', 10, 'cards1', 5, datetime.fromtimestamp(123), False),
-        (1, 2, 'player2', 20, 'cards2', 10, datetime.fromtimestamp(123), False),
-        (2, 3, 'player3', 20, 'cards3', 10, datetime.fromtimestamp(123), False),
-        (2, 4, 'player4', 30, 'cards3', 0, datetime.fromtimestamp(123), True)
+        (1, 1, 'player1', 10, 'cards1', 5, datetime.fromtimestamp(123), PlayerState.PLAYING.value),
+        (1, 2, 'player2', 20, 'cards2', 10, datetime.fromtimestamp(123), PlayerState.PLAYING.value),
+        (2, 3, 'player3', 20, 'cards3', 10, datetime.fromtimestamp(123), PlayerState.PLAYING.value),
+        (2, 4, 'player4', 30, 'cards3', 0, datetime.fromtimestamp(123), PlayerState.FOLDED.value)
     ]
     PLAYER_DATA = [{
         'table_id': table_id,
@@ -22,8 +21,8 @@ class TestPlayersRelation(IntegrationTestCase):
         'cards': from_card_list(cards),
         'bet': bet,
         'last_seen': last_seen,
-        'has_folded': has_folded
-    } for table_id, position, name, balance, cards, bet, last_seen, has_folded in PLAYER_ROWS]
+        'state': PlayerState(state)
+    } for table_id, position, name, balance, cards, bet, last_seen, state in PLAYER_ROWS]
 
     async def create_players(self):
         for fields in self.PLAYER_ROWS:
@@ -81,8 +80,8 @@ class TestPlayersRelation(IntegrationTestCase):
 
     @gen_test
     async def test_set_balance(self):
-        await PlayersRelation.add_player(*self.PLAYER_ROWS[0])
         player_data = self.PLAYER_DATA[0]
+        await PlayersRelation.add_player(**player_data)
         new_balance = player_data['balance'] + 100
         await PlayersRelation.set_balance(player_data['name'], new_balance)
 
@@ -91,8 +90,8 @@ class TestPlayersRelation(IntegrationTestCase):
 
     @gen_test
     async def test_set_balance_and_bet(self):
-        await PlayersRelation.add_player(*self.PLAYER_ROWS[0])
         player_data = self.PLAYER_DATA[0]
+        await PlayersRelation.add_player(**player_data)
         new_balance = player_data['balance'] + 100
         new_bet = player_data['bet'] + 20
         await PlayersRelation.set_balance_and_bet(player_data['name'], new_balance, new_bet)
@@ -103,8 +102,8 @@ class TestPlayersRelation(IntegrationTestCase):
 
     @gen_test
     async def test_set_cards(self):
-        await PlayersRelation.add_player(*self.PLAYER_ROWS[0])
         player_data = self.PLAYER_DATA[0]
+        await PlayersRelation.add_player(**player_data)
         cards = ['As', '2h']
         assert cards != player_data['cards']
         await PlayersRelation.set_cards(player_data['name'], cards)
@@ -113,15 +112,15 @@ class TestPlayersRelation(IntegrationTestCase):
         self.assertEqual(cards, player['cards'])
 
     @gen_test
-    async def test_set_has_folded(self):
-        await PlayersRelation.add_player(*self.PLAYER_ROWS[0])
+    async def test_set_state(self):
         player_data = self.PLAYER_DATA[0]
-        assert not player_data['has_folded']
+        await PlayersRelation.add_player(**player_data)
+        self.assertEqual(player_data['state'], PlayerState.PLAYING)
 
-        await PlayersRelation.set_has_folded(player_data['name'], True)
+        await PlayersRelation.set_state(player_data['name'], PlayerState.FOLDED)
 
         player = await PlayersRelation.load_by_name(player_data['name'])
-        self.assertTrue(player['has_folded'])
+        self.assertEqual(player['state'], PlayerState.FOLDED)
 
     @gen_test
     async def test_reset_bets(self):
@@ -134,13 +133,13 @@ class TestPlayersRelation(IntegrationTestCase):
             self.assertEqual(0, player['bet'])
 
     @gen_test
-    async def test_reset_bets_and_has_folded(self):
+    async def test_reset_bets_and_state(self):
         assert any(data['bet'] != 0 and data['table_id'] == 2 for data in self.PLAYER_DATA)
-        assert any(data['has_folded'] and data['table_id'] == 2 for data in self.PLAYER_DATA)
+        assert any(data['state'] == PlayerState.FOLDED and data['table_id'] == 2 for data in self.PLAYER_DATA)
         await self.create_players()
-        await PlayersRelation.reset_bets_and_has_folded(2)
+        await PlayersRelation.reset_bets_and_state(2)
 
         players = await PlayersRelation.load_by_table_id(2)
         for player in players:
             self.assertEqual(0, player['bet'])
-            self.assertFalse(player['has_folded'])
+            self.assertEqual(player['state'], PlayerState.PLAYING)

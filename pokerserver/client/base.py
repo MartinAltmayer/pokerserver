@@ -1,4 +1,5 @@
 import json
+from enum import Enum
 from urllib.error import HTTPError
 from urllib.request import urlopen
 
@@ -36,15 +37,21 @@ class Table:
 
 
 class Player:
-    def __init__(self, name, position, balance, bet, cards, has_folded, table_id):
+    def __init__(self, name, position, balance, bet, cards, state, table_id):
         # pylint: disable=too-many-arguments
         self.name = name
         self.position = int(position)
         self.balance = int(balance)
         self.bet = int(bet)
         self.cards = cards
-        self.has_folded = bool(has_folded)
+        self.state = PlayerState(state)
         self.table_id = int(table_id)
+
+
+class PlayerState(Enum):
+    PLAYING = 0
+    FOLDED = 1
+    ALL_IN = 2
 
 
 class BaseClient:

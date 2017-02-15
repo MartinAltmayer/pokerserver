@@ -5,7 +5,7 @@ from uuid import uuid4
 
 from tornado.testing import gen_test
 
-from pokerserver.database.uuids import UUIDsRelation
+from pokerserver.database import PlayerState, UUIDsRelation
 from pokerserver.models import Player, NotYourTurnError, PositionOccupiedError, InvalidTurnError
 from tests.utils import IntegrationHttpTestCase, return_done_future, create_table
 
@@ -49,7 +49,7 @@ class TestTableController(IntegrationHttpTestCase):
                 'name': 'a',
                 'bet': 0,
                 'position': 1,
-                'has_folded': False
+                'state': PlayerState.PLAYING.value
             }, {
                 'table_id': 1,
                 'balance': 0,
@@ -57,7 +57,7 @@ class TestTableController(IntegrationHttpTestCase):
                 'name': 'b',
                 'bet': 0,
                 'position': 2,
-                'has_folded': False
+                'state': PlayerState.PLAYING.value
             }, {
                 'table_id': 1,
                 'balance': 0,
@@ -65,7 +65,7 @@ class TestTableController(IntegrationHttpTestCase):
                 'name': 'c',
                 'bet': 0,
                 'position': 5,
-                'has_folded': False
+                'state': PlayerState.PLAYING.value
             }],
             'side_pots': [],
             'small_blind': 1
@@ -93,7 +93,7 @@ class TestTableController(IntegrationHttpTestCase):
                 'name': 'a',
                 'bet': 0,
                 'position': 1,
-                'has_folded': False
+                'state': PlayerState.PLAYING.value
             }, {
                 'table_id': 1,
                 'balance': 0,
@@ -101,7 +101,7 @@ class TestTableController(IntegrationHttpTestCase):
                 'name': 'b',
                 'bet': 0,
                 'position': 2,
-                'has_folded': False
+                'state': PlayerState.PLAYING.value
             }, {
                 'table_id': 1,
                 'balance': 0,
@@ -109,7 +109,7 @@ class TestTableController(IntegrationHttpTestCase):
                 'name': 'c',
                 'bet': 0,
                 'position': 5,
-                'has_folded': False
+                'state': PlayerState.PLAYING.value
             }],
             'side_pots': [],
             'small_blind': 1
@@ -137,7 +137,7 @@ class TestTableController(IntegrationHttpTestCase):
                 'name': 'a',
                 'bet': 0,
                 'position': 1,
-                'has_folded': False
+                'state': PlayerState.PLAYING.value
             }, {
                 'table_id': 1,
                 'balance': 0,
@@ -145,7 +145,7 @@ class TestTableController(IntegrationHttpTestCase):
                 'name': 'b',
                 'bet': 0,
                 'position': 2,
-                'has_folded': False
+                'state': PlayerState.PLAYING.value
             }, {
                 'table_id': 1,
                 'balance': 0,
@@ -153,7 +153,7 @@ class TestTableController(IntegrationHttpTestCase):
                 'name': 'c',
                 'bet': 0,
                 'position': 5,
-                'has_folded': False
+                'state': PlayerState.PLAYING.value
             }],
             'side_pots': [],
             'small_blind': 1

@@ -3,7 +3,7 @@ from unittest.mock import patch
 
 from tornado.testing import gen_test
 
-from pokerserver.database.database import DuplicateKeyError
+from pokerserver.database import DuplicateKeyError
 from tests.utils import IntegrationHttpTestCase, return_done_future
 
 

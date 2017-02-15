@@ -3,8 +3,7 @@ from datetime import datetime
 from nose.tools import nottest
 from tornado.testing import gen_test
 
-from pokerserver.database import Database, DbException, DuplicateKeyError
-from pokerserver.database.database import convert_datetime
+from pokerserver.database import Database, DbException, DuplicateKeyError, convert_datetime
 from tests.utils import IntegrationTestCase
 
 
