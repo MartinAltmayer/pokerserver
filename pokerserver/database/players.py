@@ -21,7 +21,8 @@ class PlayersRelation(Relation):
             bet INT NOT NULL,
             last_seen TEXT NOT NULL,
             state INT NOT NULL,
-            PRIMARY KEY (table_id, position)
+            PRIMARY KEY (table_id, position),
+            UNIQUE (table_id, name)
         )
     """
 
