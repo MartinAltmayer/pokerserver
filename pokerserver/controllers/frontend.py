@@ -8,9 +8,6 @@ class IndexController(RequestHandler):
         self.write(HTML)
 
 
-
-
-
 HTML = """<!doctype html>
 <html>
   <head>
