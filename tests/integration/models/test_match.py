@@ -1,18 +1,16 @@
-# pylint: disable=no-self-use
+# pylint: disable=no-self-use, too-many-lines
 import asyncio
 from asyncio.tasks import gather
 from unittest import TestCase
-from unittest.mock import patch, Mock, call, ANY
+from unittest.mock import ANY, Mock, call, patch
 from uuid import uuid4
 
 from tornado.testing import gen_test
 
 from pokerserver.configuration import ServerConfig
-from pokerserver.database import clear_relations, Database, TableConfig, PlayersRelation, PlayerState, TablesRelation
-from pokerserver.models import (
-    Player, get_all_cards, Match, Table, NotYourTurnError, PositionOccupiedError,
-    InsufficientBalanceError, InvalidBetError, InvalidTurnError, Round
-)
+from pokerserver.database import Database, PlayerState, PlayersRelation, TableConfig, TablesRelation, clear_relations
+from pokerserver.models import (InsufficientBalanceError, InvalidBetError, InvalidTurnError, Match, NotYourTurnError,
+                                Player, PositionOccupiedError, Round, Table, get_all_cards)
 from tests.utils import IntegrationTestCase, create_table, return_done_future
 
 
@@ -187,10 +185,8 @@ class TestStartHand(IntegrationTestCase):
         self.assertCountEqual(cards[-6:-4], table.players[2].cards)
         self.assertCountEqual(cards[:-6], table.remaining_deck)
 
-    @patch('pokerserver.database.players.PlayersRelation.set_state', side_effect=return_done_future())
-    @patch('pokerserver.database.players.PlayersRelation.set_balance_and_bet', side_effect=return_done_future())
     @gen_test
-    async def test_pay_blinds(self, set_balance_and_bet_mock, set_state_mock):
+    async def test_pay_blinds(self):
         table_id = 1
         balance = 100
         players = [
@@ -203,36 +199,85 @@ class TestStartHand(IntegrationTestCase):
 
         await match.pay_blinds(players[0], players[1])
 
-        set_balance_and_bet_mock.assert_has_calls([
-            call('small_blind', balance - table.config.small_blind, table.config.small_blind),
-            call('big_blind', balance - table.config.big_blind, table.config.big_blind)
-        ])
-        self.assertFalse(set_state_mock.called)
+        small_blind_player = await Player.load_by_name(players[0].name)
+        self.assertEqual(99, small_blind_player.balance)
+        self.assertEqual(1, small_blind_player.bet)
+        self.assertEqual(PlayerState.PLAYING, small_blind_player.state)
 
-    @patch('pokerserver.database.players.PlayersRelation.set_state', side_effect=return_done_future())
-    @patch('pokerserver.database.players.PlayersRelation.set_balance_and_bet', side_effect=return_done_future())
+        big_blind_player = await Player.load_by_name(players[1].name)
+        self.assertEqual(98, big_blind_player.balance)
+        self.assertEqual(2, big_blind_player.bet)
+        self.assertEqual(PlayerState.PLAYING, big_blind_player.state)
+
+        table = await Table.load_by_name(table.name)
+        self.assertEqual(1, len(table.pots))
+        self.assertEqual(3, table.pots[0].amount)
+        self.assertEqual({1, 2}, table.pots[0].positions)
+
     @gen_test
-    async def test_pay_blinds_all_in(self, set_balance_and_bet_mock, set_state_mock):
+    async def test_pay_blinds_small_blind_all_in(self):
         table_id = 1
-        balance = 1
+        small_blind_balance = 1
+        big_blind_balance = 3
+        dealer_balance = 3
         players = [
-            Player(table_id, 1, 'small_blind', balance, [], 0),
-            Player(table_id, 2, 'big_blind', balance, [], 0),
-            Player(table_id, 3, 'no_blind', balance, [], 0)
+            Player(table_id, 1, 'small_blind', small_blind_balance, [], 0),
+            Player(table_id, 2, 'big_blind', big_blind_balance, [], 0),
+            Player(table_id, 3, 'no_blind', dealer_balance, [], 0)
+        ]
+        table = await create_table(table_id=table_id, players=players)
+        players = sorted(table.players, key=lambda player: player.position)
+        match = Match(table)
+
+        await match.pay_blinds(players[0], players[1])
+
+        small_blind_player = await Player.load_by_name(players[0].name)
+        self.assertEqual(0, small_blind_player.balance)
+        self.assertEqual(1, small_blind_player.bet)
+        self.assertEqual(PlayerState.ALL_IN, small_blind_player.state)
+
+        big_blind_player = await Player.load_by_name(players[1].name)
+        self.assertEqual(1, big_blind_player.balance)
+        self.assertEqual(2, big_blind_player.bet)
+        self.assertEqual(PlayerState.PLAYING, big_blind_player.state)
+
+        table = await Table.load_by_name(table.name)
+        self.assertEqual(2, len(table.pots))
+        self.assertEqual(2, table.pots[0].amount)
+        self.assertEqual({1, 2}, table.pots[0].positions)
+        self.assertEqual(1, table.pots[1].amount)
+        self.assertEqual({2}, table.pots[1].positions)
+
+    @gen_test
+    async def test_pay_blinds_big_blind_all_in(self):
+        table_id = 1
+        small_blind_balance = 3
+        big_blind_balance = 1
+        dealer_balance = 3
+        players = [
+            Player(table_id, 1, 'small_blind', small_blind_balance, [], 0),
+            Player(table_id, 2, 'big_blind', big_blind_balance, [], 0),
+            Player(table_id, 3, 'no_blind', dealer_balance, [], 0)
         ]
         table = await create_table(table_id=table_id, players=players)
         match = Match(table)
 
         await match.pay_blinds(players[0], players[1])
 
-        set_balance_and_bet_mock.assert_has_calls([
-            call('small_blind', balance - table.config.small_blind, table.config.small_blind),
-            call('big_blind', 0, balance)
-        ])
-        set_state_mock.assert_has_calls([
-            call('small_blind', PlayerState.ALL_IN),
-            call('big_blind', PlayerState.ALL_IN)
-        ])
+        small_blind_player = await Player.load_by_name(players[0].name)
+        self.assertEqual(2, small_blind_player.balance)
+        self.assertEqual(1, small_blind_player.bet)
+        self.assertEqual(PlayerState.PLAYING, small_blind_player.state)
+
+        big_blind_player = await Player.load_by_name(players[1].name)
+        self.assertEqual(0, big_blind_player.balance)
+        self.assertEqual(1, big_blind_player.bet)
+        self.assertEqual(PlayerState.ALL_IN, big_blind_player.state)
+
+        table = await Table.load_by_name(table.name)
+        self.assertEqual(1, len(table.pots))
+        self.assertEqual(2, table.pots[0].amount)
+        self.assertEqual({1, 2}, table.pots[0].positions)
 
     @patch('random.choice')
     @gen_test
@@ -268,7 +313,15 @@ class TestStartHand(IntegrationTestCase):
         self.assertEqual([], table.open_cards)
 
 
-class BettingTestCase(IntegrationTestCase):
+class PotChecker(IntegrationTestCase):
+    async def assert_pots(self, table_name, amounts=None):
+        if amounts is None:
+            amounts = [0]
+        table = await Table.load_by_name(table_name)
+        self.assertEqual(amounts, [pot.amount for pot in table.pots])
+
+
+class BettingTestCase(PotChecker):
     async def async_setup(self, balances=(2, 2, 2, 2), bets=(0, 0, 0, 0)):
         assert len(balances) == len(bets)
 
@@ -276,7 +329,8 @@ class BettingTestCase(IntegrationTestCase):
             Player(table_id=1, position=index + 1, name='John{}'.format(index), cards=[], balance=balance, bet=bet)
             for index, (balance, bet) in enumerate(zip(balances, bets))
         ]
-        self.table = await create_table(players=self.players, main_pot=sum(bets))
+        self.table = await create_table(players=self.players,
+                                        pots=[{'bets': {(index + 1): bet for index, bet in enumerate(bets)}}])
         await self.table.set_dealer(self.players[0])
         if len(bets) == 2:
             await self.table.set_current_player(self.players[0], 'sometoken')
@@ -289,8 +343,10 @@ class TestFold(BettingTestCase):
     @gen_test
     async def test_fold_invalid_player(self):
         await self.async_setup()
+        await self.assert_pots(self.table.name)
         with self.assertRaises(NotYourTurnError):
             await self.match.fold(self.players[1].name)
+        await self.assert_pots(self.table.name)
 
     @gen_test
     async def test_fold_sets_state_to_folded(self):
@@ -308,99 +364,128 @@ class TestFold(BettingTestCase):
         table = await Table.load_by_name(self.table.name)
         self.assertEqual(self.players[0].name, table.current_player.name)
 
+    @gen_test
+    async def test_fold_keeps_pots(self):
+        await self.async_setup()
+        await self.assert_pots(self.table.name)
+        await self.match.fold(self.players[3].name)
+        await self.assert_pots(self.table.name)
+
 
 class TestCall(BettingTestCase):
     @gen_test
     async def test_call_invalid_player(self):
         await self.async_setup()
+        await self.assert_pots(self.table.name)
         with self.assertRaises(NotYourTurnError):
             await self.match.call(self.players[1].name)
+
+        await self.assert_pots(self.table.name)
 
     @gen_test
     async def test_call_changes_current_player(self):
         await self.async_setup(bets=[0, 1, 2, 0])
+        await self.assert_pots(self.table.name, amounts=[3])
         await self.match.call(self.players[3].name)
         table = await Table.load_by_name(self.table.name)
         self.assertEqual(self.players[0].name, table.current_player.name)
 
+        await self.assert_pots(self.table.name, amounts=[5])
+
     @gen_test
     async def test_call_sufficient_balance(self):
         await self.async_setup(balances=[0, 1, 2, 12], bets=[0, 1, 5, 0])
+        await self.assert_pots(self.table.name, amounts=[6])
         await self.match.call(self.players[3].name)
         player = await Player.load_by_name(self.players[3].name)
         self.assertEqual(5, player.bet)
         self.assertEqual(7, player.balance)
         self.assertEqual(PlayerState.PLAYING, player.state)
 
+        await self.assert_pots(self.table.name, amounts=[11])
+
     @gen_test
     async def test_call_insufficient_balance(self):
         await self.async_setup(balances=[0, 1, 2, 10], bets=[3, 15, 0, 3])
+        await self.assert_pots(self.table.name, amounts=[21])
         await self.match.call(self.players[3].name)
         player = await Player.load_by_name(self.players[3].name)
         self.assertEqual(13, player.bet)
         self.assertEqual(0, player.balance)
         self.assertEqual(PlayerState.ALL_IN, player.state)
-
-        # Check for side pots here
+        await self.assert_pots(self.table.name, amounts=[29, 2])
 
     @gen_test
     async def test_call_without_bet(self):
         await self.async_setup()
+        await self.assert_pots(self.table.name)
         with self.assertRaises(NotYourTurnError):
             await self.match.call(self.players[0].name)
+        await self.assert_pots(self.table.name)
 
     @gen_test
     async def test_call_without_higher_bet(self):
         await self.async_setup(balances=[10, 10, 10, 10], bets=[5, 5, 4, 4])
+        await self.assert_pots(self.table.name, amounts=[18])
         with self.assertRaises(InvalidTurnError):
             await self.match.call(self.players[0].name)
+        await self.assert_pots(self.table.name, amounts=[18])
 
     @gen_test
     async def test_call_heads_up(self):
         await self.async_setup(balances=[1, 0], bets=[1, 2])
+        await self.assert_pots(self.table.name, amounts=[3])
         await self.match.call(self.players[0].name)
         player = await Player.load_by_name(self.players[0].name)
         self.assertEqual(2, player.bet)
         self.assertEqual(0, player.balance)
+        await self.assert_pots(self.table.name, amounts=[4])
 
     @patch('pokerserver.models.match.Match.next_round', side_effect=return_done_future())
     @gen_test
     async def test_call_heads_up_big_blind(self, next_round_mock):
         await self.async_setup(balances=[1, 0], bets=[1, 2])
+        await self.assert_pots(self.table.name, amounts=[3])
         await self.match.call(self.players[0].name)
         await self.match.check(self.players[1].name)
 
         player = await Player.load_by_name(self.players[1].name)
         self.assertEqual(2, player.bet)
         self.assertEqual(0, player.balance)
+        await self.assert_pots(self.table.name, amounts=[4])
         next_round_mock.assert_called_once_with()
 
     @gen_test
     async def test_call_invalid_player_heads_up(self):
         await self.async_setup(balances=[2, 2], bets=[0, 0])
+        await self.assert_pots(self.table.name)
         with self.assertRaises(NotYourTurnError):
             await self.match.call(self.players[1].name)
+        await self.assert_pots(self.table.name)
 
     @gen_test
     async def test_call_increases_pot(self):
         await self.async_setup(balances=[0, 1, 2, 12], bets=[0, 1, 5, 0])
-        self.assertEqual(6, self.table.main_pot)
-
+        await self.assert_pots(self.table.name, amounts=[6])
+        self.assertEqual(1, len(self.table.pots))
+        self.assertEqual(6, self.table.pots[0].amount)
         await self.match.call(self.players[3].name)
-        table = await Table.load_by_name(self.table.name)
-        self.assertEqual(11, table.main_pot)
+        await self.assert_pots(self.table.name, amounts=[11])
 
 
 class TestCheck(BettingTestCase):
     @gen_test
     async def test_check_invalid_player(self):
         await self.async_setup()
+        await self.assert_pots(self.table.name)
         with self.assertRaises(NotYourTurnError):
             await self.match.check(self.players[2].name)
+        await self.assert_pots(self.table.name)
 
     @gen_test
     async def test_check_changes_current_player(self):
         await self.async_setup(bets=[0, 0, 0, 0])
+        await self.assert_pots(self.table.name)
         await self.match.check(self.players[3].name)
         table = await Table.load_by_name(self.table.name)
         self.assertEqual(self.players[0].name, table.current_player.name)
@@ -408,56 +493,72 @@ class TestCheck(BettingTestCase):
     @gen_test
     async def test_check_after_bet(self):
         await self.async_setup(bets=(1, 2, 1, 0))
+        await self.assert_pots(self.table.name, amounts=[4])
         with self.assertRaises(InvalidTurnError):
             await self.match.check(self.players[3].name)
+        await self.assert_pots(self.table.name, amounts=[4])
 
     @gen_test
     async def test_check(self):
         await self.async_setup(bets=[0, 0, 0, 0], balances=[2, 2, 2, 2])
+        await self.assert_pots(self.table.name)
         await self.match.check(self.players[3].name)
         player = await Player.load_by_name(self.players[3].name)
         self.assertEqual(0, player.bet)
         self.assertEqual(2, player.balance)
+        await self.assert_pots(self.table.name)
 
     @gen_test
     async def test_check_heads_up(self):
         await self.async_setup(balances=[2, 2], bets=[0, 0])
+        await self.assert_pots(self.table.name)
         await self.match.check(self.players[0].name)
         player = await Player.load_by_name(self.players[0].name)
         self.assertEqual(0, player.bet)
         self.assertEqual(2, player.balance)
+        await self.assert_pots(self.table.name)
 
     @gen_test
     async def test_check_invalid_player_heads_up(self):
         await self.async_setup(balances=[2, 2], bets=[0, 0])
+        await self.assert_pots(self.table.name)
         with self.assertRaises(NotYourTurnError):
             await self.match.check(self.players[1].name)
+        await self.assert_pots(self.table.name)
 
 
 class TestRaise(BettingTestCase):
     @gen_test
     async def test_raise_invalid_player(self):
         await self.async_setup()
+        await self.assert_pots(self.table.name)
         with self.assertRaises(NotYourTurnError):
             await self.match.raise_bet(self.players[1].name, 1)
+        await self.assert_pots(self.table.name)
 
     @gen_test
     async def test_raise_amount_too_low(self):
         await self.async_setup(bets=[2, 5, 0, 0])
+        await self.assert_pots(self.table.name, amounts=[7])
         with self.assertRaises(InvalidBetError):
             await self.match.raise_bet(self.players[3].name, 2)
+        await self.assert_pots(self.table.name, amounts=[7])
 
     @gen_test
     async def test_raise_negative(self):
         await self.async_setup()
+        await self.assert_pots(self.table.name)
         with self.assertRaises(InvalidBetError):
             await self.match.raise_bet(self.players[3].name, -1)
+        await self.assert_pots(self.table.name)
 
     @gen_test
     async def test_raise_insufficient_balance(self):
         await self.async_setup(balances=[9, 0, 0, 0])
+        await self.assert_pots(self.table.name)
         with self.assertRaises(InsufficientBalanceError):
             await self.match.raise_bet(self.players[3].name, 10)
+        await self.assert_pots(self.table.name)
 
     @gen_test
     async def test_raise_changes_current_player(self):
@@ -469,45 +570,57 @@ class TestRaise(BettingTestCase):
     @gen_test
     async def test_raise(self):
         await self.async_setup(balances=[0, 0, 0, 10])
+        await self.assert_pots(self.table.name)
         await self.match.raise_bet(self.players[3].name, 9)
         player = await Player.load_by_name(self.players[3].name)
         self.assertEqual(9, player.bet)
         self.assertEqual(1, player.balance)
         self.assertEqual(PlayerState.PLAYING, player.state)
+        await self.assert_pots(self.table.name, amounts=[9])
 
     @gen_test
     async def test_raise_all_in(self):
         await self.async_setup(balances=[0, 0, 0, 10])
+        await self.assert_pots(self.table.name)
         await self.match.raise_bet(self.players[3].name, 10)
         player = await Player.load_by_name(self.players[3].name)
         self.assertEqual(10, player.bet)
         self.assertEqual(0, player.balance)
         self.assertEqual(PlayerState.ALL_IN, player.state)
-
-    # Add a test for the case that a raise creates side pots.
+        await self.assert_pots(self.table.name, amounts=[10])
 
     @gen_test
     async def test_raise_heads_up(self):
         await self.async_setup(balances=[10, 0], bets=[0, 0])
+        await self.assert_pots(self.table.name)
         await self.match.raise_bet(self.players[0].name, 9)
         player = await Player.load_by_name(self.players[0].name)
         self.assertEqual(9, player.bet)
         self.assertEqual(1, player.balance)
+        await self.assert_pots(self.table.name, amounts=[9])
 
     @gen_test
     async def test_raise_invalid_player_heads_up(self):
         await self.async_setup(balances=[2, 2], bets=[0, 0])
+        await self.assert_pots(self.table.name)
         with self.assertRaises(NotYourTurnError):
             await self.match.raise_bet(self.players[1].name, 1)
+        await self.assert_pots(self.table.name)
 
     @gen_test
     async def test_raise_increases_pot(self):
         await self.async_setup(balances=[0, 0, 0, 10])
-        self.assertEqual(0, self.table.main_pot)
+        await self.assert_pots(self.table.name)
+        await self.match.raise_bet(self.players[3].name, 8)
+        await self.assert_pots(self.table.name, amounts=[8])
 
+    @gen_test
+    async def test_raise_creates_side_pot(self):
+        await self.async_setup(balances=[20, 0, 0, 10])
+        await self.assert_pots(self.table.name)
         await self.match.raise_bet(self.players[3].name, 10)
-        table = await Table.load_by_name(self.table.name)
-        self.assertEqual(10, table.main_pot)
+        await self.match.raise_bet(self.players[0].name, 20)
+        await self.assert_pots(self.table.name, amounts=[20, 10])
 
 
 class TestFindNextPlayer(TestCase):
@@ -578,7 +691,7 @@ class TestFindNextPlayer(TestCase):
         self.assertEqual(players[1], self.match.find_next_player(players[0]))
 
 
-class TestNextRound(IntegrationTestCase):
+class TestNextRound(PotChecker):
     async def create_match(self, **kwargs):
         table_id = 1
         players = [
@@ -656,6 +769,7 @@ class TestShowDown(IntegrationTestCase):
         table = await create_table(
             table_id=table_id, players=players, start_balance=self.start_balance,
             dealer=players[0].name,
+            pots=[{'bets': {1: 4, 2: 2, 3: 1}}],
             **kwargs
         )
         return Match(table)
@@ -664,7 +778,7 @@ class TestShowDown(IntegrationTestCase):
     @patch('pokerserver.models.match.Match.start_hand', side_effect=return_done_future())
     @gen_test
     async def test_distribute_pot_single_winner(self, start_hand_mock, winning_players_mock):
-        match = await self.create_match(main_pot=7)
+        match = await self.create_match()
         winning_players_mock.return_value = [match.table.players[1]]
         await match.show_down()
         table = await Table.load_by_name(match.table.name)
@@ -675,7 +789,7 @@ class TestShowDown(IntegrationTestCase):
     @patch('pokerserver.models.match.Match.start_hand', side_effect=return_done_future())
     @gen_test
     async def test_distribute_pot_several_winners(self, start_hand_mock, winning_players_mock):
-        match = await self.create_match(main_pot=7)
+        match = await self.create_match()
         winning_players_mock.return_value = match.table.players[1:]
         await match.show_down()
         table = await Table.load_by_name(match.table.name)
@@ -686,12 +800,13 @@ class TestShowDown(IntegrationTestCase):
     @patch('pokerserver.models.match.Match.start_hand', side_effect=return_done_future())
     @gen_test
     async def test_reset(self, _, winning_players_mock):
-        match = await self.create_match(main_pot=2)
+        match = await self.create_match()
         winning_players_mock.return_value = [match.table.players[1]]
         await match.show_down()
 
         table = await Table.load_by_name(match.table.name)
-        self.assertEqual(0, table.main_pot)
+        self.assertEqual(1, len(table.pots))
+        self.assertEqual(0, table.pots[0].amount)
         for player in table.players:
             self.assertEqual(0, player.bet)
             self.assertEqual(PlayerState.PLAYING, player.state)
@@ -782,7 +897,8 @@ class TestSetPlayerActive(IntegrationTestCase):
     timeout = 0.001
     wait_timeout = 10 * timeout
 
-    async def create_match(self):
+    @classmethod
+    async def create_match(cls):
         table_id = 1
         players = [
             Player(table_id, 1, 'a', 10, [], 0),
@@ -794,7 +910,7 @@ class TestSetPlayerActive(IntegrationTestCase):
         table = await create_table(table_id=table_id, players=players, small_blind=10, big_blind=20)
 
         match = Match(table)
-        ServerConfig.set(timeout=self.timeout)
+        ServerConfig.set(timeout=cls.timeout)
         match.kick_if_current_player = Mock(side_effect=return_done_future())
         return match
 
@@ -833,7 +949,8 @@ class TestSetPlayerActive(IntegrationTestCase):
 
 
 class TestKickCurrentPlayer(IntegrationTestCase):
-    async def create_match(self):
+    @staticmethod
+    async def create_match():
         table_id = 1
         players = [
             Player(table_id, 1, 'a', 10, [], 0),

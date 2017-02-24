@@ -2,7 +2,7 @@ from asyncio.tasks import gather
 
 from tornado.testing import gen_test
 
-from pokerserver.database import TablesRelation, TableConfig
+from pokerserver.database import TableConfig, TablesRelation
 from tests.utils import IntegrationTestCase
 
 TABLES = [
@@ -12,8 +12,7 @@ TABLES = [
         'config': TableConfig(4, 9, 12, 24, 10),
         'remaining_deck': ['2s', 'Jc', '4h'],
         'open_cards': [],
-        'main_pot': 1000,
-        'side_pots': [],
+        'pots': [{'bets': {1: 250, 2: 250, 5: 500}}],
         'current_player': 'a',
         'current_player_token': None,
         'dealer': 'b',
@@ -25,8 +24,7 @@ TABLES = [
         'config': TableConfig(4, 9, 12, 24, 10),
         'remaining_deck': ['2s', 'Jc', '4h'],
         'open_cards': [],
-        'main_pot': 1000,
-        'side_pots': [],
+        'pots': [{'bets': {1: 250, 2: 250, 5: 500}}],
         'current_player': 'e',
         'current_player_token': None,
         'dealer': 'f',
@@ -38,8 +36,7 @@ TABLES = [
         'config': TableConfig(4, 9, 12, 24, 10),
         'remaining_deck': ['2s', 'Jc', '4h'],
         'open_cards': [],
-        'main_pot': 1000,
-        'side_pots': [],
+        'pots': [{'bets': {1: 250, 2: 250, 5: 500}}],
         'current_player': None,
         'current_player_token': None,
         'dealer': None,
@@ -53,8 +50,8 @@ class TestTablesRelation(IntegrationTestCase):
     @gen_test
     async def test_create_table(self):
         config = TableConfig(4, 30, 12, 24, 10)
-        await TablesRelation.create_table(42, 'Game of Thrones', config, ['2s', 'Jc', '4h'], [], 1000, [],
-                                          "Eddard", "123", "John", False, '')
+        await TablesRelation.create_table(42, 'Game of Thrones', config, ['2s', 'Jc', '4h'], [],
+                                          [{'bets': {}}], "Eddard", "123", "John", False, '')
         tables = await TablesRelation.load_all()
         self.assertEqual(
             tables,
@@ -64,8 +61,7 @@ class TestTablesRelation(IntegrationTestCase):
                 'config': config,
                 'remaining_deck': ['2s', 'Jc', '4h'],
                 'open_cards': [],
-                'main_pot': 1000,
-                'side_pots': [],
+                'pots': [{'bets': {}}],
                 'current_player': 'Eddard',
                 'current_player_token': "123",
                 'dealer': 'John',
@@ -133,15 +129,15 @@ class TestTablesRelation(IntegrationTestCase):
         self.assertEqual(open_cards, table['open_cards'])
 
     @gen_test
-    async def test_set_pot(self):
+    async def test_set_pots(self):
         table_data = TABLES[0]
         await TablesRelation.create_table(**table_data)
-        amount = table_data['main_pot'] + 10
+        table_data['pots'][0]['bets'][6] = 10
 
-        await TablesRelation.set_pot(table_data['table_id'], amount)
+        await TablesRelation.set_pots(table_data['table_id'], table_data['pots'])
 
         table = await TablesRelation.load_table_by_name(table_data['name'])
-        self.assertEqual(amount, table['main_pot'])
+        self.assertEqual(table_data['pots'], table['pots'])
 
     @gen_test
     async def test_add_joined_player(self):

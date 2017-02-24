@@ -1,8 +1,7 @@
-from enum import Enum, unique
 from asyncio import gather
+from enum import Enum, unique
 
-from pokerserver.database import PlayerState
-from pokerserver.database import TablesRelation, PlayersRelation
+from pokerserver.database import PlayerState, PlayersRelation, TablesRelation
 from .player import Player
 
 
@@ -20,9 +19,9 @@ class Round(Enum):
 
 # pylint: disable=too-many-instance-attributes, too-many-public-methods
 class Table:
-    # pylint: disable=too-many-arguments, too-many-locals
+    # pylint: disable=too-many-arguments, too-many-locals, unused-argument
     def __init__(self, table_id, name, config, players=None, remaining_deck=None,
-                 open_cards=None, main_pot=0, side_pots=None, current_player=None, current_player_token=None,  # pylint: disable=unused-argument
+                 open_cards=None, pots=None, current_player=None, current_player_token=None,
                  dealer=None, is_closed=False, joined_players=None):
         self.table_id = table_id
         self.name = name
@@ -30,8 +29,7 @@ class Table:
         self.remaining_deck = remaining_deck or []
         self.players = players or []
         self.open_cards = open_cards or []
-        self.main_pot = main_pot
-        self.side_pots = side_pots or []
+        self.pots = [Pot(**pot) for pot in pots] if pots else [Pot()]
         self.current_player = current_player
         self.dealer = dealer
         self.is_closed = is_closed
@@ -71,7 +69,7 @@ class Table:
         for table_id, table_name in table_ids_and_names:
             await TablesRelation.create_table(
                 table_id=table_id, name=table_name, config=table_config, remaining_deck=[], open_cards=[],
-                main_pot=0, side_pots=[], current_player=None, current_player_token=None, dealer=None,
+                pots=[Pot().to_dict()], current_player=None, current_player_token=None, dealer=None,
                 is_closed=False, joined_players=None
             )
 
@@ -88,8 +86,7 @@ class Table:
             'big_blind': self.config.big_blind,
             'round': self.round.name,
             'open_cards': self.open_cards,
-            'main_pot': self.main_pot,
-            'side_pots': self.side_pots,
+            'pots': [pot.to_dict() for pot in self.pots],
             'current_player': self.current_player.name if self.current_player else None,
             'dealer': self.dealer.name if self.dealer else None,
             'is_closed': self.is_closed,
@@ -194,7 +191,7 @@ class Table:
 
     async def set_dealer(self, dealer):
         self.dealer = dealer
-        await TablesRelation.set_dealer(self.table_id, dealer.name if dealer is not None else None)
+        await TablesRelation.set_dealer(self.table_id, self.dealer.name if self.dealer is not None else None)
 
     async def set_current_player(self, current_player, token):
         player_name = current_player.name if current_player else None
@@ -217,11 +214,41 @@ class Table:
             self.current_player = None
         return is_current_player
 
-    async def set_pot(self, amount):
-        await TablesRelation.set_pot(self.table_id, amount)
+    async def clear_pots(self):
+        self.pots = [Pot()]
+        await self._set_pots()
 
-    async def increase_pot(self, amount):
-        await TablesRelation.set_pot(self.table_id, self.main_pot + amount)
+    async def increase_pot(self, position, bet):
+        for index, pot in enumerate(self.pots.copy()):
+            existing_bet = pot.bet(position)
+            max_bet = pot.max_bet if pot.max_bet > 0 else bet
+            if bet > 0 and existing_bet <= max_bet:
+                required_bet = max_bet - existing_bet
+                if bet >= required_bet:
+                    pot.add_bet(position, required_bet)
+                    bet -= required_bet
+                else:
+                    pot.add_bet(position, bet)
+                    new_pot = pot.split(bet + existing_bet)
+                    self.pots.insert(index + 1, new_pot)
+                    bet = 0
+                    break
+        if bet > 0:
+            if self.has_all_in_players(self.pots[-1], position):
+                self.pots += [Pot()]
+            self.pots[-1].add_bet(position, bet)
+        await self._set_pots()
+
+    def has_all_in_players(self, pot, excluded_position):
+        all_in_positions = {
+            player.position
+            for player in self.players
+            if player.is_all_in() and not player.position == excluded_position
+        }
+        return all_in_positions and not all_in_positions.isdisjoint(pot.positions)
+
+    async def _set_pots(self):
+        await TablesRelation.set_pots(self.table_id, [pot.to_dict() for pot in self.pots])
 
     async def add_player(self, player):
         self.players.append(player)
@@ -239,10 +266,43 @@ class Table:
 
     async def reset_after_hand(self):
         await self.set_cards([], [])
-        await self.set_pot(0)
+        await self.clear_pots()
         await self.set_dealer(None)
 
     async def close(self):
         await gather(*[self.remove_player(player) for player in self.players.copy()])
         self.is_closed = True
         await TablesRelation.close_table(self.table_id)
+
+
+class Pot:
+    def __init__(self, bets=None):
+        self.bets = bets or {}
+
+    @property
+    def amount(self):
+        return sum(self.bets.values(), 0)
+
+    @property
+    def max_bet(self):
+        return max(self.bets.values(), default=0)
+
+    def bet(self, position):
+        return self.bets.get(position, 0)
+
+    def add_bet(self, position, bet):
+        self.bets[position] = self.bet(position) + bet
+
+    @property
+    def positions(self):
+        return set(self.bets.keys())
+
+    def split(self, threshold):
+        bets_in_new_pot = {position: bet - threshold for position, bet in self.bets.items() if bet > threshold}
+        self.bets = {position: min(threshold, bet) for position, bet in self.bets.items()}
+        return Pot(bets_in_new_pot)
+
+    def to_dict(self):
+        return {
+            'bets': self.bets
+        }

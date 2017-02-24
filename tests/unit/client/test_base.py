@@ -50,8 +50,11 @@ class TestBaseClient(TestCase):
             "big_blind": 2,
             "round": "preflop",
             "open_cards": [],
-            "main_pot": 0,
-            "side_pots": [],
+            "pots": [
+                {
+                    "bets": {}
+                }
+            ],
             "current_player": null,
             "dealer": null,
             "is_closed": false,

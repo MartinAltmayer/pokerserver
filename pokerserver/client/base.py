@@ -1,5 +1,5 @@
-import json
 from enum import Enum
+import json
 from urllib.error import HTTPError
 from urllib.request import urlopen
 
@@ -29,11 +29,20 @@ class Table:
     def __init__(self, name, current_player, players, **kwargs):
         self.name = name
         self.current_player = current_player
-        self.players = [Player(**player_data) for player_data in players]
+        self.players = [Player(**player_dict) for player_dict in players]
         self.players.sort(key=lambda p: p.position)
-        self.round = kwargs['round']
-        self.main_pot = kwargs['main_pot']
-        self.open_cards = kwargs['open_cards']
+        self.round = kwargs.get('round')
+        self.pots = [Pot(**pot_dict) for pot_dict in kwargs.get('pots', [])]
+        self.open_cards = kwargs.get('open_cards')
+
+
+class Pot:
+    def __init__(self, bets=None):
+        self.bets = bets or {}
+
+    @property
+    def amount(self):
+        return sum(self.bets.values(), 0)
 
 
 class Player:
