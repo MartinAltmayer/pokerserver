@@ -1,10 +1,11 @@
+from unittest import TestCase
 from unittest.mock import Mock, patch
 
 from nose.tools import assert_equal
 from tornado.testing import AsyncTestCase, gen_test
 
 from pokerserver.database import PlayerState, TableConfig
-from pokerserver.models import Player, Table
+from pokerserver.models import Player, Pot, Table
 from tests.utils import return_done_future
 
 
@@ -14,6 +15,7 @@ class TestTable(AsyncTestCase):
         self.players = [
             Mock(
                 position=position,
+                balance=balance,
                 is_all_in=Mock(return_value=False),
                 to_dict=Mock(return_value={})
             )
@@ -286,3 +288,47 @@ class TestTable(AsyncTestCase):
         self.assertEqual(2, len(self.table.pots))
         self.assertEqual(20, self.table.pots[0].amount)
         self.assertEqual(2, self.table.pots[1].amount)
+
+    @gen_test()
+    async def test_has_all_in_players(self):
+        pot = Pot(bets={1: 10})
+        self.assertFalse(self.table.has_all_in_players(pot, 2))
+
+        self.players[0].is_all_in.return_value = True
+        self.assertTrue(self.table.has_all_in_players(pot, 2))
+        self.assertFalse(self.table.has_all_in_players(pot, 1))
+
+
+class TestPot(TestCase):
+    def setUp(self):
+        self.pot = Pot(bets={1: 1, 2: 2, 3: 0})
+
+    def test_amount(self):
+        self.assertEqual(3, self.pot.amount)
+
+    def test_positions(self):
+        self.assertEqual({1, 2, 3}, self.pot.positions)
+
+    def test_max_bet(self):
+        self.assertEqual(2, self.pot.max_bet)
+
+    def test_bet(self):
+        self.assertEqual(1, self.pot.bet(1))
+        self.assertEqual(2, self.pot.bet(2))
+        self.assertEqual(0, self.pot.bet(3))
+
+    def test_add_bet(self):
+        self.pot.add_bet(4, 10)
+        self.assertEqual({1: 1, 2: 2, 3: 0, 4: 10}, self.pot.bets)
+
+        self.pot.add_bet(1, 9)
+        self.assertEqual({1: 10, 2: 2, 3: 0, 4: 10}, self.pot.bets)
+
+    def test_split(self):
+        new_pot = self.pot.split(1)
+
+        self.assertEqual({1: 1, 2: 1, 3: 0}, self.pot.bets)
+        self.assertEqual({2: 1}, new_pot.bets)
+
+    def test_to_dict(self):
+        self.assertEqual({'bets': {1: 1, 2: 2, 3: 0}}, self.pot.to_dict())

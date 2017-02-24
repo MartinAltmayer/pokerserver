@@ -245,7 +245,7 @@ class Table:
             for player in self.players
             if player.is_all_in() and not player.position == excluded_position
         }
-        return all_in_positions and not all_in_positions.isdisjoint(pot.positions)
+        return len(all_in_positions) > 0 and not all_in_positions.isdisjoint(pot.positions)
 
     async def _set_pots(self):
         await TablesRelation.set_pots(self.table_id, [pot.to_dict() for pot in self.pots])
