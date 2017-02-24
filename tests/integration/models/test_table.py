@@ -1,10 +1,10 @@
-from unittest.mock import patch, call, Mock
+from unittest.mock import Mock, call, patch
 
-from tornado.testing import gen_test, AsyncTestCase
+from tornado.testing import AsyncTestCase, gen_test
 
 from pokerserver.database import TableConfig
-from pokerserver.models import Table, Player
-from tests.utils import return_done_future, create_table, IntegrationTestCase
+from pokerserver.models import Player, Table
+from tests.utils import IntegrationTestCase, create_table, return_done_future
 
 
 class TestTable(AsyncTestCase):
@@ -37,8 +37,7 @@ class TestTable(AsyncTestCase):
                 'config': TableConfig(4, 9, 12, 24, 10),
                 'remaining_deck': 'so many cards',
                 'open_cards': 'turn',
-                'main_pot': 3000,
-                'side_pots': '',
+                'pots': [{'bets': {1: 1000, 2: 1000, 5: 1000}}],
                 'current_player': 'Arthur',
                 'dealer': 'Percival',
                 'is_closed': False
@@ -51,13 +50,13 @@ class TestTable(AsyncTestCase):
         await Table.create_tables(2, config)
         create_table.assert_has_calls([
             call(
-                table_id=3, name='Table2', config=config, remaining_deck=[], open_cards=[], main_pot=0,
-                side_pots=[], current_player=None, current_player_token=None, dealer=None,
+                table_id=3, name='Table2', config=config, remaining_deck=[], open_cards=[],
+                pots=[{'bets': {}}], current_player=None, current_player_token=None, dealer=None,
                 is_closed=False, joined_players=None
             ),
             call(
-                table_id=4, name='Table4', config=config, remaining_deck=[], open_cards=[], main_pot=0,
-                side_pots=[], current_player=None, current_player_token=None, dealer=None,
+                table_id=4, name='Table4', config=config, remaining_deck=[], open_cards=[],
+                pots=[{'bets': {}}], current_player=None, current_player_token=None, dealer=None,
                 is_closed=False, joined_players=None
             )
         ])

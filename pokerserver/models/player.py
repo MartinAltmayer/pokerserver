@@ -84,25 +84,15 @@ class Player:
         await PlayersRelation.reset_bets_and_state(table_id)
 
     async def increase_bet(self, amount):
-        """
-        Increases the bet for amount. If the player does not have sufficient funds, the bet will be increased by his
-        remaining balance and he will be "all in".
-
-        :param amount:
-        :return:
-        """
         assert amount > 0, 'Need to increase bet by more than 0.'
         await PlayersRelation.set_balance_and_bet(self.name, self.balance - amount, self.bet + amount)
         self.balance -= amount
         self.bet += amount
-        return amount
-
-    async def set_balance(self, balance):
-        assert balance >= 0, 'Insufficient balance.'
-        await PlayersRelation.set_balance(self.name, balance)
-        self.balance = balance
+        if self.balance == 0:
+            await self.all_in()
 
     async def increase_balance(self, increase):
+        assert increase >= 0, 'the balance increase must not be negative'
         await PlayersRelation.set_balance(self.name, self.balance + increase)
         self.balance += increase
 
@@ -117,9 +107,15 @@ class Player:
     async def all_in(self):
         await self.set_state(PlayerState.ALL_IN)
 
+    def is_all_in(self):
+        return self.state == PlayerState.ALL_IN
+
     async def set_state(self, state):
         self.state = state
         await PlayersRelation.set_state(self.name, self.state)
 
     def __repr__(self):
         return '<Player {}>'.format(self.name)
+
+    def __str__(self):
+        return self.name

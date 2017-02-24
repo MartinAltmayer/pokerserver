@@ -1,12 +1,11 @@
+from asyncio import get_event_loop, sleep
+from asyncio.tasks import gather
 import logging
 import random
-from asyncio import sleep, get_event_loop
-from asyncio.tasks import gather
 from uuid import uuid4
 
 from pokerserver.configuration import ServerConfig
-from pokerserver.database import DuplicateKeyError, StatsRelation
-from pokerserver.database import PlayerState
+from pokerserver.database import DuplicateKeyError, PlayerState, StatsRelation
 from .card import get_all_cards
 from .player import Player
 from .ranking import determine_winning_players
@@ -109,6 +108,7 @@ class Match:  # pylint: disable=too-many-public-methods
         assert len(self.table.players) >= 2
         small_blind_player, big_blind_player, under_the_gun = self.find_blind_players(dealer)
         await self.table.set_dealer(dealer)
+        await self.table.clear_pots()
         await self.reset_bets()
         await self.pay_blinds(small_blind_player, big_blind_player)
         await self.distribute_cards()
@@ -134,21 +134,16 @@ class Match:  # pylint: disable=too-many-public-methods
         return start_player
 
     async def pay_blinds(self, small_blind_player, big_blind_player):
-        # If a player cannot pay a blind, side pots should be created here.
-        pot = await self.make_player_pay(small_blind_player, self.table.config.small_blind)
-        pot += await self.make_player_pay(big_blind_player, self.table.config.big_blind)
-        await self.table.set_pot(pot)
+        assert small_blind_player in self.table.players
+        assert big_blind_player in self.table.players
+        await self.make_player_pay(small_blind_player, self.table.config.small_blind)
+        await self.make_player_pay(big_blind_player, self.table.config.big_blind)
 
     async def make_player_pay(self, player, amount):
-        if self.can_pay_amount(player, amount):
-            await player.increase_bet(amount)
-            paid_amount = amount
-        else:
-            await player.increase_bet(player.balance)
-            paid_amount = player.balance
-        if player.balance == 0:
-            await player.all_in()
-        return paid_amount
+        assert amount > 0, 'amount to pay must be greater than 0'
+        paid_amount = amount if self.can_pay_amount(player, amount) else player.balance
+        await player.increase_bet(paid_amount)
+        await self.table.increase_pot(player.position, paid_amount)
 
     @staticmethod
     def can_pay_amount(player, amount):
@@ -206,7 +201,7 @@ class Match:  # pylint: disable=too-many-public-methods
         await self.set_player_active(next_player)
 
     async def show_down(self):
-        await self.distribute_pot()
+        await self.distribute_pots()
         await Player.reset_after_hand(self.table.table_id)
         old_dealer = self.table.dealer
         await self.table.reset_after_hand()
@@ -229,17 +224,22 @@ class Match:  # pylint: disable=too-many-public-methods
         else:
             await self.close_table()
 
-    async def distribute_pot(self):
+    async def distribute_pots(self):
         active_players = self.table.active_players()
-        winning_players = determine_winning_players(active_players, self.table.open_cards)
 
-        # Side pots are missing here!
+        for pot in self.table.pots:
+            active_players_for_pot = [player for player in active_players if player.position in pot.bets.keys()]
+            await self.distribute_pot(pot, active_players_for_pot)
+
+    async def distribute_pot(self, pot, players):
+        winning_players = determine_winning_players(players, self.table.open_cards)
+
         for player in winning_players:
-            await player.increase_balance(self.table.main_pot // len(winning_players))
+            await player.increase_balance(pot.amount // len(winning_players))
 
-        rest = self.table.main_pot % len(winning_players)
+        rest = pot.amount % len(winning_players)
         if rest != 0:
-            player = self.table.player_left_of(self.table.dealer, player_filter=active_players)
+            player = self.table.player_left_of(self.table.dealer, player_filter=players)
             await player.increase_balance(rest)
 
     def find_bankrupt_players(self, dealer):
@@ -274,11 +274,7 @@ class Match:  # pylint: disable=too-many-public-methods
         if highest_bet <= player.bet:
             raise InvalidTurnError('Cannot call without higher bet, use \'check\' instead')
 
-        # Create side pot if necessary here!
-
-        paid_amount = await self.make_player_pay(player, highest_bet - player.bet)
-        await self.table.increase_pot(paid_amount)
-
+        await self.make_player_pay(player, highest_bet - player.bet)
         await self.next_player_or_round(player)
 
     async def check(self, player_name):
@@ -296,8 +292,7 @@ class Match:  # pylint: disable=too-many-public-methods
             raise InvalidBetError('Amount too low')
         if amount > player.balance:
             raise InsufficientBalanceError('Balance too low')
-        actual_increase = await self.make_player_pay(player, amount)
-        await self.table.increase_pot(actual_increase)
+        await self.make_player_pay(player, amount)
         await self.next_player_or_round(player)
 
     def _get_highest_bet(self):
@@ -310,5 +305,4 @@ class Match:  # pylint: disable=too-many-public-methods
 
     @staticmethod
     def log(player_or_name, message):
-        player_name = player_or_name if isinstance(player_or_name, str) else player_or_name.name
-        LOG.info('[%s] %s', player_name, message)
+        LOG.info('[%s] %s', str(player_or_name), message)

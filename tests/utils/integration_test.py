@@ -10,7 +10,7 @@ from tornado.web import Application
 from pokerserver.configuration import ServerConfig
 from pokerserver.controllers import HANDLERS
 from pokerserver.database import create_relations, Database, PlayersRelation, TablesRelation, TableConfig
-from pokerserver.models.table import Table
+from pokerserver.models import Table, Pot
 
 
 class IntegrationTestCase(AsyncTestCase):
@@ -81,15 +81,12 @@ class IntegrationHttpTestCase(IntegrationTestCase, AsyncHTTPTestCase):
         return result
 
 
-async def create_table(table_id=1, name='Table', min_player_count=2, max_player_count=10, small_blind=1,
-                       big_blind=2, start_balance=10,
-                       remaining_deck=None, open_cards=None, main_pot=0, side_pots=None,
-                       current_player=None, current_player_token=None, dealer=None,
-                       is_closed=False, joined_players=None, players=None):
+async def create_table(table_id=1, name='Table', min_player_count=2, max_player_count=10, small_blind=1, big_blind=2,
+                       start_balance=10, remaining_deck=None, open_cards=None, pots=None, current_player=None,
+                       current_player_token=None, dealer=None, is_closed=False, joined_players=None, players=None):
     # pylint: disable=too-many-locals, too-many-arguments
     remaining_deck = remaining_deck or []
     open_cards = open_cards or []
-    side_pots = side_pots or []
     config = TableConfig(min_player_count, max_player_count, small_blind, big_blind, start_balance)
     await TablesRelation.create_table(
         table_id=table_id,
@@ -97,8 +94,7 @@ async def create_table(table_id=1, name='Table', min_player_count=2, max_player_
         config=config,
         remaining_deck=remaining_deck,
         open_cards=open_cards,
-        main_pot=main_pot,
-        side_pots=side_pots,
+        pots=pots or [Pot().to_dict()],
         current_player=current_player,
         current_player_token=current_player_token,
         dealer=dealer,

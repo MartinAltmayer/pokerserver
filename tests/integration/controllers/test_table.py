@@ -40,7 +40,6 @@ class TestTableController(IntegrationHttpTestCase):
             'dealer': None,
             'is_closed': False,
             'round': 'preflop',
-            'main_pot': 0,
             'open_cards': [],
             'players': [{
                 'table_id': 1,
@@ -67,7 +66,9 @@ class TestTableController(IntegrationHttpTestCase):
                 'position': 5,
                 'state': PlayerState.PLAYING.value
             }],
-            'side_pots': [],
+            'pots': [{
+                'bets': {}
+            }],
             'small_blind': 1
         })
 
@@ -84,7 +85,6 @@ class TestTableController(IntegrationHttpTestCase):
             'dealer': None,
             'is_closed': False,
             'round': 'preflop',
-            'main_pot': 0,
             'open_cards': [],
             'players': [{
                 'table_id': 1,
@@ -111,7 +111,9 @@ class TestTableController(IntegrationHttpTestCase):
                 'position': 5,
                 'state': PlayerState.PLAYING.value
             }],
-            'side_pots': [],
+            'pots': [{
+                'bets': {}
+            }],
             'small_blind': 1
         })
 
@@ -128,7 +130,6 @@ class TestTableController(IntegrationHttpTestCase):
             'dealer': None,
             'is_closed': False,
             'round': 'preflop',
-            'main_pot': 0,
             'open_cards': [],
             'players': [{
                 'table_id': 1,
@@ -155,7 +156,9 @@ class TestTableController(IntegrationHttpTestCase):
                 'position': 5,
                 'state': PlayerState.PLAYING.value
             }],
-            'side_pots': [],
+            'pots': [{
+                'bets': {}
+            }],
             'small_blind': 1
         })
 

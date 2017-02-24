@@ -15,6 +15,7 @@ class IndexController(RequestHandler):
         data_url = 'http://{}/fedata/{}'.format(self.request.host, quote(table_name))
         self.write(HTML.format(data_url=data_url))
 
+
 HTML = """<!doctype html>
 <html>
   <head>

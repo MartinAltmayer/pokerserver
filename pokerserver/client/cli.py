@@ -99,7 +99,9 @@ class CliClient(BaseClient):
         return self.table.players
 
     def print_table_info(self):
-        print('{} Pot: {} | Cards: {}'.format(self.table.round.upper(), self.table.main_pot, self.table.open_cards))
+        pots = ', '.join([str(pot.amount) for pot in self.table.pots]) or 'None'
+        open_cards = ' '.join(self.table.open_cards or [])
+        print('{} Pots: {} | Cards: {}'.format(self.table.round.upper(), pots, open_cards))
 
     def print_player_info(self):
         parts = []

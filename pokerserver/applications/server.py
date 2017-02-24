@@ -1,9 +1,9 @@
+from argparse import ArgumentParser
 import asyncio
 import logging
 from logging.config import dictConfig
 import os
 import sys
-from argparse import ArgumentParser
 
 from tornado.ioloop import IOLoop
 from tornado.platform.asyncio import AsyncIOMainLoop
