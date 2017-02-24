@@ -1,5 +1,6 @@
 from datetime import datetime
-from pokerserver.database import PlayersRelation
+
+from pokerserver.database import PlayersRelation, PlayerState
 
 PLAYER_NAME_PATTERN = "[A-Za-z0-9]{3,}"
 
@@ -10,7 +11,8 @@ class PlayerNotFoundError(Exception):
 
 class Player:
     # pylint: disable=too-many-instance-attributes
-    def __init__(self, table_id, position, name, balance, cards, bet, last_seen=None, has_folded=False):  # pylint: disable=too-many-arguments
+    def __init__(self, table_id, position, name, balance, cards, bet,  # pylint: disable=too-many-arguments
+                 last_seen=None, state=PlayerState.PLAYING):
         self.table_id = table_id
         self.position = position
         self.name = name
@@ -18,7 +20,7 @@ class Player:
         self.cards = cards
         self.bet = bet
         self.last_seen = last_seen if last_seen is not None else datetime.now()
-        self.has_folded = has_folded
+        self.state = state
 
     def __eq__(self, other):
         if not isinstance(other, Player):
@@ -36,7 +38,7 @@ class Player:
             'balance': self.balance,
             'cards': self.cards if show_cards else [],
             'bet': self.bet,
-            'has_folded': self.has_folded
+            'state': self.state.value
         }
 
     @classmethod
@@ -52,10 +54,16 @@ class Player:
         return await PlayersRelation.load_by_name(name)
 
     @classmethod
-    async def add_player(cls, table, position, name, balance):  # pylint: disable=too-many-arguments
+    async def sit_down(cls, table, position, name, balance):  # pylint: disable=too-many-arguments
         await PlayersRelation.add_player(
-            table.table_id, position, name, balance,
-            cards=[], bet=0, last_seen=datetime.now(), has_folded=False
+            table.table_id,
+            position,
+            name,
+            balance,
+            cards=[],
+            bet=0,
+            last_seen=datetime.now(),
+            state=PlayerState.PLAYING
         )
 
     @classmethod
@@ -73,14 +81,21 @@ class Player:
 
     @classmethod
     async def reset_after_hand(cls, table_id):
-        await PlayersRelation.reset_bets_and_has_folded(table_id)
+        await PlayersRelation.reset_bets_and_state(table_id)
 
     async def increase_bet(self, amount):
+        """
+        Increases the bet for amount. If the player does not have sufficient funds, the bet will be increased by his
+        remaining balance and he will be "all in".
+
+        :param amount:
+        :return:
+        """
         assert amount > 0, 'Need to increase bet by more than 0.'
-        assert amount <= self.balance, 'Trying to bet more than remaining balance.'
         await PlayersRelation.set_balance_and_bet(self.name, self.balance - amount, self.bet + amount)
         self.balance -= amount
         self.bet += amount
+        return amount
 
     async def set_balance(self, balance):
         assert balance >= 0, 'Insufficient balance.'
@@ -97,8 +112,14 @@ class Player:
         self.cards = cards
 
     async def fold(self):
-        self.has_folded = True
-        await PlayersRelation.set_has_folded(self.name, True)
+        await self.set_state(PlayerState.FOLDED)
+
+    async def all_in(self):
+        await self.set_state(PlayerState.ALL_IN)
+
+    async def set_state(self, state):
+        self.state = state
+        await PlayersRelation.set_state(self.name, self.state)
 
     def __repr__(self):
         return '<Player {}>'.format(self.name)

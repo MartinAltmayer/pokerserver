@@ -3,8 +3,7 @@ from datetime import datetime
 from nose.tools import nottest
 from tornado.testing import gen_test
 
-from pokerserver.database import Database, DbException, DuplicateKeyError
-from pokerserver.database.database import convert_datetime
+from pokerserver.database import Database, DbException, DuplicateKeyError, convert_datetime
 from tests.utils import IntegrationTestCase
 
 
@@ -39,7 +38,7 @@ class TestDatabase(IntegrationTestCase):
     async def test_execute(self):
         db = await self.connect_database()
         await db.execute("CREATE TABLE test ( an INT ) ")
-        self.assertTrue(await self.check_table_exists('test'))
+        self.assertTrue(await self.check_relation_exists('test'))
 
     @gen_test
     async def test_execute_with_statement(self):
@@ -118,6 +117,24 @@ class TestDatabase(IntegrationTestCase):
                 actual_rows.append(row)
 
         self.assertEqual(expected_rows, actual_rows)
+
+    @gen_test
+    async def test_executemany(self):
+        db = await self.connect_database()
+        await db.execute('CREATE TABLE test ( name VARCHAR, value INT )')
+        expected_rows = []
+        for index in range(100):
+            row_to_insert = [('abc', index * 3), ('def', index * 3 + 1), ('ghi', index * 3 + 2)]
+            expected_rows += row_to_insert
+            await db.executemany('INSERT INTO test (name, value) VALUES (?, ?)', row_to_insert)
+
+            actual_rows = []
+            async with db.execute('SELECT name, value FROM test ORDER BY value ASC') as cursor:
+                async for row in cursor:
+                    actual_rows.append(row)
+
+            self.assertEqual(expected_rows, actual_rows)
+        await db.execute('DROP TABLE test')
 
     @gen_test
     async def test_rowcount(self):

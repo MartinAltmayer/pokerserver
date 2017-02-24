@@ -2,8 +2,8 @@ from unittest.mock import patch, call, Mock
 
 from tornado.testing import gen_test, AsyncTestCase
 
-from pokerserver.database.tables import TableConfig
-from pokerserver.models.table import Table, Player
+from pokerserver.database import TableConfig
+from pokerserver.models import Table, Player
 from tests.utils import return_done_future, create_table, IntegrationTestCase
 
 

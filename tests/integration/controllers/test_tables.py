@@ -8,9 +8,8 @@ from tornado.web import Application
 
 from pokerserver.controllers import HANDLERS
 from pokerserver.controllers.tables import TablesController
-from pokerserver.database import TablesRelation, PlayersRelation
-from pokerserver.database.tables import TableConfig
-from pokerserver.models.table import Table
+from pokerserver.database import PlayerState, TablesRelation, PlayersRelation, TableConfig
+from pokerserver.models import Table
 from tests.utils import IntegrationHttpTestCase, return_done_future
 
 
@@ -32,10 +31,10 @@ class TestTablesController(IntegrationHttpTestCase):
             "gandalf", None, "bilbo", False, ''
         )
         timestamp = datetime.now()
-        await PlayersRelation.add_player(table_1_id, 1, "frodo", 10, ['Ac', 'Ad'], 0, timestamp, False)
-        await PlayersRelation.add_player(table_1_id, 2, "pippin", 10, ['Kc', 'Kd'], 0, timestamp, False)
-        await PlayersRelation.add_player(table_2_id, 1, "gandalf", 10, ['Ac', 'Ad'], 0, timestamp, False)
-        await PlayersRelation.add_player(table_2_id, 2, "bilbo", 10, ['Kc', 'Kd'], 0, timestamp, False)
+        await PlayersRelation.add_player(table_1_id, 1, "frodo", 10, ['Ac', 'Ad'], 0, timestamp, PlayerState.PLAYING)
+        await PlayersRelation.add_player(table_1_id, 2, "pippin", 10, ['Kc', 'Kd'], 0, timestamp, PlayerState.PLAYING)
+        await PlayersRelation.add_player(table_2_id, 1, "gandalf", 10, ['Ac', 'Ad'], 0, timestamp, PlayerState.PLAYING)
+        await PlayersRelation.add_player(table_2_id, 2, "bilbo", 10, ['Kc', 'Kd'], 0, timestamp, PlayerState.PLAYING)
 
     @gen_test
     async def test_tables_response(self):

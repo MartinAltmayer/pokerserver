@@ -14,8 +14,8 @@ class StatsRelation(Relation):
         )
     """
 
-    DROP_QUERY = """
-        DROP TABLE stats
+    DROP_IF_EXISTS_QUERY = """
+        DROP TABLE IF EXISTS stats
     """
 
     CLEAR_QUERY = """

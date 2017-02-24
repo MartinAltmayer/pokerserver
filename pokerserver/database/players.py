@@ -1,7 +1,7 @@
 from collections import namedtuple
+from enum import unique, Enum
 
-from pokerserver.database.database import convert_datetime
-from .database import Database
+from .database import Database, convert_datetime
 from .relation import Relation
 from .utils import make_card_list, from_card_list
 
@@ -9,7 +9,7 @@ from .utils import make_card_list, from_card_list
 class PlayersRelation(Relation):
     NAME = 'players'
 
-    FIELDS = ['table_id', 'position', 'name', 'balance', 'cards', 'bet', 'last_seen', 'has_folded']
+    FIELDS = ['table_id', 'position', 'name', 'balance', 'cards', 'bet', 'last_seen', 'state']
 
     CREATE_QUERY = """
         CREATE TABLE players (
@@ -20,13 +20,14 @@ class PlayersRelation(Relation):
             cards VARCHAR NOT NULL,
             bet INT NOT NULL,
             last_seen TEXT NOT NULL,
-            has_folded INT NOT NULL,
-            PRIMARY KEY (table_id, position)
+            state INT NOT NULL,
+            PRIMARY KEY (table_id, position),
+            UNIQUE (table_id, name)
         )
     """
 
-    DROP_QUERY = """
-        DROP TABLE players
+    DROP_IF_EXISTS_QUERY = """
+        DROP TABLE IF EXISTS players
     """
 
     CLEAR_QUERY = """
@@ -86,9 +87,9 @@ class PlayersRelation(Relation):
         WHERE name = ?
     """
 
-    SET_HAS_FOLDED_QUERY = """
+    SET_STATE_QUERY = """
         UPDATE players
-        SET has_folded = ?
+        SET state = ?
         WHERE name = ?
     """
 
@@ -96,8 +97,8 @@ class PlayersRelation(Relation):
         UPDATE players SET bet = 0 WHERE table_id = ?
     """
 
-    RESET_BETS_AND_HAS_FOLDED_QUERY = """
-        UPDATE players SET bet = 0, has_folded = 0 WHERE table_id = ?
+    RESET_BETS_AND_STATE_QUERY = """
+        UPDATE players SET bet = 0, state = 0 WHERE table_id = ?
     """
 
     @classmethod
@@ -114,7 +115,7 @@ class PlayersRelation(Relation):
         data = cls.PLAYERS_RELATION_ROW(*row)._asdict()
         data['cards'] = from_card_list(data['cards'])
         data['last_seen'] = convert_datetime(data['last_seen'])
-        data['has_folded'] = bool(data['has_folded'])
+        data['state'] = PlayerState(data['state'])
         return data
 
     @classmethod
@@ -138,11 +139,11 @@ class PlayersRelation(Relation):
 
     @classmethod
     async def add_player(cls, table_id, position, name, balance, cards, bet,  # pylint: disable=too-many-arguments
-                         last_seen, has_folded):
+                         last_seen, state):
         assert position > 0
         cards = make_card_list(cards)
         await Database.instance().execute(cls.INSERT_QUERY, table_id, position, name, balance, cards, bet,
-                                          last_seen, has_folded)
+                                          last_seen, state.value)
 
     @classmethod
     async def delete_player(cls, table_id, position):
@@ -164,13 +165,20 @@ class PlayersRelation(Relation):
         await Database.instance().execute(cls.SET_CARDS_QUERY, cards, name)
 
     @classmethod
-    async def set_has_folded(cls, name, has_folded):
-        await Database.instance().execute(cls.SET_HAS_FOLDED_QUERY, has_folded, name)
+    async def set_state(cls, name, state):
+        await Database.instance().execute(cls.SET_STATE_QUERY, state.value, name)
 
     @classmethod
     async def reset_bets(cls, table_id):
         await Database.instance().execute(cls.RESET_BETS_QUERY, table_id)
 
     @classmethod
-    async def reset_bets_and_has_folded(cls, table_id):
-        await Database.instance().execute(cls.RESET_BETS_AND_HAS_FOLDED_QUERY, table_id)
+    async def reset_bets_and_state(cls, table_id):
+        await Database.instance().execute(cls.RESET_BETS_AND_STATE_QUERY, table_id)
+
+
+@unique
+class PlayerState(Enum):
+    PLAYING = 0
+    FOLDED = 1
+    ALL_IN = 2

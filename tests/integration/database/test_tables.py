@@ -2,8 +2,7 @@ from asyncio.tasks import gather
 
 from tornado.testing import gen_test
 
-from pokerserver.database import TablesRelation
-from pokerserver.database.tables import TableConfig
+from pokerserver.database import TablesRelation, TableConfig
 from tests.utils import IntegrationTestCase
 
 TABLES = [

@@ -1,6 +1,7 @@
-from enum import Enum
+from enum import Enum, unique
 from asyncio import gather
 
+from pokerserver.database import PlayerState
 from pokerserver.database import TablesRelation, PlayersRelation
 from .player import Player
 
@@ -9,6 +10,7 @@ class TableNotFoundError(Exception):
     pass
 
 
+@unique
 class Round(Enum):
     preflop = 1
     flop = 2
@@ -140,7 +142,7 @@ class Table:
         return any(player.name == player_name for player in self.players)
 
     def active_players(self):
-        return [player for player in self.players if not player.has_folded]
+        return [player for player in self.players if player.state != PlayerState.FOLDED]
 
     def player_positions_between(self, pos1, pos2):
         if pos1 == pos2:

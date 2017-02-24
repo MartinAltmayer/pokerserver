@@ -1,16 +1,24 @@
+from nose.tools import assert_raises
 from tornado.testing import gen_test
 
-from pokerserver.database import Database, PlayersRelation, TablesRelation, UUIDsRelation
-from pokerserver.database.relations import create_relations, clear_relations, RELATIONS
+from pokerserver.database import (create_relations, clear_relations, RELATIONS, Database, PlayersRelation,
+                                  TablesRelation, UUIDsRelation, DbException)
 from tests.utils import IntegrationTestCase
 
 
 class TestRelations(IntegrationTestCase):
     @gen_test
-    async def test_create_tables(self):
+    async def test_create_relations(self):
         await create_relations()
         for table_class in RELATIONS:
-            self.assertTrue(await self.check_table_exists(table_class.NAME))
+            self.assertTrue(await self.check_relation_exists(table_class.NAME))
+
+    @gen_test
+    async def test_create_relations_multiple_times(self):
+        for _ in range(100):
+            await create_relations()
+        for table_class in RELATIONS:
+            self.assertTrue(await self.check_relation_exists(table_class.NAME))
 
     @gen_test
     async def test_clear_relations(self):
@@ -36,7 +44,5 @@ class TestRelations(IntegrationTestCase):
         await db.execute(UUIDsRelation.INSERT_QUERY, *([1] * len(UUIDsRelation.FIELDS)))
         await PlayersRelation.drop_relation()
 
-        await clear_relations(exclude=['uuids'])
-
-        self.assertEqual(0, await db.find_one('SELECT COUNT(*) FROM tables'))
-        self.assertEqual(1, await db.find_one('SELECT COUNT(*) FROM uuids'))
+        with assert_raises(DbException):
+            await clear_relations(exclude=['uuids'])

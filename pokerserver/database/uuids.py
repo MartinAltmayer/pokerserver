@@ -19,8 +19,8 @@ class UUIDsRelation(Relation):
         )
     """
 
-    DROP_QUERY = """
-        DROP TABLE uuids;
+    DROP_IF_EXISTS_QUERY = """
+        DROP TABLE IF EXISTS uuids;
     """
 
     CLEAR_QUERY = """
