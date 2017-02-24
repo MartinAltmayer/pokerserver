@@ -1,16 +1,13 @@
-# pylint: disable=no-self-use
 from unittest import TestCase
 from unittest.mock import Mock
 
-from pokerserver.models.card import parse_card
-from pokerserver.models.ranking import (
-    find_high_card, find_n_of_a_kind, find_two_pairs, find_straight, find_flush,
-    find_full_house, find_straight_flush, rank as rank_function, determine_winning_players
-)
+from pokerserver.models import (determine_winning_players, find_flush, find_full_house, find_high_card,
+                                find_n_of_a_kind,
+                                find_straight, find_straight_flush, find_two_pairs, parse_card, rank as rank_function)
 
 
 class TestRanking(TestCase):
-    def parse_cards(self, card_strings):
+    def parse_cards(self, card_strings):  # pylint: disable=no-self-use
         return [parse_card(s) for s in card_strings]
 
     def test_find_high_card(self):

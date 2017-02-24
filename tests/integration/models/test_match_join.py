@@ -1,4 +1,3 @@
-# pylint: disable=no-self-use
 from asyncio.tasks import gather
 from unittest.mock import Mock
 
