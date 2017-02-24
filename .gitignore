@@ -15,3 +15,5 @@ dist/
 .coverage
 *.pyc
 poker.db
+node_modules
+.cache
