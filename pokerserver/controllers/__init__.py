@@ -1,10 +1,11 @@
-from .frontend import IndexController
+from .frontend import IndexController, FrontendDataController
 from .info import InfoController
 from .table import TableController, JoinController, FoldController, CallController, CheckController, RaiseController
 from .tables import TablesController
 from .uuid import UUIDController
 
 _CONTROLLERS = [
+    FrontendDataController,
     IndexController,
     InfoController,
     TableController,

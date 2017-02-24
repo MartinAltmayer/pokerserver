@@ -7,7 +7,7 @@ from argparse import ArgumentParser
 
 from tornado.ioloop import IOLoop
 from tornado.platform.asyncio import AsyncIOMainLoop
-from tornado.web import Application, StaticFileHandler
+from tornado.web import Application
 
 from pokerserver.configuration import LOGGING, ServerConfig
 from pokerserver.controllers import HANDLERS, TablesController
@@ -17,7 +17,6 @@ LOG = logging.getLogger(__name__)
 
 
 def make_app(args):
-    handlers = HANDLERS.copy()
     return Application(
         HANDLERS,
         static_path='dist',

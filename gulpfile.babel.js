@@ -6,11 +6,13 @@ import webpack from 'webpack-stream';
 import webpackConfig from './webpack.config.babel';
 
 const paths = {
-  allSrcJs: 'frontend/**/*.js',
+  allSrcJs: 'frontend/**/*.js?(x)',
   libDir: 'lib',
   distDir: 'dist',
   gulpFile: 'gulpfile.babel.js',
   webpackFile: 'webpack.config.babel.js',
+  cssFile: 'frontend/style.css',
+  staticFiles: ['frontend/style.css', 'frontend/cards.png'],
   clientEntryPoint: 'frontend/App.jsx',
 };
 
@@ -35,14 +37,19 @@ gulp.task('build', ['lint', 'clean'], () =>
     .pipe(gulp.dest(paths.libDir))
 );
 
-gulp.task('main', ['lint', 'clean'], () =>
+gulp.task('statics', ['clean'], () =>
+  gulp.src(paths.staticFiles)
+    .pipe(gulp.dest(paths.distDir))
+);
+
+gulp.task('main', ['lint', 'statics', 'clean'], () =>
   gulp.src(paths.clientEntryPoint)
     .pipe(webpack(webpackConfig))
     .pipe(gulp.dest(paths.distDir))
 );
 
 gulp.task('watch', () =>
-  gulp.watch(paths.allSrcJs, ['build'])
+  gulp.watch([paths.allSrcJs, paths.cssFile], ['main'])
 );
 
 gulp.task('default', ['watch', 'main']);
