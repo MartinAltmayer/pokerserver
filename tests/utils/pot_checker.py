@@ -1,8 +1,9 @@
+from unittest import TestCase
+
 from pokerserver.models import Table
-from .integration_test import IntegrationTestCase
 
 
-class PotChecker(IntegrationTestCase):
+class PotChecker(TestCase):
     async def assert_pots(self, table_name, amounts=None):
         if amounts is None:
             amounts = [0]

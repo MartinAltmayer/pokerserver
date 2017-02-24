@@ -5,10 +5,10 @@ from tornado.testing import gen_test
 from pokerserver.database import PlayerState, PlayersRelation
 from pokerserver.models import (InsufficientBalanceError, InvalidBetError, InvalidTurnError, Match, NotYourTurnError,
                                 Player, Table)
-from tests.utils import PotChecker, create_table, return_done_future
+from tests.utils import IntegrationTestCase, PotChecker, create_table, return_done_future
 
 
-class BettingTestCase(PotChecker):
+class BettingTestCase(IntegrationTestCase, PotChecker):
     async def async_setup(self, balances=(2, 2, 2, 2), bets=(0, 0, 0, 0)):
         assert len(balances) == len(bets)
 
