@@ -1,11 +1,11 @@
 import asyncio
 import functools
-import logging
 from http import HTTPStatus
+import logging
 from uuid import UUID
 
 from tornado import httputil
-from tornado.web import RequestHandler, MissingArgumentError, HTTPError as TornadoHTTPError
+from tornado.web import HTTPError as TornadoHTTPError, MissingArgumentError, RequestHandler
 
 from pokerserver.database import UUIDsRelation
 from pokerserver.models import Match, Player, Table, TableNotFoundError
@@ -50,13 +50,14 @@ class BaseController(RequestHandler):
 
         super().write_error(status_code, **kwargs)
 
-    @classmethod
-    async def load_match(cls, table_name):
+    async def load_match(self, table_name):
         try:
             table = await Table.load_by_name(table_name)
         except TableNotFoundError:
             raise HTTPError(HTTPStatus.NOT_FOUND, 'Table not found')
-        return Match(table)
+        if self.settings.get('args'):
+            turn_delay = self.settings.get('args').turn_delay
+        return Match(table, turn_delay)
 
 
 def authenticated(method):

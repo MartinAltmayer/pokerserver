@@ -1,6 +1,7 @@
+from .base import BaseController
 from .frontend import IndexController, FrontendDataController
 from .info import InfoController
-from .table import TableController, JoinController, FoldController, CallController, CheckController, RaiseController
+from .table import CallController, CheckController, FoldController, JoinController, RaiseController, TableController
 from .tables import TablesController
 from .uuid import UUIDController
 

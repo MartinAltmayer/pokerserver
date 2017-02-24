@@ -2,8 +2,8 @@ from http import HTTPStatus
 
 from tornado.web import MissingArgumentError
 
-from pokerserver.models import Table, PositionOccupiedError, InvalidTurnError
-from .base import BaseController, authenticated, HTTPError
+from pokerserver.models import InvalidTurnError, PositionOccupiedError, Table
+from .base import BaseController, HTTPError, authenticated
 
 TABLE_NAME_PATTERN = "([^/]+)"
 

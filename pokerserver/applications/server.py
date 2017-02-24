@@ -52,6 +52,8 @@ def main():
     parser.add_argument('--max-player-count', default=8, type=int, help='Maximum number of players per table.')
     parser.add_argument('--small-blind', default=1, type=int, help='Small blind for every game.')
     parser.add_argument('--big-blind', default=2, type=int, help='Big blind for every game.')
+    parser.add_argument('--turn-delay', default=None, type=float,
+                        help='Waiting time before the next player becomes active in seconds.')
     parser.add_argument('--timeout', default=0, type=float,
                         help='Interval during which a client has to send a reply in seconds. Use 0 to disable.')
     parser.add_argument('--turn-interval', default=2, type=float, help='Time each turn takes in seconds.')

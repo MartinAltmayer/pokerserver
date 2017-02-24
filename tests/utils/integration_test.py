@@ -70,7 +70,7 @@ class IntegrationTestCase(AsyncTestCase):
 
 class IntegrationHttpTestCase(IntegrationTestCase, AsyncHTTPTestCase):
     def setUp(self):
-        self.args = Mock()
+        self.args = Mock(turn_delay=None)
         super().setUp()
 
     def get_app(self):

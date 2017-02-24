@@ -35,8 +35,9 @@ class InvalidBetError(InvalidTurnError):
 
 
 class Match:  # pylint: disable=too-many-public-methods
-    def __init__(self, table):
+    def __init__(self, table, turn_delay=None):
         self.table = table
+        self.turn_delay = turn_delay
 
     async def check_and_unset_current_player(self, player_name):
         is_current_player = await self.table.check_and_unset_current_player(player_name)
@@ -45,6 +46,10 @@ class Match:  # pylint: disable=too-many-public-methods
 
     async def set_player_active(self, player):
         token = str(uuid4())
+
+        if self.turn_delay is not None:
+            await sleep(self.turn_delay)
+
         await self.table.set_current_player(player, token)
 
         timeout = ServerConfig.get('timeout')
