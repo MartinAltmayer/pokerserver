@@ -274,6 +274,14 @@ class Table:
         self.is_closed = True
         await TablesRelation.close_table(self.table_id)
 
+    @classmethod
+    async def ensure_free_tables(cls, number, table_config):
+        tables = await Table.load_all()
+        free_tables = len([table for table in tables if table.is_free()])
+        if free_tables < number:
+            await Table.create_tables(number - free_tables, table_config)
+        return number - free_tables
+
 
 class Pot:
     def __init__(self, bets=None):

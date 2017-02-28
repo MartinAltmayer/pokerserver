@@ -1,16 +1,14 @@
 from datetime import datetime
 from http import HTTPStatus
 import json
-from unittest.mock import Mock, patch
+from unittest.mock import Mock
 
 from tornado.testing import gen_test
 from tornado.web import Application
 
 from pokerserver.controllers import HANDLERS
-from pokerserver.controllers.tables import TablesController
 from pokerserver.database import PlayerState, PlayersRelation, TableConfig, TablesRelation
-from pokerserver.models import Table
-from tests.utils import IntegrationHttpTestCase, return_done_future
+from tests.utils import IntegrationHttpTestCase
 
 
 class TestTablesController(IntegrationHttpTestCase):
@@ -58,16 +56,3 @@ class TestTablesController(IntegrationHttpTestCase):
                 'players': {'1': 'gandalf', '2': 'bilbo'}
             }
         ])
-
-    @patch('pokerserver.models.table.Table.load_all')
-    @patch('pokerserver.models.table.Table.create_tables', side_effect=return_done_future())
-    @gen_test
-    async def test_ensure_free_tables(self, create_tables, load_all):
-        config = TableConfig(
-            min_player_count=2, max_player_count=4, small_blind=12, big_blind=24, start_balance=10)
-        existing_tables = [Table(i, 'name', config) for i in range(5)]
-        load_all.side_effect = return_done_future(existing_tables)
-
-        await TablesController.ensure_free_tables(10, config)
-
-        create_tables.assert_called_once_with(5, config)
