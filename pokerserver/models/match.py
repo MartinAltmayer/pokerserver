@@ -5,10 +5,11 @@ import random
 from uuid import uuid4
 
 from pokerserver.configuration import ServerConfig
-from pokerserver.database import DuplicateKeyError, PlayerState, StatsRelation
+from pokerserver.database import DuplicateKeyError, PlayerState
 from .card import get_all_cards
 from .player import Player
 from .ranking import determine_winning_players
+from .statistics import Statistics
 from .table import Round
 
 LOG = logging.getLogger(__name__)
@@ -269,7 +270,7 @@ class Match:  # pylint: disable=too-many-public-methods
         await self.table.close()
 
     async def increment_stats_for_player(self, player):
-        await StatsRelation.increment_stats(
+        await Statistics.increment_statistics(
             player.name, matches=1, buy_in=self.table.config.start_balance, gain=player.balance)
 
     async def call(self, player_name):

@@ -187,7 +187,7 @@ class TestShowDownWithSidePots(IntegrationTestCase, PotChecker):
         start_hand_mock.assert_called_once_with(ANY)
 
     @patch('pokerserver.models.match.Match.start_hand', side_effect=return_done_future())
-    @patch('pokerserver.database.stats.StatsRelation.increment_stats', side_effect=return_done_future())
+    @patch('pokerserver.models.statistics.Statistics.increment_statistics', side_effect=return_done_future())
     @gen_test
     async def test_remove_bankrupt_players(self, increment_stats_mock, _):
         match = await self.create_match()

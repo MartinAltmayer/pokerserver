@@ -1,9 +1,9 @@
 from .players import PlayersRelation
-from .stats import StatsRelation
+from .statistics import StatisticsRelation
 from .tables import TablesRelation
 from .uuids import UUIDsRelation
 
-RELATIONS = [PlayersRelation, TablesRelation, StatsRelation, UUIDsRelation]
+RELATIONS = [PlayersRelation, TablesRelation, StatisticsRelation, UUIDsRelation]
 
 
 async def clear_relations(exclude=None):

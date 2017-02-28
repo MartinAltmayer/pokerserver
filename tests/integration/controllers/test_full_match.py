@@ -2,8 +2,8 @@ from unittest.mock import patch
 
 from tornado.testing import gen_test
 
-from pokerserver.database import TableConfig, TablesRelation, PlayersRelation, StatsRelation
-from pokerserver.models import Table, Round, get_all_cards
+from pokerserver.database import PlayersRelation, TableConfig, TablesRelation
+from pokerserver.models import Round, Statistics, Table, get_all_cards
 from tests.utils import IntegrationHttpTestCase
 
 
@@ -105,13 +105,13 @@ class TestFullMatch(IntegrationHttpTestCase):
         table = await Table.load_by_name(self.table.name)
         self.assertTrue(table.is_closed)
 
-        stats = await StatsRelation.get_stats()
+        stats = await Statistics.load()
         self.assertEqual({
-            'Player0': (1, 10, 40),
-            'Player1': (1, 10, 0),
-            'Player2': (1, 10, 0),
-            'Player3': (1, 10, 0)
-        }, stats)
+            'Player0': {'matches': 1, 'buy_in': 10, 'gain': 40},
+            'Player1': {'matches': 1, 'buy_in': 10, 'gain': 0},
+            'Player2': {'matches': 1, 'buy_in': 10, 'gain': 0},
+            'Player3': {'matches': 1, 'buy_in': 10, 'gain': 0}
+        }, {statistics.player_name: statistics.to_dict() for statistics in stats.player_statistics})
 
     async def everyone_calls_and_big_blind_checks(self, player_order, balances):
         for index in player_order[:-1]:
