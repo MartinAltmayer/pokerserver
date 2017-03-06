@@ -102,7 +102,7 @@ class TestShowDown(IntegrationTestCase, PotChecker):
         await self.assert_pots(match.table.name, amounts=[7])
         await match.show_down()
         table = await Table.load_by_name(match.table.name)
-        self.assertEqual([10, 17, 10, 10, 10], [player.balance for player in table.players])
+        self.assertEqual([10, 17, 10, 10], [player.balance for player in table.players])
         await self.assert_pots(match.table.name)
         start_hand_mock.assert_called_once_with(ANY)
 
@@ -113,7 +113,7 @@ class TestShowDown(IntegrationTestCase, PotChecker):
         await self.assert_pots(match.table.name, amounts=[7])
         await match.show_down()
         table = await Table.load_by_name(match.table.name)
-        self.assertEqual([10, 14, 13, 10, 10], [player.balance for player in table.players])
+        self.assertEqual([10, 14, 13, 10], [player.balance for player in table.players])
         await self.assert_pots(match.table.name)
         start_hand_mock.assert_called_once_with(ANY)
 
