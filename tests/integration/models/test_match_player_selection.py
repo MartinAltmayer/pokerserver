@@ -93,18 +93,29 @@ class TestFindNextPlayer(TestCase):
         self.assertEqual(players[3], self.match.find_next_player(players[2]))
         self.assertEqual(players[0], self.match.find_next_player(players[5]))
 
-    def test_find_next_player_inactive(self):
+    def test_find_next_player_folded(self):
         players = self.sorted_players
         players[3].state = PlayerState.FOLDED
         self.assertEqual(players[4], self.match.find_next_player(players[2]))
 
-    def test_find_next_player_all_inactive(self):
+    def test_find_next_player_sitting_out(self):
+        players = self.sorted_players
+        players[3].state = PlayerState.SITTING_OUT
+        self.assertEqual(players[4], self.match.find_next_player(players[2]))
+
+    def test_find_next_player_all_folded(self):
         players = self.sorted_players
         for player in players:
             player.state = PlayerState.FOLDED
         self.assertIsNone(self.match.find_next_player(players[0]))
 
-    def test_find_next_player_all_inactive_except_current(self):
+    def test_find_next_player_all_sitting_out(self):
+        players = self.sorted_players
+        for player in players:
+            player.state = PlayerState.SITTING_OUT
+        self.assertIsNone(self.match.find_next_player(players[0]))
+
+    def test_find_next_player_all_folded_except_current(self):
         players = self.sorted_players
         for player in players[1:]:
             player.state = PlayerState.FOLDED

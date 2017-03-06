@@ -1,9 +1,9 @@
 from collections import namedtuple
-from enum import unique, Enum
+from enum import Enum, unique
 
 from .database import Database, convert_datetime
 from .relation import Relation
-from .utils import make_card_list, from_card_list
+from .utils import from_card_list, make_card_list
 
 
 class PlayersRelation(Relation):
@@ -20,7 +20,7 @@ class PlayersRelation(Relation):
             cards VARCHAR NOT NULL,
             bet INT NOT NULL,
             last_seen TEXT NOT NULL,
-            state INT NOT NULL,
+            state VARCHAR NOT NULL,
             PRIMARY KEY (table_id, position),
             UNIQUE (table_id, name)
         )
@@ -75,6 +75,12 @@ class PlayersRelation(Relation):
         WHERE name = ?
     """
 
+    SET_BET_QUERY = """
+        UPDATE players
+        SET bet = ?
+        WHERE name = ?
+    """
+
     SET_BALANCE_AND_BET_QUERY = """
         UPDATE players
         SET balance = ?, bet = ?
@@ -91,14 +97,6 @@ class PlayersRelation(Relation):
         UPDATE players
         SET state = ?
         WHERE name = ?
-    """
-
-    RESET_BETS_QUERY = """
-        UPDATE players SET bet = 0 WHERE table_id = ?
-    """
-
-    RESET_BETS_AND_STATE_QUERY = """
-        UPDATE players SET bet = 0, state = 0 WHERE table_id = ?
     """
 
     @classmethod
@@ -154,6 +152,10 @@ class PlayersRelation(Relation):
         await Database.instance().execute(cls.SET_BALANCE_QUERY, balance, name)
 
     @classmethod
+    async def set_bet(cls, name, bet):
+        await Database.instance().execute(cls.SET_BET_QUERY, bet, name)
+
+    @classmethod
     async def set_balance_and_bet(cls, name, balance, bet):
         assert balance is not None
         assert bet is not None
@@ -168,17 +170,10 @@ class PlayersRelation(Relation):
     async def set_state(cls, name, state):
         await Database.instance().execute(cls.SET_STATE_QUERY, state.value, name)
 
-    @classmethod
-    async def reset_bets(cls, table_id):
-        await Database.instance().execute(cls.RESET_BETS_QUERY, table_id)
-
-    @classmethod
-    async def reset_bets_and_state(cls, table_id):
-        await Database.instance().execute(cls.RESET_BETS_AND_STATE_QUERY, table_id)
-
 
 @unique
 class PlayerState(Enum):
-    PLAYING = 0
-    FOLDED = 1
-    ALL_IN = 2
+    PLAYING = 'playing'
+    FOLDED = 'folded'
+    ALL_IN = 'all in'
+    SITTING_OUT = 'sitting out'

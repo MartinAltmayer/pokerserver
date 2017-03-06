@@ -108,14 +108,13 @@ class Match:  # pylint: disable=too-many-public-methods
     async def start(self, dealer=None):
         if dealer is None:
             dealer = random.choice(self.table.players)
+        await self.table.reset()
         await self.start_hand(dealer)
 
     async def start_hand(self, dealer):
         assert len(self.table.players) >= 2
         small_blind_player, big_blind_player, under_the_gun = self.find_blind_players(dealer)
         await self.table.set_dealer(dealer)
-        await self.table.clear_pots()
-        await self.reset_bets()
         await self.pay_blinds(small_blind_player, big_blind_player)
         await self.distribute_cards()
         self.log(under_the_gun, "Started table {}".format(self.table.name))
@@ -177,7 +176,10 @@ class Match:  # pylint: disable=too-many-public-methods
             await self.set_player_active(next_player)
 
     def find_next_player(self, current_player):
-        active_players = [player for player in self.table.players if player.state != PlayerState.FOLDED]
+        active_players = [
+            player for player in self.table.players
+            if player.state not in [PlayerState.FOLDED, PlayerState.SITTING_OUT]
+        ]
         if len(active_players) <= 1:
             return None
 
@@ -188,9 +190,8 @@ class Match:  # pylint: disable=too-many-public-methods
         return next_player
 
     async def reset_bets(self):
-        await Player.reset_bets(self.table.table_id)
         for player in self.table.players:
-            player.bet = 0
+            await player.set_bet(0)
 
     async def next_round(self):
         await self.reset_bets()
@@ -207,14 +208,13 @@ class Match:  # pylint: disable=too-many-public-methods
         await self.set_player_active(next_player)
 
     async def show_down(self):
-        await self.distribute_pots()
-        await Player.reset_after_hand(self.table.table_id)
         old_dealer = self.table.dealer
-        await self.table.reset_after_hand()
+        await self.distribute_pots()
+        await self.table.reset()
 
         dealer = self.table.player_left_of(old_dealer)
         while len(self.table.players) > 1:
-            bankrupt_players = self.find_bankrupt_players(dealer)
+            bankrupt_players = self.find_bankrupt_players()
             if not bankrupt_players:
                 break
 
@@ -248,21 +248,8 @@ class Match:  # pylint: disable=too-many-public-methods
             player = self.table.player_left_of(self.table.dealer, player_filter=players)
             await player.increase_balance(rest)
 
-    def find_bankrupt_players(self, dealer):
-        small_blind_player, big_blind_player, _ = self.find_blind_players(dealer)
-        bankrupt_players = []
-        for player in self.table.players:
-            if player == small_blind_player:
-                required_balance = self.table.config.small_blind
-            elif player == big_blind_player:
-                required_balance = self.table.config.big_blind
-            else:
-                required_balance = 1
-
-            if player.balance < required_balance:
-                bankrupt_players.append(player)
-
-        return bankrupt_players
+    def find_bankrupt_players(self):
+        return [player for player in self.table.players if player.balance == 0]
 
     async def close_table(self):
         self.log('', 'Closing table {}'.format(self.table.table_id))

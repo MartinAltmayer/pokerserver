@@ -63,7 +63,7 @@ class Player:
             cards=[],
             bet=0,
             last_seen=datetime.now(),
-            state=PlayerState.PLAYING
+            state=PlayerState.SITTING_OUT
         )
 
     @classmethod
@@ -75,13 +75,13 @@ class Player:
     def is_valid_name(cls, name):
         return name.isalpha()
 
-    @classmethod
-    async def reset_bets(cls, table_id):
-        await PlayersRelation.reset_bets(table_id)
+    async def set_bet(self, bet):
+        self.bet = bet
+        await PlayersRelation.set_bet(self.name, self.bet)
 
-    @classmethod
-    async def reset_after_hand(cls, table_id):
-        await PlayersRelation.reset_bets_and_state(table_id)
+    async def reset(self):
+        await self.set_bet(0)
+        await self.set_state(PlayerState.PLAYING)
 
     async def increase_bet(self, amount):
         assert amount > 0, 'Need to increase bet by more than 0.'
@@ -109,6 +109,9 @@ class Player:
 
     def is_all_in(self):
         return self.state == PlayerState.ALL_IN
+
+    async def sit_out(self):
+        await self.set_state(PlayerState.SITTING_OUT)
 
     async def set_state(self, state):
         self.state = state

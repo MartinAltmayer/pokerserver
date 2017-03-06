@@ -170,7 +170,7 @@ class TestStartHand(IntegrationTestCase):
         players = [
             Player(table_id, 1, 'a', 10, [], 10),
             Player(table_id, 2, 'b', 10, [], 20),
-            Player(table_id, 3, 'c', 10, [], 30)
+            Player(table_id, 3, 'c', 10, [], 30, state=PlayerState.SITTING_OUT)
         ]
 
         table = await create_table(table_id=table_id, players=players)
@@ -180,6 +180,7 @@ class TestStartHand(IntegrationTestCase):
         await match.start()
 
         table = await Table.load_by_name(table.name)
+        self.assertEqual([], [player for player in table.players if player.state != PlayerState.PLAYING])
         expected_dealer = table.get_player_at(2)
         expected_small_blind = table.get_player_at(3)
         expected_big_blind = table.get_player_at(1)

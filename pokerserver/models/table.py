@@ -139,7 +139,7 @@ class Table:
         return any(player.name == player_name for player in self.players)
 
     def active_players(self):
-        return [player for player in self.players if player.state != PlayerState.FOLDED]
+        return [player for player in self.players if player.state not in [PlayerState.FOLDED, PlayerState.SITTING_OUT]]
 
     def player_positions_between(self, pos1, pos2):
         if pos1 == pos2:
@@ -194,6 +194,7 @@ class Table:
         await TablesRelation.set_dealer(self.table_id, self.dealer.name if self.dealer is not None else None)
 
     async def set_current_player(self, current_player, token):
+        assert current_player.state not in [PlayerState.FOLDED, PlayerState.SITTING_OUT]
         player_name = current_player.name if current_player else None
         self.current_player = self.find_player(player_name)
         await TablesRelation.set_current_player(self.table_id, player_name, token)
@@ -264,10 +265,11 @@ class Table:
         self.open_cards.extend(cards)
         await TablesRelation.set_cards(self.table_id, self.remaining_deck, self.open_cards)
 
-    async def reset_after_hand(self):
+    async def reset(self):
         await self.set_cards([], [])
         await self.clear_pots()
         await self.set_dealer(None)
+        await gather(*[player.reset() for player in self.players])
 
     async def close(self):
         await gather(*[self.remove_player(player) for player in self.players.copy()])
