@@ -51,8 +51,7 @@ class TestNextRound(IntegrationTestCase, PotChecker):
         await match.next_round()
 
         table = await Table.load_by_name(match.table.name)
-        for player in table.players:
-            self.assertEqual(0, player.bet)
+        self.assertEqual({0}, {player.bet for player in table.players})
         await self.assert_pots(match.table.name, amounts=[30, 20, 10])
 
     @gen_test
@@ -100,22 +99,22 @@ class TestShowDown(IntegrationTestCase, PotChecker):
     @gen_test
     async def test_distribute_pots_single_winner(self, start_hand_mock):
         match = await self.create_match()
-        self.assert_pots(match.table.name, amounts=[7])
+        await self.assert_pots(match.table.name, amounts=[7])
         await match.show_down()
         table = await Table.load_by_name(match.table.name)
-        self.assertEqual([10, 17, 10, 10], [player.balance for player in table.players])
-        self.assert_pots(match.table.name)
+        self.assertEqual([10, 17, 10, 10, 10], [player.balance for player in table.players])
+        await self.assert_pots(match.table.name)
         start_hand_mock.assert_called_once_with(ANY)
 
     @patch('pokerserver.models.match.Match.start_hand', side_effect=return_done_future())
     @gen_test
     async def test_distribute_pots_several_winners(self, start_hand_mock):
         match = await self.create_match(cards=[['Kc', '2c'], ['Ah', '2h'], ['As', '2s'], ['Ad', '2d']])
-        self.assert_pots(match.table.name, amounts=[7])
+        await self.assert_pots(match.table.name, amounts=[7])
         await match.show_down()
         table = await Table.load_by_name(match.table.name)
-        self.assertEqual([10, 14, 13, 10], [player.balance for player in table.players])
-        self.assert_pots(match.table.name)
+        self.assertEqual([10, 14, 13, 10, 10], [player.balance for player in table.players])
+        await self.assert_pots(match.table.name)
         start_hand_mock.assert_called_once_with(ANY)
 
     @patch('pokerserver.models.match.Match.start_hand', side_effect=return_done_future())
@@ -124,7 +123,7 @@ class TestShowDown(IntegrationTestCase, PotChecker):
         match = await self.create_match()
         await match.show_down()
 
-        self.assert_pots(match.table.name)
+        await self.assert_pots(match.table.name)
         table = await Table.load_by_name(match.table.name)
         for player in table.players:
             self.assertEqual(0, player.bet)
@@ -168,22 +167,22 @@ class TestShowDownWithSidePots(IntegrationTestCase, PotChecker):
     @gen_test
     async def test_distribute_pots_single_winner(self, start_hand_mock):
         match = await self.create_match()
-        self.assert_pots(match.table.name, amounts=[3, 2, 2])
+        await self.assert_pots(match.table.name, amounts=[3, 2, 2])
         await match.show_down()
         table = await Table.load_by_name(match.table.name)
         self.assertEqual([12, 5, 10], [player.balance for player in table.players])
-        self.assert_pots(match.table.name)
+        await self.assert_pots(match.table.name)
         start_hand_mock.assert_called_once_with(ANY)
 
     @patch('pokerserver.models.match.Match.start_hand', side_effect=return_done_future())
     @gen_test
     async def test_distribute_pots_several_winners(self, start_hand_mock):
         match = await self.create_match(cards=[['Kc', '2c'], ['Ah', '2h'], ['As', '2s'], ['Ad', '2d']])
-        self.assert_pots(match.table.name, amounts=[7])
+        await self.assert_pots(match.table.name, amounts=[3, 2, 2])
         await match.show_down()
         table = await Table.load_by_name(match.table.name)
         self.assertEqual([12, 4, 1, 10], [player.balance for player in table.players])
-        self.assert_pots(match.table.name)
+        await self.assert_pots(match.table.name)
         start_hand_mock.assert_called_once_with(ANY)
 
     @patch('pokerserver.models.match.Match.start_hand', side_effect=return_done_future())
