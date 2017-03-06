@@ -55,8 +55,7 @@ class BaseController(RequestHandler):
             table = await Table.load_by_name(table_name)
         except TableNotFoundError:
             raise HTTPError(HTTPStatus.NOT_FOUND, 'Table not found')
-        if self.settings.get('args'):
-            turn_delay = self.settings.get('args').turn_delay
+        turn_delay = self.settings.get('args').turn_delay if self.settings.get('args') else 0
         return Match(table, turn_delay)
 
 
