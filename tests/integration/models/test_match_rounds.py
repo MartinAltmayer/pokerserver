@@ -72,10 +72,10 @@ class TestNextRound(IntegrationTestCase, PotChecker):
         await match.table.set_current_player(match.table.players[1], 'sometoken')
         await match.next_round()
         table = await Table.load_by_name(match.table.name)
-        self.assertEqual(match.table.players[3].name, table.current_player.name)
+        self.assertEqual(match.table.players[1].name, table.current_player.name)
         await self.assert_pots(match.table.name, amounts=[30, 20, 10])
 
-    @patch('pokerserver.models.match.Match.show_down', side_effect=return_done_future())
+    @patch('pokerserver.models.match.Match.finish_hand', side_effect=return_done_future())
     @gen_test
     async def test_trigger_showdown(self, show_down_mock):
         match = await self.create_match(open_cards=['2h'] * 5)
@@ -112,7 +112,7 @@ class TestShowDown(IntegrationTestCase, PotChecker):
     async def test_distribute_pots_single_winner(self, start_hand_mock):
         match = await self.create_match()
         await self.assert_pots(match.table.name, amounts=[7])
-        await match.show_down()
+        await match.finish_hand()
         table = await Table.load_by_name(match.table.name)
         self.assertEqual([10, 17, 10, 10, 10], [player.balance for player in table.players])
         await self.assert_pots(match.table.name)
@@ -123,7 +123,7 @@ class TestShowDown(IntegrationTestCase, PotChecker):
     async def test_distribute_pots_several_winners(self, start_hand_mock):
         match = await self.create_match(cards=[['Kc', '2c'], ['Ah', '2h'], ['As', '2s'], ['Ad', '2d']])
         await self.assert_pots(match.table.name, amounts=[7])
-        await match.show_down()
+        await match.finish_hand()
         table = await Table.load_by_name(match.table.name)
         self.assertEqual([10, 14, 13, 10, 10], [player.balance for player in table.players])
         await self.assert_pots(match.table.name)
@@ -133,7 +133,7 @@ class TestShowDown(IntegrationTestCase, PotChecker):
     @gen_test
     async def test_reset(self, _):
         match = await self.create_match()
-        await match.show_down()
+        await match.finish_hand()
 
         await self.assert_pots(match.table.name)
         table = await Table.load_by_name(match.table.name)
@@ -149,7 +149,7 @@ class TestShowDown(IntegrationTestCase, PotChecker):
         players = match.table.players.copy()
         bankrupt_players_mock.side_effect = [players[1:], []]
 
-        await match.show_down()
+        await match.finish_hand()
 
         close_mock.assert_called_once_with()
 
@@ -180,7 +180,7 @@ class TestShowDownWithSidePots(IntegrationTestCase, PotChecker):
     async def test_distribute_pots_single_winner(self, start_hand_mock):
         match = await self.create_match()
         await self.assert_pots(match.table.name, amounts=[3, 2, 2])
-        await match.show_down()
+        await match.finish_hand()
         table = await Table.load_by_name(match.table.name)
         self.assertEqual([12, 5, 10], [player.balance for player in table.players])
         await self.assert_pots(match.table.name)
@@ -191,7 +191,7 @@ class TestShowDownWithSidePots(IntegrationTestCase, PotChecker):
     async def test_distribute_pots_several_winners(self, start_hand_mock):
         match = await self.create_match(cards=[['Kc', '2c'], ['Ah', '2h'], ['As', '2s'], ['Ad', '2d']])
         await self.assert_pots(match.table.name, amounts=[3, 2, 2])
-        await match.show_down()
+        await match.finish_hand()
         table = await Table.load_by_name(match.table.name)
         self.assertEqual([12, 4, 1, 10], [player.balance for player in table.players])
         await self.assert_pots(match.table.name)
@@ -202,7 +202,7 @@ class TestShowDownWithSidePots(IntegrationTestCase, PotChecker):
     @gen_test
     async def test_remove_bankrupt_players(self, increment_stats_mock, _):
         match = await self.create_match()
-        await match.show_down()
+        await match.finish_hand()
 
         table = await Table.load_by_name(match.table.name)
         self.assertEqual(['a', 'b', 'd'], [player.name for player in table.players])

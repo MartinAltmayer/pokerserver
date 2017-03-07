@@ -93,8 +93,8 @@ class Player:
 
     async def increase_balance(self, increase):
         assert increase >= 0, 'the balance increase must not be negative'
-        await PlayersRelation.set_balance(self.name, self.balance + increase)
         self.balance += increase
+        await PlayersRelation.set_balance(self.name, self.balance)
 
     async def set_cards(self, cards):
         assert len(cards) <= 2

@@ -3,7 +3,7 @@ from unittest.mock import patch
 from tornado.testing import gen_test
 
 from pokerserver.database import PlayerState, TableConfig
-from pokerserver.models import Match, Player, Round, Table, get_all_cards
+from pokerserver.models import Match, Player, Table, get_all_cards
 from tests.utils import IntegrationTestCase, create_table
 
 
@@ -16,36 +16,51 @@ class TestStartHand(IntegrationTestCase):
             min_player_count=2, max_player_count=10, small_blind=1, big_blind=2, start_balance=10)
         return Match(Table(table_id, 'a table', config, players))
 
-    def check_blind_players(self, players, small_blind, big_blind, start):
+    def check_blind_players(self, players, small_blind, big_blind):
         self.assertEqual(players[0], small_blind.name)
         self.assertEqual(players[1], big_blind.name)
-        self.assertEqual(players[2], start.name)
 
     def test_find_blind_players(self):
         match = self.create_match({1: 'a', 2: 'b', 3: 'c', 5: 'd'})
-        small_blind, big_blind, start = match.find_blind_players(match.table.get_player_at(1))
-        self.check_blind_players('bcd', small_blind, big_blind, start)
+        match.table.dealer = match.table.get_player_at(1)
+        small_blind, big_blind = match.find_blind_players()
+        self.check_blind_players('bc', small_blind, big_blind)
 
-        small_blind, big_blind, start = match.find_blind_players(match.table.get_player_at(2))
-        self.check_blind_players('cda', small_blind, big_blind, start)
+        match.table.dealer = match.table.get_player_at(2)
+        small_blind, big_blind = match.find_blind_players()
+        self.check_blind_players('cd', small_blind, big_blind)
 
     def test_find_blind_players_heads_up(self):
         match = self.create_match({1: 'a', 4: 'b'})
-        small_blind, big_blind, start = match.find_blind_players(match.table.get_player_at(1))
-        self.check_blind_players('aba', small_blind, big_blind, start)
+        match.table.dealer = match.table.get_player_at(1)
+        small_blind, big_blind = match.find_blind_players()
+        self.check_blind_players('ab', small_blind, big_blind)
 
-        small_blind, big_blind, start = match.find_blind_players(match.table.get_player_at(4))
-        self.check_blind_players('bab', small_blind, big_blind, start)
+        match.table.dealer = match.table.get_player_at(4)
+        small_blind, big_blind = match.find_blind_players()
+        self.check_blind_players('ba', small_blind, big_blind)
 
-    def test_find_start_player(self):
+    def test_find_start_player_preflop(self):
         match = self.create_match({1: 'a', 2: 'b', 3: 'c', 5: 'd'})
-        self.assertEqual('d', match.find_start_player(match.table.get_player_at(1), Round.PREFLOP).name)
-        self.assertEqual('d', match.find_start_player(match.table.get_player_at(1), Round.FLOP).name)
+        match.table.dealer = match.table.get_player_at(1)
+        self.assertEqual('d', match.find_start_player().name)
 
-    def test_find_start_player_heads_up(self):
+    def test_find_start_player_on_flop(self):
+        match = self.create_match({1: 'a', 2: 'b', 3: 'c', 5: 'd'})
+        match.table.dealer = match.table.get_player_at(1)
+        match.table.open_cards = ['2h', '2c', '2d']
+        self.assertEqual('b', match.find_start_player().name)
+
+    def test_find_start_player_heads_up_preflop(self):
         match = self.create_match({1: 'a', 3: 'b'})
-        self.assertEqual('a', match.find_start_player(match.table.get_player_at(1), Round.PREFLOP).name)
-        self.assertEqual('b', match.find_start_player(match.table.get_player_at(1), Round.FLOP).name)
+        match.table.dealer = match.table.get_player_at(1)
+        self.assertEqual('a', match.find_start_player().name)
+
+    def test_find_start_player_heads_up_on_flop(self):
+        match = self.create_match({1: 'a', 3: 'b'})
+        match.table.dealer = match.table.get_player_at(1)
+        match.table.open_cards = ['2h', '2c', '2d']
+        self.assertEqual('b', match.find_start_player().name)
 
     @patch('random.shuffle')
     @gen_test

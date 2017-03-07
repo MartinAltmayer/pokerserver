@@ -106,14 +106,14 @@ class TestFindNextPlayer(TestCase):
     def test_find_next_player_has_already_played_and_highest_bet(self):
         players = self.sorted_players
         self.assertIs(players[5], self.table.dealer)
-        self.assertIs(players[2], self.match.find_start_player(self.table.dealer, self.table.round))
+        self.assertIs(players[2], self.match.find_start_player())
 
         self.assertIsNone(self.match.find_next_player(players[1]))
 
     def test_find_next_player_has_already_played_but_not_highest_bet(self):
         players = self.sorted_players
         self.assertIs(players[5], self.table.dealer)
-        self.assertIs(players[2], self.match.find_start_player(self.table.dealer, self.table.round))
+        self.assertIs(players[2], self.match.find_start_player())
         players[3].bet = 10
 
         self.assertIs(players[2], self.match.find_next_player(players[1]))

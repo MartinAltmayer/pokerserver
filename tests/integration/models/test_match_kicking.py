@@ -85,7 +85,7 @@ class TestKickCurrentPlayer(IntegrationTestCase):
         await match.kick_if_current_player(match.table.players[2], token, 'reason')
 
         self.assertEqual(Round.FLOP, match.table.round)
-        self.assertEqual('a', match.table.current_player.name)
+        self.assertEqual('b', match.table.current_player.name)
 
     @gen_test
     async def test_kick_closes_table_if_only_one_player_left(self):
