@@ -134,7 +134,7 @@ class Match:  # pylint: disable=too-many-public-methods
 
     def find_start_player(self, dealer, round_of_match):
         _, big_blind, start_player = self.find_blind_players(dealer)
-        if round_of_match is not Round.preflop and len(self.table.players) == 2:
+        if round_of_match is not Round.PREFLOP and len(self.table.players) == 2:
             start_player = big_blind
         return start_player
 
@@ -195,9 +195,9 @@ class Match:  # pylint: disable=too-many-public-methods
 
     async def next_round(self):
         await self.reset_bets()
-        if self.table.round is Round.preflop:
+        if self.table.round is Round.PREFLOP:
             await self.table.draw_cards(3)
-        elif self.table.round in [Round.flop, Round.turn]:
+        elif self.table.round in [Round.FLOP, Round.TURN]:
             await self.table.draw_cards(1)
         else:
             await self.show_down()

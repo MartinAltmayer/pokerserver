@@ -39,13 +39,13 @@ class TestStartHand(IntegrationTestCase):
 
     def test_find_start_player(self):
         match = self.create_match({1: 'a', 2: 'b', 3: 'c', 5: 'd'})
-        self.assertEqual('d', match.find_start_player(match.table.get_player_at(1), Round.preflop).name)
-        self.assertEqual('d', match.find_start_player(match.table.get_player_at(1), Round.flop).name)
+        self.assertEqual('d', match.find_start_player(match.table.get_player_at(1), Round.PREFLOP).name)
+        self.assertEqual('d', match.find_start_player(match.table.get_player_at(1), Round.FLOP).name)
 
     def test_find_start_player_heads_up(self):
         match = self.create_match({1: 'a', 3: 'b'})
-        self.assertEqual('a', match.find_start_player(match.table.get_player_at(1), Round.preflop).name)
-        self.assertEqual('b', match.find_start_player(match.table.get_player_at(1), Round.flop).name)
+        self.assertEqual('a', match.find_start_player(match.table.get_player_at(1), Round.PREFLOP).name)
+        self.assertEqual('b', match.find_start_player(match.table.get_player_at(1), Round.FLOP).name)
 
     @patch('random.shuffle')
     @gen_test

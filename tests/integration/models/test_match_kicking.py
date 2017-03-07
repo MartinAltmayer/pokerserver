@@ -84,7 +84,7 @@ class TestKickCurrentPlayer(IntegrationTestCase):
         token = await TablesRelation.get_current_player_token(match.table.table_id)
         await match.kick_if_current_player(match.table.players[2], token, 'reason')
 
-        self.assertEqual(Round.flop, match.table.round)
+        self.assertEqual(Round.FLOP, match.table.round)
         self.assertEqual('a', match.table.current_player.name)
 
     @gen_test

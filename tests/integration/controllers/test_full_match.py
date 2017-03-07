@@ -72,31 +72,31 @@ class TestFullMatch(IntegrationHttpTestCase):
         await self.async_setup()
 
         await self.assert_special_players(dealer='Player0', current_player='Player3')
-        await self.assert_round_and_pots(Round.preflop, [3])
+        await self.assert_round_and_pots(Round.PREFLOP, [3])
         await self.assert_balances_and_bets([10, 9, 8, 10], [0, 1, 2, 0])
 
         await self.everyone_calls_and_big_blind_checks(player_order=[3, 0, 1, 2], balances=[8, 8, 8, 8])
         await self.every_one_checks_three_times(player_order=[3, 0, 1, 2], balances=[8, 8, 8, 8])
 
-        await self.assert_round_and_pots(Round.preflop, [3])
+        await self.assert_round_and_pots(Round.PREFLOP, [3])
         await self.assert_balances_and_bets([16, 8, 7, 6], [0, 0, 1, 2])
 
         await self.everyone_calls_and_big_blind_checks(player_order=[0, 1, 2, 3], balances=[14, 6, 6, 6])
         await self.every_one_checks_three_times(player_order=[0, 1, 2, 3], balances=[14, 6, 6, 6])
 
-        await self.assert_round_and_pots(Round.preflop, [3])
+        await self.assert_round_and_pots(Round.PREFLOP, [3])
         await self.assert_balances_and_bets([20, 6, 6, 5], [2, 0, 0, 1])
 
         await self.everyone_calls_and_big_blind_checks(player_order=[1, 2, 3, 0], balances=[20, 4, 4, 4])
         await self.every_one_checks_three_times(player_order=[1, 2, 3, 0], balances=[20, 4, 4, 4])
 
-        await self.assert_round_and_pots(Round.preflop, [3])
+        await self.assert_round_and_pots(Round.PREFLOP, [3])
         await self.assert_balances_and_bets([27, 2, 4, 4], [1, 2, 0, 0])
 
         await self.everyone_calls_and_big_blind_checks(player_order=[2, 3, 0, 1], balances=[26, 2, 2, 2])
         await self.every_one_checks_three_times(player_order=[2, 3, 0, 1], balances=[26, 2, 2, 2])
 
-        await self.assert_round_and_pots(Round.preflop, [3])
+        await self.assert_round_and_pots(Round.PREFLOP, [3])
         await self.assert_balances_and_bets([34, 1, 0, 2], [0, 1, 2, 0])
 
         await self.everyone_calls_and_big_blind_checks(player_order=[3, 0, 1, 2], balances=[32, 0, 0, 0])
@@ -118,20 +118,20 @@ class TestFullMatch(IntegrationHttpTestCase):
             await self.fetch_with_uuid('/table/{}/call'.format(self.table.name), self.player_data[index])
         await self.fetch_with_uuid('/table/{}/check'.format(self.table.name), self.player_data[player_order[-1]])
 
-        await self.assert_round_and_pots(Round.flop, [8])
+        await self.assert_round_and_pots(Round.FLOP, [8])
         await self.assert_balances_and_bets(balances, [0, 0, 0, 0])
 
     async def every_one_checks_three_times(self, player_order, balances):
         for index in player_order:
             await self.fetch_with_uuid('/table/{}/check'.format(self.table.name), self.player_data[index])
 
-        await self.assert_round_and_pots(Round.turn, [8])
+        await self.assert_round_and_pots(Round.TURN, [8])
         await self.assert_balances_and_bets(balances, [0, 0, 0, 0])
 
         for index in player_order:
             await self.fetch_with_uuid('/table/{}/check'.format(self.table.name), self.player_data[index])
 
-        await self.assert_round_and_pots(Round.river, [8])
+        await self.assert_round_and_pots(Round.RIVER, [8])
         await self.assert_balances_and_bets(balances, [0, 0, 0, 0])
 
         for index in player_order:

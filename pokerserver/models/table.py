@@ -11,10 +11,10 @@ class TableNotFoundError(Exception):
 
 @unique
 class Round(Enum):
-    preflop = 1
-    flop = 2
-    turn = 3
-    river = 4
+    PREFLOP = 1
+    FLOP = 2
+    TURN = 3
+    RIVER = 4
 
 
 # pylint: disable=too-many-instance-attributes, too-many-public-methods
@@ -84,7 +84,7 @@ class Table:
             'players': [player.to_dict(show_cards=player_name == player.name) for player in self.players],
             'small_blind': self.config.small_blind,
             'big_blind': self.config.big_blind,
-            'round': self.round.name,
+            'round': self.round.name.lower(),
             'open_cards': self.open_cards,
             'pots': [pot.to_dict() for pot in self.pots],
             'current_player': self.current_player.name if self.current_player else None,
@@ -106,10 +106,10 @@ class Table:
     @property
     def round(self):
         return {
-            0: Round.preflop,
-            3: Round.flop,
-            4: Round.turn,
-            5: Round.river
+            0: Round.PREFLOP,
+            3: Round.FLOP,
+            4: Round.TURN,
+            5: Round.RIVER
         }[len(self.open_cards)]
 
     def is_free(self):

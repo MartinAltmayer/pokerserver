@@ -28,10 +28,10 @@ class TestNextRound(IntegrationTestCase, PotChecker):
     @gen_test
     async def test_draw_open_cards(self):
         expected_card_count = {
-            Round.preflop: 0,
-            Round.flop: 3,
-            Round.turn: 4,
-            Round.river: 5
+            Round.PREFLOP: 0,
+            Round.FLOP: 3,
+            Round.TURN: 4,
+            Round.RIVER: 5
         }
         rounds = list(Round)
         for i, round_of_match in enumerate(rounds[:-1]):
