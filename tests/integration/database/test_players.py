@@ -89,6 +89,16 @@ class TestPlayersRelation(IntegrationTestCase):
         self.assertEqual(new_balance, player['balance'])
 
     @gen_test
+    async def test_set_bet(self):
+        player_data = self.PLAYER_DATA[0]
+        await PlayersRelation.add_player(**player_data)
+        new_bet = player_data['bet'] + 100
+        await PlayersRelation.set_bet(player_data['name'], new_bet)
+
+        player = await PlayersRelation.load_by_name(player_data['name'])
+        self.assertEqual(new_bet, player['bet'])
+
+    @gen_test
     async def test_set_balance_and_bet(self):
         player_data = self.PLAYER_DATA[0]
         await PlayersRelation.add_player(**player_data)
@@ -121,25 +131,3 @@ class TestPlayersRelation(IntegrationTestCase):
 
         player = await PlayersRelation.load_by_name(player_data['name'])
         self.assertEqual(player['state'], PlayerState.FOLDED)
-
-    @gen_test
-    async def test_reset_bets(self):
-        assert any(data['bet'] != 0 and data['table_id'] == 1 for data in self.PLAYER_DATA)
-        await self.create_players()
-        await PlayersRelation.reset_bets(1)
-
-        players = await PlayersRelation.load_by_table_id(1)
-        for player in players:
-            self.assertEqual(0, player['bet'])
-
-    @gen_test
-    async def test_reset_bets_and_state(self):
-        assert any(data['bet'] != 0 and data['table_id'] == 2 for data in self.PLAYER_DATA)
-        assert any(data['state'] == PlayerState.FOLDED and data['table_id'] == 2 for data in self.PLAYER_DATA)
-        await self.create_players()
-        await PlayersRelation.reset_bets_and_state(2)
-
-        players = await PlayersRelation.load_by_table_id(2)
-        for player in players:
-            self.assertEqual(0, player['bet'])
-            self.assertEqual(player['state'], PlayerState.PLAYING)

@@ -21,24 +21,10 @@ class TestFindBankruptPlayers(IntegrationTestCase):
     async def test_bankrupt_players(self):
         match = await self.create_match(0, 20, 20, 0)
         players = match.table.players
-        bankrupt_players = match.find_bankrupt_players(dealer=match.table.players[0])
+        bankrupt_players = match.find_bankrupt_players()
         self.assertEqual([players[0], players[3]], bankrupt_players)
-
-    @gen_test
-    async def test_small_blind_bankrupt(self):
-        match = await self.create_match(20, 9, 20, 20)
-        players = match.table.players
-        bankrupt_players = match.find_bankrupt_players(dealer=match.table.players[0])
-        self.assertEqual([players[1]], bankrupt_players)
-
-    @gen_test
-    async def test_big_blind_bankrupt(self):
-        match = await self.create_match(20, 10, 19, 20)
-        players = match.table.players
-        bankrupt_players = match.find_bankrupt_players(dealer=match.table.players[0])
-        self.assertEqual([players[2]], bankrupt_players)
 
     @gen_test
     async def test_noone_bankrupt(self):
         match = await self.create_match(1, 10, 20, 1)
-        self.assertEqual([], match.find_bankrupt_players(dealer=match.table.players[0]))
+        self.assertEqual([], match.find_bankrupt_players())

@@ -11,10 +11,10 @@ class TableNotFoundError(Exception):
 
 @unique
 class Round(Enum):
-    preflop = 1
-    flop = 2
-    turn = 3
-    river = 4
+    PREFLOP = 1
+    FLOP = 2
+    TURN = 3
+    RIVER = 4
 
 
 # pylint: disable=too-many-instance-attributes, too-many-public-methods
@@ -84,7 +84,7 @@ class Table:
             'players': [player.to_dict(show_cards=player_name == player.name) for player in self.players],
             'small_blind': self.config.small_blind,
             'big_blind': self.config.big_blind,
-            'round': self.round.name,
+            'round': self.round.name.lower(),
             'open_cards': self.open_cards,
             'pots': [pot.to_dict() for pot in self.pots],
             'current_player': self.current_player.name if self.current_player else None,
@@ -106,10 +106,10 @@ class Table:
     @property
     def round(self):
         return {
-            0: Round.preflop,
-            3: Round.flop,
-            4: Round.turn,
-            5: Round.river
+            0: Round.PREFLOP,
+            3: Round.FLOP,
+            4: Round.TURN,
+            5: Round.RIVER
         }[len(self.open_cards)]
 
     def is_free(self):
@@ -139,7 +139,7 @@ class Table:
         return any(player.name == player_name for player in self.players)
 
     def active_players(self):
-        return [player for player in self.players if player.state != PlayerState.FOLDED]
+        return [player for player in self.players if player.state not in [PlayerState.FOLDED, PlayerState.SITTING_OUT]]
 
     def player_positions_between(self, pos1, pos2):
         if pos1 == pos2:
@@ -194,6 +194,7 @@ class Table:
         await TablesRelation.set_dealer(self.table_id, self.dealer.name if self.dealer is not None else None)
 
     async def set_current_player(self, current_player, token):
+        assert current_player.state not in [PlayerState.FOLDED, PlayerState.SITTING_OUT]
         player_name = current_player.name if current_player else None
         self.current_player = self.find_player(player_name)
         await TablesRelation.set_current_player(self.table_id, player_name, token)
@@ -264,15 +265,24 @@ class Table:
         self.open_cards.extend(cards)
         await TablesRelation.set_cards(self.table_id, self.remaining_deck, self.open_cards)
 
-    async def reset_after_hand(self):
+    async def reset(self):
         await self.set_cards([], [])
         await self.clear_pots()
         await self.set_dealer(None)
+        await gather(*[player.reset() for player in self.players])
 
     async def close(self):
         await gather(*[self.remove_player(player) for player in self.players.copy()])
         self.is_closed = True
         await TablesRelation.close_table(self.table_id)
+
+    @classmethod
+    async def ensure_free_tables(cls, number, table_config):
+        tables = await Table.load_all()
+        free_tables = len([table for table in tables if table.is_free()])
+        if free_tables < number:
+            await Table.create_tables(number - free_tables, table_config)
+        return number - free_tables
 
 
 class Pot:

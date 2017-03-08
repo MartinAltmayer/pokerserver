@@ -1,5 +1,5 @@
 from argparse import ArgumentParser
-import asyncio
+from asyncio import get_event_loop, sleep
 import logging
 from logging.config import dictConfig
 import os
@@ -10,10 +10,13 @@ from tornado.platform.asyncio import AsyncIOMainLoop
 from tornado.web import Application
 
 from pokerserver.configuration import LOGGING, ServerConfig
-from pokerserver.controllers import HANDLERS, TablesController
+from pokerserver.controllers import HANDLERS
 from pokerserver.database import Database, TableConfig
+from pokerserver.models import Table
 
 LOG = logging.getLogger(__name__)
+
+ENSURE_TABLES_INTERVAL_SECONDS = 10
 
 
 def make_app(args):
@@ -28,8 +31,26 @@ def make_app(args):
 async def setup(args):
     ServerConfig.set(timeout=args.timeout or None)
     await Database.connect(args.db)
-    await TablesController.ensure_free_tables(args.free_tables, TableConfig(
-        args.min_player_count, args.max_player_count, args.small_blind, args.big_blind, args.start_balance))
+
+
+async def ensure_free_tables(args):
+    while True:
+        try:
+            LOG.info('Calling Table.ensure_free_tables to ensure %s tables are available...', args.free_tables)
+            number_of_created_tables = await Table.ensure_free_tables(
+                args.free_tables,
+                TableConfig(
+                    args.min_player_count,
+                    args.max_player_count,
+                    args.small_blind,
+                    args.big_blind,
+                    args.start_balance
+                )
+            )
+            LOG.info('Created %s tables.', number_of_created_tables)
+            await sleep(ENSURE_TABLES_INTERVAL_SECONDS)
+        except Exception:  # pylint: disable=broad-except
+            LOG.exception('An error occurred in ensure_free_tables!')
 
 
 async def teardown():
@@ -61,14 +82,15 @@ def main():
 
     LOG.debug('Starting server...')
     AsyncIOMainLoop().install()
-    asyncio.get_event_loop().run_until_complete(setup(args))
+    get_event_loop().run_until_complete(setup(args))
+    get_event_loop().create_task(ensure_free_tables(args))
     app = make_app(args)
     LOG.debug('Listening on %s:%s...', args.ip, args.port)
     app.listen(address=args.ip, port=args.port)
     try:
         IOLoop.current().start()
     finally:
-        asyncio.get_event_loop().run_until_complete(teardown())
+        get_event_loop().run_until_complete(teardown())
     LOG.debug('Shut down.')
 
 

@@ -5,10 +5,11 @@ import random
 from uuid import uuid4
 
 from pokerserver.configuration import ServerConfig
-from pokerserver.database import DuplicateKeyError, PlayerState, StatsRelation
+from pokerserver.database import DuplicateKeyError, PlayerState
 from .card import get_all_cards
 from .player import Player
 from .ranking import determine_winning_players
+from .statistics import Statistics
 from .table import Round
 
 LOG = logging.getLogger(__name__)
@@ -107,36 +108,33 @@ class Match:  # pylint: disable=too-many-public-methods
     async def start(self, dealer=None):
         if dealer is None:
             dealer = random.choice(self.table.players)
+        await self.table.reset()
         await self.start_hand(dealer)
 
     async def start_hand(self, dealer):
         assert len(self.table.players) >= 2
-        small_blind_player, big_blind_player, under_the_gun = self.find_blind_players(dealer)
         await self.table.set_dealer(dealer)
-        await self.table.clear_pots()
-        await self.reset_bets()
+        small_blind_player, big_blind_player = self.find_blind_players()
+        under_the_gun = self.find_start_player()
         await self.pay_blinds(small_blind_player, big_blind_player)
         await self.distribute_cards()
         self.log(under_the_gun, "Started table {}".format(self.table.name))
         await self.set_player_active(under_the_gun)
 
-    def find_blind_players(self, dealer):
+    def find_blind_players(self):
         if len(self.table.players) == 2:
-            small_blind = dealer
+            small_blind = self.table.dealer
             big_blind = self.table.player_left_of(small_blind)
-            under_the_gun = small_blind
         else:
-            small_blind = self.table.player_left_of(dealer)
+            small_blind = self.table.player_left_of(self.table.dealer)
             big_blind = self.table.player_left_of(small_blind)
-            under_the_gun = self.table.player_left_of(big_blind)
+        return small_blind, big_blind
 
-        return small_blind, big_blind, under_the_gun
-
-    def find_start_player(self, dealer, round_of_match):
-        _, big_blind, start_player = self.find_blind_players(dealer)
-        if round_of_match is not Round.preflop and len(self.table.players) == 2:
-            start_player = big_blind
-        return start_player
+    def find_start_player(self):
+        small_blind, big_blind = self.find_blind_players()
+        if len(self.table.players) == 2:
+            return small_blind if self.table.round == Round.PREFLOP else big_blind
+        return self.table.player_left_of(big_blind) if self.table.round == Round.PREFLOP else small_blind
 
     async def pay_blinds(self, small_blind_player, big_blind_player):
         assert small_blind_player in self.table.players
@@ -176,7 +174,10 @@ class Match:  # pylint: disable=too-many-public-methods
             await self.set_player_active(next_player)
 
     def find_next_player(self, current_player):
-        active_players = [player for player in self.table.players if player.state != PlayerState.FOLDED]
+        active_players = [
+            player for player in self.table.players
+            if player.state not in [PlayerState.FOLDED, PlayerState.SITTING_OUT]
+        ]
         if len(active_players) <= 1:
             return None
 
@@ -187,33 +188,37 @@ class Match:  # pylint: disable=too-many-public-methods
         return next_player
 
     async def reset_bets(self):
-        await Player.reset_bets(self.table.table_id)
         for player in self.table.players:
-            player.bet = 0
+            await player.set_bet(0)
 
     async def next_round(self):
         await self.reset_bets()
-        if self.table.round is Round.preflop:
-            await self.table.draw_cards(3)
-        elif self.table.round in [Round.flop, Round.turn]:
-            await self.table.draw_cards(1)
-        else:
-            await self.show_down()
+        only_one_player_remaining = len(self.table.active_players()) == 1
+
+        if only_one_player_remaining:
+            await self.finish_hand()
             return
 
-        next_player = self.find_start_player(self.table.dealer, self.table.round)
+        if self.table.round is Round.PREFLOP:
+            await self.table.draw_cards(3)
+        elif self.table.round in [Round.FLOP, Round.TURN]:
+            await self.table.draw_cards(1)
+        else:
+            await self.finish_hand()
+            return
+
+        next_player = self.find_start_player()
         self.log(next_player, 'Starts new round')
         await self.set_player_active(next_player)
 
-    async def show_down(self):
-        await self.distribute_pots()
-        await Player.reset_after_hand(self.table.table_id)
+    async def finish_hand(self):
         old_dealer = self.table.dealer
-        await self.table.reset_after_hand()
+        await self.distribute_pots()
+        await self.table.reset()
 
         dealer = self.table.player_left_of(old_dealer)
         while len(self.table.players) > 1:
-            bankrupt_players = self.find_bankrupt_players(dealer)
+            bankrupt_players = self.find_bankrupt_players()
             if not bankrupt_players:
                 break
 
@@ -237,7 +242,7 @@ class Match:  # pylint: disable=too-many-public-methods
             await self.distribute_pot(pot, active_players_for_pot)
 
     async def distribute_pot(self, pot, players):
-        winning_players = determine_winning_players(players, self.table.open_cards)
+        winning_players = determine_winning_players(players, self.table.open_cards) if len(players) > 1 else players
 
         for player in winning_players:
             await player.increase_balance(pot.amount // len(winning_players))
@@ -247,21 +252,8 @@ class Match:  # pylint: disable=too-many-public-methods
             player = self.table.player_left_of(self.table.dealer, player_filter=players)
             await player.increase_balance(rest)
 
-    def find_bankrupt_players(self, dealer):
-        small_blind_player, big_blind_player, _ = self.find_blind_players(dealer)
-        bankrupt_players = []
-        for player in self.table.players:
-            if player == small_blind_player:
-                required_balance = self.table.config.small_blind
-            elif player == big_blind_player:
-                required_balance = self.table.config.big_blind
-            else:
-                required_balance = 1
-
-            if player.balance < required_balance:
-                bankrupt_players.append(player)
-
-        return bankrupt_players
+    def find_bankrupt_players(self):
+        return [player for player in self.table.players if player.balance == 0]
 
     async def close_table(self):
         self.log('', 'Closing table {}'.format(self.table.table_id))
@@ -269,7 +261,7 @@ class Match:  # pylint: disable=too-many-public-methods
         await self.table.close()
 
     async def increment_stats_for_player(self, player):
-        await StatsRelation.increment_stats(
+        await Statistics.increment_statistics(
             player.name, matches=1, buy_in=self.table.config.start_balance, gain=player.balance)
 
     async def call(self, player_name):
@@ -304,7 +296,7 @@ class Match:  # pylint: disable=too-many-public-methods
         return max([0] + [p.bet for p in self.table.players if p.bet is not None])
 
     def _has_made_turn(self, player, current_player):
-        start_player = self.find_start_player(self.table.dealer, self.table.round)
+        start_player = self.find_start_player()
         return player.position in self.table.player_positions_between(
             start_player.position, current_player.position)
 

@@ -48,14 +48,14 @@ class TestKickCurrentPlayer(IntegrationTestCase):
         await match.kick_if_current_player(match.table.players[2], 'thisisnotthetoken', 'reason')
         self.assertEqual(4, len(match.table.players))
 
-    @patch('pokerserver.database.stats.StatsRelation.increment_stats', side_effect=return_done_future())
+    @patch('pokerserver.database.statistics.StatisticsRelation.increment_statistics', side_effect=return_done_future())
     @gen_test
     async def test_kick_increments_stats(self, increment_stats_mock):
         match = await self.create_match()
         await match.start(match.table.players[0])
         token = await TablesRelation.get_current_player_token(match.table.table_id)
         await match.kick_if_current_player(match.table.players[3], token, 'reason')
-        increment_stats_mock.assert_called_once_with('d', matches=1, buy_in=20, gain=10)
+        increment_stats_mock.assert_called_once_with('d', 1, 20, 10)
 
     @gen_test
     async def test_kick_sets_next_player(self):
@@ -84,8 +84,8 @@ class TestKickCurrentPlayer(IntegrationTestCase):
         token = await TablesRelation.get_current_player_token(match.table.table_id)
         await match.kick_if_current_player(match.table.players[2], token, 'reason')
 
-        self.assertEqual(Round.flop, match.table.round)
-        self.assertEqual('a', match.table.current_player.name)
+        self.assertEqual(Round.FLOP, match.table.round)
+        self.assertEqual('b', match.table.current_player.name)
 
     @gen_test
     async def test_kick_closes_table_if_only_one_player_left(self):

@@ -1,6 +1,7 @@
 from .base import BaseController
-from .frontend import IndexController, FrontendDataController
+from .frontend import FrontendDataController, IndexController
 from .info import InfoController
+from .statistics import StatisticsController
 from .table import CallController, CheckController, FoldController, JoinController, RaiseController, TableController
 from .tables import TablesController
 from .uuid import UUIDController
@@ -16,6 +17,7 @@ _CONTROLLERS = [
     CallController,
     CheckController,
     RaiseController,
+    StatisticsController,
     UUIDController
 ]
 

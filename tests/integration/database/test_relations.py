@@ -13,7 +13,7 @@ class TestRelations(IntegrationTestCase):
         for table_class in RELATIONS:
             self.assertTrue(await self.check_relation_exists(table_class.NAME))
 
-    @gen_test
+    @gen_test(timeout=60)
     async def test_create_relations_multiple_times(self):
         for _ in range(100):
             await create_relations()

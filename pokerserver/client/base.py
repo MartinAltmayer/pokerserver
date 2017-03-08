@@ -58,9 +58,10 @@ class Player:
 
 
 class PlayerState(Enum):
-    PLAYING = 0
-    FOLDED = 1
-    ALL_IN = 2
+    PLAYING = 'playing'
+    FOLDED = 'folded'
+    ALL_IN = 'all in'
+    SITTING_OUT = 'sitting out'
 
 
 class BaseClient:

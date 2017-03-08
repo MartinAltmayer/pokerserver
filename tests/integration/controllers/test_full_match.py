@@ -2,8 +2,8 @@ from unittest.mock import patch
 
 from tornado.testing import gen_test
 
-from pokerserver.database import TableConfig, TablesRelation, PlayersRelation, StatsRelation
-from pokerserver.models import Table, Round, get_all_cards
+from pokerserver.database import PlayersRelation, TableConfig, TablesRelation
+from pokerserver.models import Round, Statistics, Table, get_all_cards
 from tests.utils import IntegrationHttpTestCase
 
 
@@ -71,85 +71,239 @@ class TestFullMatch(IntegrationHttpTestCase):
     async def test_all_call_and_check(self):
         await self.async_setup()
 
-        await self.assert_special_players(dealer='Player0', current_player='Player3')
-        await self.assert_round_and_pots(Round.preflop, [3])
-        await self.assert_balances_and_bets([10, 9, 8, 10], [0, 1, 2, 0])
+        await self._assert_special_players(dealer='Player0', current_player='Player3')
+        await self._assert_round_and_pots(Round.PREFLOP, [3])
+        await self._assert_balances_and_bets([10, 9, 8, 10], [0, 1, 2, 0])
 
-        await self.everyone_calls_and_big_blind_checks(player_order=[3, 0, 1, 2], balances=[8, 8, 8, 8])
-        await self.every_one_checks_three_times(player_order=[3, 0, 1, 2], balances=[8, 8, 8, 8])
+        await self._everyone_calls_and_big_blind_checks(player_order=[3, 0, 1, 2], balances=[8, 8, 8, 8])
+        await self._everyone_checks_three_times(player_order=[1, 2, 3, 0], balances=[8, 8, 8, 8])
 
-        await self.assert_round_and_pots(Round.preflop, [3])
-        await self.assert_balances_and_bets([16, 8, 7, 6], [0, 0, 1, 2])
+        await self._assert_round_and_pots(Round.PREFLOP, [3])
+        await self._assert_balances_and_bets([16, 8, 7, 6], [0, 0, 1, 2])
 
-        await self.everyone_calls_and_big_blind_checks(player_order=[0, 1, 2, 3], balances=[14, 6, 6, 6])
-        await self.every_one_checks_three_times(player_order=[0, 1, 2, 3], balances=[14, 6, 6, 6])
+        await self._everyone_calls_and_big_blind_checks(player_order=[0, 1, 2, 3], balances=[14, 6, 6, 6])
+        await self._everyone_checks_three_times(player_order=[2, 3, 0, 1], balances=[14, 6, 6, 6])
 
-        await self.assert_round_and_pots(Round.preflop, [3])
-        await self.assert_balances_and_bets([20, 6, 6, 5], [2, 0, 0, 1])
+        await self._assert_round_and_pots(Round.PREFLOP, [3])
+        await self._assert_balances_and_bets([20, 6, 6, 5], [2, 0, 0, 1])
 
-        await self.everyone_calls_and_big_blind_checks(player_order=[1, 2, 3, 0], balances=[20, 4, 4, 4])
-        await self.every_one_checks_three_times(player_order=[1, 2, 3, 0], balances=[20, 4, 4, 4])
+        await self._everyone_calls_and_big_blind_checks(player_order=[1, 2, 3, 0], balances=[20, 4, 4, 4])
+        await self._everyone_checks_three_times(player_order=[3, 0, 1, 2], balances=[20, 4, 4, 4])
 
-        await self.assert_round_and_pots(Round.preflop, [3])
-        await self.assert_balances_and_bets([27, 2, 4, 4], [1, 2, 0, 0])
+        await self._assert_round_and_pots(Round.PREFLOP, [3])
+        await self._assert_balances_and_bets([27, 2, 4, 4], [1, 2, 0, 0])
 
-        await self.everyone_calls_and_big_blind_checks(player_order=[2, 3, 0, 1], balances=[26, 2, 2, 2])
-        await self.every_one_checks_three_times(player_order=[2, 3, 0, 1], balances=[26, 2, 2, 2])
+        await self._everyone_calls_and_big_blind_checks(player_order=[2, 3, 0, 1], balances=[26, 2, 2, 2])
+        await self._everyone_checks_three_times(player_order=[0, 1, 2, 3], balances=[26, 2, 2, 2])
 
-        await self.assert_round_and_pots(Round.preflop, [3])
-        await self.assert_balances_and_bets([34, 1, 0, 2], [0, 1, 2, 0])
+        await self._assert_round_and_pots(Round.PREFLOP, [3])
+        await self._assert_balances_and_bets([34, 1, 0, 2], [0, 1, 2, 0])
 
-        await self.everyone_calls_and_big_blind_checks(player_order=[3, 0, 1, 2], balances=[32, 0, 0, 0])
-        await self.every_one_checks_three_times(player_order=[3, 0, 1, 2], balances=[32, 0, 0, 0])
+        await self._everyone_calls_and_big_blind_checks(player_order=[3, 0, 1, 2], balances=[32, 0, 0, 0])
+        await self._everyone_checks_three_times(player_order=[1, 2, 3, 0], balances=[32, 0, 0, 0])
 
         table = await Table.load_by_name(self.table.name)
         self.assertTrue(table.is_closed)
 
-        stats = await StatsRelation.get_stats()
+        stats = await Statistics.load()
         self.assertEqual({
-            'Player0': (1, 10, 40),
-            'Player1': (1, 10, 0),
-            'Player2': (1, 10, 0),
-            'Player3': (1, 10, 0)
-        }, stats)
+            'Player0': {'matches': 1, 'buy_in': 10, 'gain': 40},
+            'Player1': {'matches': 1, 'buy_in': 10, 'gain': 0},
+            'Player2': {'matches': 1, 'buy_in': 10, 'gain': 0},
+            'Player3': {'matches': 1, 'buy_in': 10, 'gain': 0}
+        }, {statistics.player_name: statistics.to_dict() for statistics in stats.player_statistics})
 
-    async def everyone_calls_and_big_blind_checks(self, player_order, balances):
+    @gen_test
+    async def test_everyone_folds_preflop(self):
+        await self.async_setup()
+
+        await self._assert_special_players(dealer='Player0', current_player='Player3')
+        await self._assert_round_and_pots(Round.PREFLOP, [3])
+        await self._assert_balances_and_bets([10, 9, 8, 10], [0, 1, 2, 0])
+
+        await self._everyone_folds(player_order=[3, 0, 1])
+
+        await self._assert_round_and_pots(Round.PREFLOP, [3])
+        await self._assert_balances_and_bets([10, 9, 10, 8], [0, 0, 1, 2])
+
+    @gen_test
+    async def test_everyone_folds_on_flop_except_dealer(self):
+        await self.async_setup()
+
+        await self._assert_special_players(dealer='Player0', current_player='Player3')
+        await self._assert_round_and_pots(Round.PREFLOP, [3])
+        await self._assert_balances_and_bets([10, 9, 8, 10], [0, 1, 2, 0])
+
+        await self._everyone_calls_and_big_blind_checks(player_order=[3, 0, 1, 2], balances=[8, 8, 8, 8])
+        await self._assert_round_and_pots(Round.FLOP, [8])
+        await self._assert_balances_and_bets([8, 8, 8, 8], [0, 0, 0, 0])
+
+        await self._everyone_folds(player_order=[1, 2, 3])
+
+        await self._assert_round_and_pots(Round.PREFLOP, [3])
+        await self._assert_balances_and_bets([16, 8, 7, 6], [0, 0, 1, 2])
+
+    @gen_test
+    async def test_everyone_folds_on_flop_except_big_blind(self):
+        await self.async_setup()
+
+        await self._assert_special_players(dealer='Player0', current_player='Player3')
+        await self._assert_round_and_pots(Round.PREFLOP, [3])
+        await self._assert_balances_and_bets([10, 9, 8, 10], [0, 1, 2, 0])
+
+        await self._everyone_calls_and_big_blind_checks(player_order=[3, 0, 1, 2], balances=[8, 8, 8, 8])
+        await self._assert_round_and_pots(Round.FLOP, [8])
+        await self._assert_balances_and_bets([8, 8, 8, 8], [0, 0, 0, 0])
+
+        await self._everyone_folds(player_order=[1])
+        await self._player_raises(2)
+        await self._everyone_folds(player_order=[3, 0])
+
+        await self._assert_round_and_pots(Round.PREFLOP, [3])
+        await self._assert_balances_and_bets([8, 8, 15, 6], [0, 0, 1, 2])
+
+    @gen_test
+    async def test_everyone_folds_on_turn_except_dealer(self):
+        await self.async_setup()
+
+        await self._assert_special_players(dealer='Player0', current_player='Player3')
+        await self._assert_round_and_pots(Round.PREFLOP, [3])
+        await self._assert_balances_and_bets([10, 9, 8, 10], [0, 1, 2, 0])
+
+        await self._everyone_calls_and_big_blind_checks(player_order=[3, 0, 1, 2], balances=[8, 8, 8, 8])
+        await self._assert_round_and_pots(Round.FLOP, [8])
+        await self._assert_balances_and_bets([8, 8, 8, 8], [0, 0, 0, 0])
+
+        await self._everyone_checks(player_order=[1, 2, 3, 0])
+        await self._assert_round_and_pots(Round.TURN, [8])
+        await self._assert_balances_and_bets([8, 8, 8, 8], [0, 0, 0, 0])
+
+        await self._everyone_folds(player_order=[1, 2, 3])
+
+        await self._assert_round_and_pots(Round.PREFLOP, [3])
+        await self._assert_balances_and_bets([16, 8, 7, 6], [0, 0, 1, 2])
+
+    @gen_test
+    async def test_everyone_folds_on_turn_except_big_blind(self):
+        await self.async_setup()
+
+        await self._assert_special_players(dealer='Player0', current_player='Player3')
+        await self._assert_round_and_pots(Round.PREFLOP, [3])
+        await self._assert_balances_and_bets([10, 9, 8, 10], [0, 1, 2, 0])
+
+        await self._everyone_calls_and_big_blind_checks(player_order=[3, 0, 1, 2], balances=[8, 8, 8, 8])
+        await self._assert_round_and_pots(Round.FLOP, [8])
+        await self._assert_balances_and_bets([8, 8, 8, 8], [0, 0, 0, 0])
+
+        await self._everyone_checks(player_order=[1, 2, 3, 0])
+        await self._assert_round_and_pots(Round.TURN, [8])
+        await self._assert_balances_and_bets([8, 8, 8, 8], [0, 0, 0, 0])
+
+        await self._everyone_folds(player_order=[1])
+        await self._player_raises(2)
+        await self._everyone_folds(player_order=[3, 0])
+
+        await self._assert_round_and_pots(Round.PREFLOP, [3])
+        await self._assert_balances_and_bets([8, 8, 15, 6], [0, 0, 1, 2])
+
+    @gen_test
+    async def test_everyone_folds_on_river_except_dealer(self):
+        await self.async_setup()
+
+        await self._assert_special_players(dealer='Player0', current_player='Player3')
+        await self._assert_round_and_pots(Round.PREFLOP, [3])
+        await self._assert_balances_and_bets([10, 9, 8, 10], [0, 1, 2, 0])
+
+        await self._everyone_calls_and_big_blind_checks(player_order=[3, 0, 1, 2], balances=[8, 8, 8, 8])
+        await self._assert_round_and_pots(Round.FLOP, [8])
+        await self._assert_balances_and_bets([8, 8, 8, 8], [0, 0, 0, 0])
+
+        await self._everyone_checks(player_order=[1, 2, 3, 0])
+        await self._assert_round_and_pots(Round.TURN, [8])
+        await self._assert_balances_and_bets([8, 8, 8, 8], [0, 0, 0, 0])
+
+        await self._everyone_checks(player_order=[1, 2, 3, 0])
+        await self._assert_round_and_pots(Round.RIVER, [8])
+        await self._assert_balances_and_bets([8, 8, 8, 8], [0, 0, 0, 0])
+
+        await self._everyone_folds(player_order=[1, 2, 3])
+
+        await self._assert_round_and_pots(Round.PREFLOP, [3])
+        await self._assert_balances_and_bets([16, 8, 7, 6], [0, 0, 1, 2])
+
+    @gen_test
+    async def test_everyone_folds_on_river_except_big_blind(self):
+        await self.async_setup()
+
+        await self._assert_special_players(dealer='Player0', current_player='Player3')
+        await self._assert_round_and_pots(Round.PREFLOP, [3])
+        await self._assert_balances_and_bets([10, 9, 8, 10], [0, 1, 2, 0])
+
+        await self._everyone_calls_and_big_blind_checks(player_order=[3, 0, 1, 2], balances=[8, 8, 8, 8])
+        await self._assert_round_and_pots(Round.FLOP, [8])
+        await self._assert_balances_and_bets([8, 8, 8, 8], [0, 0, 0, 0])
+
+        await self._everyone_checks(player_order=[1, 2, 3, 0])
+        await self._assert_round_and_pots(Round.TURN, [8])
+        await self._assert_balances_and_bets([8, 8, 8, 8], [0, 0, 0, 0])
+
+        await self._everyone_checks(player_order=[1, 2, 3, 0])
+        await self._assert_round_and_pots(Round.RIVER, [8])
+        await self._assert_balances_and_bets([8, 8, 8, 8], [0, 0, 0, 0])
+
+        await self._everyone_folds(player_order=[1])
+        await self._player_raises(2)
+        await self._everyone_folds(player_order=[3, 0])
+
+        await self._assert_round_and_pots(Round.PREFLOP, [3])
+        await self._assert_balances_and_bets([8, 8, 15, 6], [0, 0, 1, 2])
+
+    async def _player_raises(self, index):
+        await self.fetch_with_uuid('/table/{}/raise?amount=1'.format(self.table.name), self.player_data[index])
+
+    async def _everyone_calls_and_big_blind_checks(self, player_order, balances):
         for index in player_order[:-1]:
             await self.fetch_with_uuid('/table/{}/call'.format(self.table.name), self.player_data[index])
         await self.fetch_with_uuid('/table/{}/check'.format(self.table.name), self.player_data[player_order[-1]])
 
-        await self.assert_round_and_pots(Round.flop, [8])
-        await self.assert_balances_and_bets(balances, [0, 0, 0, 0])
+        await self._assert_round_and_pots(Round.FLOP, [8])
+        await self._assert_balances_and_bets(balances, [0, 0, 0, 0])
 
-    async def every_one_checks_three_times(self, player_order, balances):
+    async def _everyone_checks_three_times(self, player_order, balances):
+        await self._everyone_checks(player_order)
+
+        await self._assert_round_and_pots(Round.TURN, [8])
+        await self._assert_balances_and_bets(balances, [0, 0, 0, 0])
+
+        await self._everyone_checks(player_order)
+
+        await self._assert_round_and_pots(Round.RIVER, [8])
+        await self._assert_balances_and_bets(balances, [0, 0, 0, 0])
+
+        await self._everyone_checks(player_order)
+
+    async def _everyone_checks(self, player_order):
         for index in player_order:
             await self.fetch_with_uuid('/table/{}/check'.format(self.table.name), self.player_data[index])
 
-        await self.assert_round_and_pots(Round.turn, [8])
-        await self.assert_balances_and_bets(balances, [0, 0, 0, 0])
-
+    async def _everyone_folds(self, player_order):
         for index in player_order:
-            await self.fetch_with_uuid('/table/{}/check'.format(self.table.name), self.player_data[index])
+            print(index)
+            await self.fetch_with_uuid('/table/{}/fold'.format(self.table.name), self.player_data[index])
 
-        await self.assert_round_and_pots(Round.river, [8])
-        await self.assert_balances_and_bets(balances, [0, 0, 0, 0])
-
-        for index in player_order:
-            await self.fetch_with_uuid('/table/{}/check'.format(self.table.name), self.player_data[index])
-
-    async def assert_special_players(self, dealer=None, current_player=None):
+    async def _assert_special_players(self, dealer=None, current_player=None):
         table = await TablesRelation.load_table_by_id(self.table.table_id)
         if dealer is not None:
             self.assertEqual(dealer, table['dealer'])
         if current_player is not None:
             self.assertEqual(current_player, table['current_player'])
 
-    async def assert_round_and_pots(self, round_of_match, pots):
+    async def _assert_round_and_pots(self, round_of_match, pots):
         table = await Table.load_by_name(self.table.name)
         self.assertEqual(round_of_match, table.round)
         self.assertEqual(pots, [pot.amount for pot in table.pots])
 
-    async def assert_balances_and_bets(self, balances, bets):
+    async def _assert_balances_and_bets(self, balances, bets):
         players = await PlayersRelation.load_by_table_id(self.table.table_id)
         players.sort(key=lambda player: player['position'])
 
