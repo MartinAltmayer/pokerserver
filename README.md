@@ -30,4 +30,6 @@ and installs the whole package including its requirements:
 Afterwards you can activate the environment using
 
     workon pokerserver
-    
+   
+## Attributions
+We use card images from https://github.com/notpeter/Vector-Playing-Cards which are released into the public domain.

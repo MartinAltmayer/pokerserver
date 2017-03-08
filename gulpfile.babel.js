@@ -12,7 +12,7 @@ const paths = {
   gulpFile: 'gulpfile.babel.js',
   webpackFile: 'webpack.config.babel.js',
   cssFile: 'frontend/style.css',
-  staticFiles: ['frontend/style.css', 'frontend/cards.png'],
+  staticFiles: ['frontend/style.css', 'frontend/cards/*'],
   clientEntryPoint: 'frontend/App.jsx',
 };
 
@@ -38,7 +38,7 @@ gulp.task('build', ['lint', 'clean'], () =>
 );
 
 gulp.task('statics', ['clean'], () =>
-  gulp.src(paths.staticFiles)
+  gulp.src(paths.staticFiles, { base: 'frontend' })
     .pipe(gulp.dest(paths.distDir))
 );
 
