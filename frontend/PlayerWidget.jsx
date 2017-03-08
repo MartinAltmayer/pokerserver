@@ -2,7 +2,7 @@ import React, { PropTypes } from 'react';
 import Card from './Card';
 
 function renderCard(card) {
-  return <Card name={card} key={card} />;
+  return <Card name={card} key={card} size="small" />;
 }
 
 const PlayerWidget = props => (

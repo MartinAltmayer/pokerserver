@@ -12,7 +12,7 @@ const paths = {
   gulpFile: 'gulpfile.babel.js',
   webpackFile: 'webpack.config.babel.js',
   cssFile: 'frontend/style.css',
-  staticFiles: ['frontend/style.css', 'frontend/cards/*'],
+  staticFiles: ['frontend/style.css', 'frontend/cards/**/*'],
   clientEntryPoint: 'frontend/App.jsx',
 };
 

@@ -30,6 +30,15 @@ body {
   display: flex;
 }
 
-.card {
+.card--small {
   margin: 0 3px;
+}
+
+.card--large {
+  margin: 0 10px;
+}
+
+.open-cards {
+  text-align: center;
+  min-height: 236px;
 }

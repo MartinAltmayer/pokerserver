@@ -6,15 +6,16 @@ const Card = (props) => {
 
   return (
     <img
-      src={`/static/cards/${rank}${suit}.png`}
+      src={`/static/cards/${props.size}/${rank}${suit}.png`}
       alt={props.name}
-      className="card"
+      className={`card--${props.size}`}
     />
   );
 };
 
 Card.propTypes = {
-  name: PropTypes.string.isRequired
+  name: PropTypes.string.isRequired,
+  size: PropTypes.string.isRequired,
 };
 
 export default Card;

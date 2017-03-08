@@ -39,7 +39,8 @@ class FrontendDataController(RequestHandler):
             raise HTTPError(HTTPStatus.NOT_FOUND)
 
         self.write({
-            'players': [self.write_player(table, player) for player in table.players]
+            'players': [self.write_player(table, player) for player in table.players],
+            'openCards': table.open_cards
         })
 
     @staticmethod

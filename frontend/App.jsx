@@ -3,11 +3,12 @@ import 'babel-polyfill';
 import React from 'react';
 import ReactDOM from 'react-dom';
 import PlayerWidget from './PlayerWidget';
+import Card from './Card';
 
 class App extends React.Component {
   constructor(props) {
     super(props);
-    this.state = { players: [] };
+    this.state = { players: [], openCards: [] };
   }
 
   componentDidMount() {
@@ -52,10 +53,23 @@ class App extends React.Component {
     );
   }
 
+  renderOpenCard(card) {
+    return <Card key={card} name={card} size="large" />;
+  }
+
+  renderOpenCards() {
+    return (
+      <div className="open-cards">
+        {this.state.openCards.map(this.renderOpenCard)}
+      </div>
+    );
+  }
+
   render() {
     return (
       <div>
         {this.renderPlayerList([1, 2, 3, 4])}
+        {this.renderOpenCards()}
         {this.renderPlayerList([8, 7, 6, 5])}
       </div>
     );
