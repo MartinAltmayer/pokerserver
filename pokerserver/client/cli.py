@@ -83,16 +83,14 @@ class CliClient(BaseClient):
             return []
 
     def read_and_execute_command(self):
-        while True:
-            try:
-                command_text = input('{}> '.format(self.table.current_player))
-                uuid = self.uuids[self.table.current_player]
-                self.execute_command(command_text, uuid)
-                break
-            except ValueError:
-                print('Invalid command. Enter one of fold, call, check, raise <amount>')
-            except HTTPError as exc:
-                print(exc)
+        try:
+            command_text = input('{}> '.format(self.table.current_player))
+            uuid = self.uuids[self.table.current_player]
+            self.execute_command(command_text, uuid)
+        except ValueError:
+            print('Invalid command. Enter one of fold, call, check, raise <amount>')
+        except HTTPError as exc:
+            print(exc)
 
     @property
     def players(self):

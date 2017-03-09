@@ -265,30 +265,30 @@ class Match:  # pylint: disable=too-many-public-methods
             player.name, matches=1, buy_in=self.table.config.start_balance, gain=player.balance)
 
     async def call(self, player_name):
-        await self.check_and_unset_current_player(player_name)
         player = self.table.find_player(player_name)
         highest_bet = self._get_highest_bet()
         if highest_bet <= player.bet:
             raise InvalidTurnError('Cannot call without higher bet, use \'check\' instead')
 
+        await self.check_and_unset_current_player(player_name)
         await self.make_player_pay(player, highest_bet - player.bet)
         await self.next_player_or_round(player)
 
     async def check(self, player_name):
-        await self.check_and_unset_current_player(player_name)
         player = self.table.find_player(player_name)
         if self._get_highest_bet() > player.bet:
             raise InvalidTurnError('Cannot check after a higher bet was made')
+        await self.check_and_unset_current_player(player_name)
         await self.next_player_or_round(player)
 
     async def raise_bet(self, player_name, amount):
-        await self.check_and_unset_current_player(player_name)
         player = self.table.find_player(player_name)
         highest_bet = self._get_highest_bet()
         if amount <= highest_bet - player.bet:
             raise InvalidBetError('Amount too low')
         if amount > player.balance:
             raise InsufficientBalanceError('Balance too low')
+        await self.check_and_unset_current_player(player_name)
         await self.make_player_pay(player, amount)
         await self.next_player_or_round(player)
 
