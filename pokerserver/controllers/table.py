@@ -1,6 +1,6 @@
 from http import HTTPStatus
 
-from pokerserver.models import InvalidTurnError, PositionOccupiedError, Table
+from pokerserver.models import InvalidTurnError, PositionOccupiedError, Table, TableNotFoundError
 from .base import BaseController, HTTPError, authenticated
 
 TABLE_NAME_PATTERN = "([^/]+)"
@@ -10,8 +10,11 @@ class TableController(BaseController):
     route = '/table/' + TABLE_NAME_PATTERN
 
     async def get(self, name):  # pylint: disable=arguments-differ
-        table = await Table.load_by_name(name)
-        self.write(table.to_dict(self.player_name))
+        try:
+            table = await Table.load_by_name(name)
+            self.write(table.to_dict(self.player_name))
+        except TableNotFoundError:
+            raise HTTPError(HTTPStatus.NOT_FOUND, 'Table not found')
 
 
 class JoinController(BaseController):

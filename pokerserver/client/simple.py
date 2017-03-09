@@ -1,4 +1,5 @@
 from http import HTTPStatus
+from random import choice
 import time
 
 from requests import HTTPError
@@ -26,6 +27,27 @@ class SimpleClient(BaseClient):
 
     def make_turn(self, table, position):  # pylint: disable=unused-argument
         self.log("It's my turn")
+        if self.can_check(table, position):
+            self.check(table.name, self.uuid)
+            return
+
+        actions = {
+            'fold': lambda: self.fold(table.name, self.uuid),
+            'call': lambda: self.call(table.name, self.uuid),
+            'raise': lambda: self.raise_bet(table.name, self.uuid, 3 * self.maximum_bet(table, position))
+        }
+        action = choice(list(actions.keys()))
+        actions[action]()
+
+    @classmethod
+    def can_check(cls, table, position):
+        my_bet = next(player.bet for player in table.players if player.position == position)
+        maximum_bet = cls.maximum_bet(table, position)
+        return my_bet >= maximum_bet
+
+    @staticmethod
+    def maximum_bet(table, position):
+        return max((player.bet for player in table.players if player.position != position))
 
     def ensure_uuid(self):
         if self.uuid is None:

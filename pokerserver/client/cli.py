@@ -1,4 +1,5 @@
 from http import HTTPStatus
+from time import sleep
 
 from requests import HTTPError
 
@@ -6,6 +7,8 @@ from pokerserver.client import BaseClient
 
 
 class CliClient(BaseClient):
+    WAIT_FOR_TURN_TIMEOUT_SECONDS = 1
+
     def __init__(self, host, port, player_count):
         super().__init__(host, port)
         self.player_count = player_count
@@ -22,6 +25,9 @@ class CliClient(BaseClient):
                 self.load_table_and_players()
                 self.print_table_info()
                 self.print_player_info()
+                if self.uuids.get(self.table.current_player) is None:
+                    sleep(self.WAIT_FOR_TURN_TIMEOUT_SECONDS)
+                    continue
                 self.read_and_execute_command()
         except EOFError:
             print()
@@ -63,8 +69,10 @@ class CliClient(BaseClient):
         # Load the same table separately for each player to get the cards.
         # Insert the cards in the table above.
         for player in self.players:
-            table_viewed_by_player = self.fetch_table(self.table_name, self.uuids[player.name])
-            player.cards = self.find_player_cards(table_viewed_by_player, player)
+            uuid = self.uuids.get(player.name)
+            if uuid is not None:
+                table_viewed_by_player = self.fetch_table(self.table_name, uuid)
+                player.cards = self.find_player_cards(table_viewed_by_player, player)
 
     @staticmethod
     def find_player_cards(table, player):
