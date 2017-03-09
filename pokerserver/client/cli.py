@@ -47,7 +47,7 @@ class CliClient(BaseClient):
     def find_table_and_join(self):
         table = self.find_suitable_table()
         for name, position in zip(self.player_names, table.find_free_positions()):
-            self.join_table(table, name, position, self.uuids[name])
+            self.join_table(table, position, self.uuids[name])
         self.table_name = table.name  # table is a TableInfo, full data is loaded later
 
     def find_suitable_table(self):

@@ -1,13 +1,13 @@
 from http import HTTPStatus
 from json import loads
-from unittest.mock import patch, Mock
+from unittest.mock import Mock, patch
 from uuid import uuid4
 
 from tornado.testing import gen_test
 
 from pokerserver.database import PlayerState, UUIDsRelation
-from pokerserver.models import Player, NotYourTurnError, PositionOccupiedError, InvalidTurnError
-from tests.utils import IntegrationHttpTestCase, return_done_future, create_table
+from pokerserver.models import InvalidTurnError, NotYourTurnError, Player, PositionOccupiedError
+from tests.utils import IntegrationHttpTestCase, create_table, return_done_future
 
 
 class TestTableController(IntegrationHttpTestCase):
@@ -180,7 +180,11 @@ class TestJoinController(IntegrationHttpTestCase):
         match_mock.join.side_effect = return_done_future()
         load_mock.side_effect = return_done_future(match_mock)
 
-        response = await self.fetch_async('/table/{}/join?position=1&uuid={}'.format(self.table_name, self.uuid))
+        response = await self.post_with_uuid(
+            '/table/{}/actions/join'.format(self.table_name),
+            self.uuid,
+            body={'position': 1}
+        )
 
         self.assertEqual(response.code, HTTPStatus.OK.value)
         load_mock.assert_called_once_with(self.table_name)
@@ -195,23 +199,34 @@ class TestJoinController(IntegrationHttpTestCase):
         match_mock.join.side_effect = return_done_future(exception=PositionOccupiedError)
         load_mock.side_effect = return_done_future(match_mock)
 
-        response = await self.fetch_async('/table/{}/join?position=1&uuid={}'.format(self.table_name, self.uuid),
-                                          raise_error=False)
+        response = await self.post_with_uuid(
+            '/table/{}/actions/join'.format(self.table_name),
+            self.uuid,
+            body={'position': 1},
+            raise_error=False
+        )
 
         self.assertEqual(response.code, HTTPStatus.CONFLICT.value)
 
     @gen_test
     async def test_join_missing_parameter(self):
         await self.async_setup()
-        response = await self.fetch_async('/table/{}/join?uuid={}'.format(self.table_name, self.uuid),
-                                          raise_error=False)
+        response = await self.post_with_uuid(
+            '/table/{}/actions/join'.format(self.table_name),
+            self.uuid,
+            body={},
+            raise_error=False)
         self.assertEqual(response.code, HTTPStatus.BAD_REQUEST.value)
 
     @gen_test
     async def test_join_invalid_parameter(self):
         await self.async_setup()
-        response = await self.fetch_async('/table/{}/join?position=-1&uuid={}'.format(self.table_name, self.uuid),
-                                          raise_error=False)
+        response = await self.post_with_uuid(
+            '/table/{}/actions/join'.format(self.table_name),
+            self.uuid,
+            body={'position': -1},
+            raise_error=False
+        )
         self.assertEqual(response.code, HTTPStatus.BAD_REQUEST.value)
 
 
@@ -232,7 +247,7 @@ class TestFoldController(IntegrationHttpTestCase):
         match_mock.fold.side_effect = return_done_future()
         load_mock.side_effect = return_done_future(match_mock)
 
-        response = await self.fetch_async('/table/{}/fold?uuid={}'.format(self.table_name, self.uuid))
+        response = await self.post_with_uuid('/table/{}/actions/fold'.format(self.table_name), self.uuid)
 
         self.assertEqual(response.code, HTTPStatus.OK.value)
         load_mock.assert_called_once_with(self.table_name)
@@ -247,8 +262,11 @@ class TestFoldController(IntegrationHttpTestCase):
         match_mock.fold.side_effect = return_done_future(exception=NotYourTurnError)
         load_mock.side_effect = return_done_future(match_mock)
 
-        response = await self.fetch_async('/table/{}/fold?uuid={}'.format(self.table_name, self.uuid),
-                                          raise_error=False)
+        response = await self.post_with_uuid(
+            '/table/{}/actions/fold'.format(self.table_name),
+            self.uuid,
+            raise_error=False
+        )
 
         self.assertEqual(response.code, HTTPStatus.BAD_REQUEST.value)
 
@@ -270,7 +288,7 @@ class TestCallController(IntegrationHttpTestCase):
         match_mock.call.side_effect = return_done_future()
         load_mock.side_effect = return_done_future(match_mock)
 
-        response = await self.fetch_async('/table/{}/call?uuid={}'.format(self.table_name, self.uuid))
+        response = await self.post_with_uuid('/table/{}/actions/call'.format(self.table_name), self.uuid)
 
         self.assertEqual(response.code, HTTPStatus.OK.value)
         load_mock.assert_called_once_with(self.table_name)
@@ -285,8 +303,11 @@ class TestCallController(IntegrationHttpTestCase):
         match_mock.call.side_effect = return_done_future(exception=NotYourTurnError)
         load_mock.side_effect = return_done_future(match_mock)
 
-        response = await self.fetch_async('/table/{}/call?uuid={}'.format(self.table_name, self.uuid),
-                                          raise_error=False)
+        response = await self.post_with_uuid(
+            '/table/{}/actions/call'.format(self.table_name),
+            self.uuid,
+            raise_error=False
+        )
 
         self.assertEqual(response.code, HTTPStatus.BAD_REQUEST.value)
 
@@ -308,7 +329,7 @@ class TestCheckController(IntegrationHttpTestCase):
         match_mock.check.side_effect = return_done_future()
         load_mock.side_effect = return_done_future(match_mock)
 
-        response = await self.fetch_async('/table/{}/check?uuid={}'.format(self.table_name, self.uuid))
+        response = await self.post_with_uuid('/table/{}/actions/check'.format(self.table_name), self.uuid)
 
         self.assertEqual(response.code, HTTPStatus.OK.value)
         load_mock.assert_called_once_with(self.table_name)
@@ -323,8 +344,11 @@ class TestCheckController(IntegrationHttpTestCase):
         match_mock.check.side_effect = return_done_future(exception=InvalidTurnError)
         load_mock.side_effect = return_done_future(match_mock)
 
-        response = await self.fetch_async('/table/{}/check?uuid={}'.format(self.table_name, self.uuid),
-                                          raise_error=False)
+        response = await self.post_with_uuid(
+            '/table/{}/actions/check'.format(self.table_name),
+            self.uuid,
+            raise_error=False
+        )
 
         self.assertEqual(response.code, HTTPStatus.BAD_REQUEST.value)
 
@@ -346,7 +370,11 @@ class TestRaiseController(IntegrationHttpTestCase):
         match_mock.raise_bet.side_effect = return_done_future()
         load_mock.side_effect = return_done_future(match_mock)
 
-        response = await self.fetch_async('/table/{}/raise?amount=17&uuid={}'.format(self.table_name, self.uuid))
+        response = await self.post_with_uuid(
+            '/table/{}/actions/raise'.format(self.table_name),
+            self.uuid,
+            body={'amount': 17}
+        )
 
         self.assertEqual(response.code, HTTPStatus.OK.value)
         load_mock.assert_called_once_with(self.table_name)
@@ -361,21 +389,31 @@ class TestRaiseController(IntegrationHttpTestCase):
         match_mock.raise_bet.side_effect = return_done_future(exception=NotYourTurnError)
         load_mock.side_effect = return_done_future(match_mock)
 
-        response = await self.fetch_async('/table/{}/raise?amount=3&uuid={}'.format(self.table_name, self.uuid),
-                                          raise_error=False)
+        response = await self.post_with_uuid(
+            '/table/{}/actions/raise'.format(self.table_name),
+            self.uuid,
+            body={'amount': 3},
+            raise_error=False
+        )
 
         self.assertEqual(response.code, HTTPStatus.BAD_REQUEST.value)
 
     @gen_test
     async def test_raise_missing_parameter(self):
         await self.async_setup()
-        response = await self.fetch_async('/table/{}/raise?uuid={}'.format(self.table_name, self.uuid),
-                                          raise_error=False)
+        response = await self.post_with_uuid(
+            '/table/{}/actions/raise'.format(self.table_name),
+            self.uuid,
+            raise_error=False
+        )
         self.assertEqual(response.code, HTTPStatus.BAD_REQUEST.value)
 
     @gen_test
     async def test_raise_invalid_parameter(self):
         await self.async_setup()
-        response = await self.fetch_async('/table/{}/raise?amount=googol&uuid={}'.format(self.table_name, self.uuid),
-                                          raise_error=False)
+        response = await self.post_with_uuid(
+            '/table/{}/actions/raise?amount=googol'.format(self.table_name),
+            self.uuid,
+            raise_error=False
+        )
         self.assertEqual(response.code, HTTPStatus.BAD_REQUEST.value)

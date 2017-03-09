@@ -1,7 +1,7 @@
 from unittest import TestCase
-from unittest.mock import patch, Mock
+from unittest.mock import Mock, patch
 
-from nose.tools import assert_equal, assert_false, assert_true, assert_raises
+from nose.tools import assert_equal, assert_false, assert_raises, assert_true
 
 from pokerserver.client import BaseClient, TableInfo
 
@@ -27,73 +27,73 @@ class TestTableInfo(TestCase):
             self.table_info.find_free_position()
 
 
-@patch('pokerserver.client.base.urlopen')
 class TestBaseClient(TestCase):
     def setUp(self):
-        self.response = Mock(code=200, read=Mock(return_value='{ "response": "ok" }'.encode()))
+        self.response = Mock(status_code=200, json=Mock(return_value={'response': 'ok'}), text='{ "response": "ok" }')
         self.base_client = BaseClient('localhost', 55555)
 
-    def test_fetch(self, urlopen_mock):
-        urlopen_mock.return_value = self.response
+    @patch('pokerserver.client.base.get')
+    def test_fetch(self, get_mock):
+        get_mock.return_value = self.response
         assert_equal('{ "response": "ok" }', self.base_client.fetch("/test_url", as_json=False))
 
+    @patch('pokerserver.client.base.get')
     def test_fetch_as_json(self, urlopen_mock):
         urlopen_mock.return_value = self.response
         assert_equal({'response': 'ok'}, self.base_client.fetch("/test_url", as_json=True))
         urlopen_mock.assert_called_once_with('http://localhost:55555/test_url')
 
-    def test_fetch_table(self, urlopen_mock):
-        response = '''
-        {
-            "players": [],
-            "small_blind": 1,
-            "big_blind": 2,
-            "round": "preflop",
-            "open_cards": [],
-            "pots": [
+    @patch('pokerserver.client.base.get')
+    def test_fetch_table(self, get_mock):
+        self.response.json.return_value = {
+            'players': [],
+            'small_blind': 1,
+            'big_blind': 2,
+            'round': 'preflop',
+            'open_cards': [],
+            'pots': [
                 {
-                    "bets": {}
+                    'bets': {}
                 }
             ],
-            "current_player": null,
-            "dealer": null,
-            "is_closed": false,
-            "can_join": true
+            'current_player': None,
+            'dealer': None,
+            'is_closed': False,
+            'can_join': True
         }
-        '''
-        urlopen_mock.return_value = Mock(code=200, read=Mock(return_value=response.encode()))
+        get_mock.return_value = self.response
         table = self.base_client.fetch_table('table 1')
         assert_equal("table 1", table.name)
         assert_equal('preflop', table.round)
-        urlopen_mock.assert_called_once_with('http://localhost:55555/table/table 1')
+        get_mock.assert_called_once_with('http://localhost:55555/table/table 1')
 
-    def test_fetch_tables(self, urlopen_mock):
-        response = '''
-        {
-            "tables": [
+    @patch('pokerserver.client.base.get')
+    def test_fetch_tables(self, get_mock):
+        self.response.json.return_value = {
+            'tables': [
                 {
-                    "name": "table 1",
-                    "min_player_count": 3,
-                    "max_player_count": 42,
-                    "players": {}
+                    'name': 'table 1',
+                    'min_player_count': 3,
+                    'max_player_count': 42,
+                    'players': {}
                 }
             ]
         }
-        '''
-        urlopen_mock.return_value = Mock(code=200, read=Mock(return_value=response.encode()))
+        get_mock.return_value = self.response
         tables_infos = self.base_client.fetch_tables()
         assert_equal(1, len(tables_infos))
-        urlopen_mock.assert_called_once_with('http://localhost:55555/tables')
+        get_mock.assert_called_once_with('http://localhost:55555/tables')
 
-    def test_find_free_table(self, _):  # pylint: disable=no-self-use
+    def test_find_free_table(self):  # pylint: disable=no-self-use
         tables = [
             TableInfo('table 1', 1, 3, {1: 'lynn', 2: 'brian'})
         ]
         BaseClient.find_free_table(tables, ['alf', 'willy', 'kate'])
 
-    def test_join_table(self, urlopen_mock):
-        urlopen_mock.return_value = self.response
-        self.base_client.join_table(TableInfo("table 1", 1, 3, {}), "player 1", 42, "uuid")
-        urlopen_mock.assert_called_once_with(
-            'http://localhost:55555/table/table 1/join?player_name=player 1&position=42&uuid=uuid'
+    @patch('pokerserver.client.base.post')
+    def test_join_table(self, post_mock):
+        self.base_client.join_table(TableInfo("table 1", 1, 3, {}), 42, "uuid")
+        post_mock.assert_called_once_with(
+            'http://localhost:55555/table/table 1/actions/join?uuid=uuid',
+            json={'position': 42}
         )

@@ -1,7 +1,6 @@
 from enum import Enum
-import json
-from urllib.error import HTTPError
-from urllib.request import urlopen
+
+from requests import HTTPError, get, post
 
 
 class TableInfo:
@@ -92,32 +91,34 @@ class BaseClient:
         else:
             raise RuntimeError('No free table')
 
-    def join_table(self, table_info, player_name, position, uuid):
-        self.fetch(
-            '/table/{}/join?player_name={}&position={}&uuid={}'.format(
-                table_info.name,
-                player_name,
-                position,
-                uuid
-            )
-        )
-
-    def fetch(self, url, as_json=True):
-        url = 'http://{}:{}{}'.format(self.host, self.port, url)
-        self.log("Fetching from {}... ".format(url), new_line=False)
+    def join_table(self, table_info, position, uuid):
         try:
-            response = urlopen(url)
-            self.log('{}'.format(response.code))
+            response = post(
+                self.build_url('/table/{}/actions/join?uuid={}'.format(table_info.name, uuid)),
+                json={'position': position}
+            )
+            response.raise_for_status()
+            self.log('{}'.format(response.status_code))
         except HTTPError as error:
-            self.log('{}'.format(error.code))
+            self.log('{}'.format(error.response.status_code))
             raise
 
-        data = response.read()
-        if not data:
-            return None
-        data = data.decode('utf-8')
+    def fetch(self, url, as_json=True):
+        url = self.build_url(url)
+        self.log("Fetching from {}... ".format(url), new_line=False)
+        try:
+            response = get(url)
+            response.raise_for_status()
+            self.log('{}'.format(response.status_code))
+        except HTTPError as error:
+            self.log('{}'.format(error.response.status_code))
+            raise
 
-        return json.loads(data) if as_json else data
+        return response.json() if as_json else response.text
+
+    def build_url(self, url):
+        url = 'http://{}:{}{}'.format(self.host, self.port, url)
+        return url
 
     def log(self, message, new_line=True):  # pylint: disable=no-self-use
         print(message, end='\n' if new_line else '')
