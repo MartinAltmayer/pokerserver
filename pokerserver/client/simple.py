@@ -1,4 +1,4 @@
-from urllib.error import HTTPError
+from requests import HTTPError
 from http import HTTPStatus
 import time
 
@@ -42,9 +42,8 @@ class SimpleClient(BaseClient):
                 self.join_table(free_table, free_position, self.uuid)
                 return free_table, free_position
             except HTTPError as error:
-                if error.code != HTTPStatus.CONFLICT.value:
+                if error.response.status_code != HTTPStatus.CONFLICT.value:
                     raise
-                # else continue
 
     def log(self, message, new_line=True):
         super().log('[{}] {}'.format(self.player_name, message), new_line=new_line)

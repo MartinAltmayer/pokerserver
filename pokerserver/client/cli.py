@@ -1,4 +1,4 @@
-from urllib.error import HTTPError
+from requests import HTTPError
 
 from http import HTTPStatus
 
@@ -36,7 +36,7 @@ class CliClient(BaseClient):
             try:
                 uuid = self.receive_uuid(name)
             except HTTPError as exc:
-                if exc.code == HTTPStatus.BAD_REQUEST.value:
+                if exc.response.status_code == HTTPStatus.BAD_REQUEST.value:
                     continue  # player exists
                 else:
                     raise
