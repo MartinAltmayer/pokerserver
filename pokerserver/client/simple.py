@@ -21,6 +21,9 @@ class SimpleClient(BaseClient):
 
         while True:
             table = self.fetch_table(table_info.name)
+            if table.is_closed:
+                self.log('Table was closed.')
+                break
             if table.current_player == self.player_name:
                 self.make_turn(table, position)
             sleep(POLL_INTERVAL_SECONDS)

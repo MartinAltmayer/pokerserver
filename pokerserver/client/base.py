@@ -33,6 +33,7 @@ class Table:
         self.round = kwargs.get('round')
         self.pots = [Pot(**pot_dict) for pot_dict in kwargs.get('pots', [])]
         self.open_cards = kwargs.get('open_cards')
+        self.is_closed = kwargs.get('is_closed')
 
 
 class Pot:
