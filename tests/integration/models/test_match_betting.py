@@ -29,6 +29,7 @@ class BettingTestCase(IntegrationTestCase, PotChecker):
         table = await Table.load_by_name(self.table.name)
         self.assertEqual(player_name, table.current_player.name)
 
+
 class TestFold(BettingTestCase):
     @gen_test
     async def test_fold_invalid_player(self):
