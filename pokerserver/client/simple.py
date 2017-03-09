@@ -1,6 +1,7 @@
-from requests import HTTPError
 from http import HTTPStatus
 import time
+
+from requests import HTTPError
 
 from pokerserver.client import BaseClient
 
