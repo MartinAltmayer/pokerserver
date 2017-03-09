@@ -97,3 +97,26 @@ class TestBaseClient(TestCase):
             'http://localhost:55555/table/table 1/actions/join?uuid=uuid',
             json={'position': 42}
         )
+
+    @patch('pokerserver.client.base.post')
+    def test_fold(self, post_mock):
+        self.base_client.fold("table 1", "uuid")
+        post_mock.assert_called_once_with('http://localhost:55555/table/table 1/actions/fold?uuid=uuid')
+
+    @patch('pokerserver.client.base.post')
+    def test_check(self, post_mock):
+        self.base_client.check("table 1", "uuid")
+        post_mock.assert_called_once_with('http://localhost:55555/table/table 1/actions/check?uuid=uuid')
+
+    @patch('pokerserver.client.base.post')
+    def test_call(self, post_mock):
+        self.base_client.call("table 1", "uuid")
+        post_mock.assert_called_once_with('http://localhost:55555/table/table 1/actions/call?uuid=uuid')
+
+    @patch('pokerserver.client.base.post')
+    def test_raise_bet(self, post_mock):
+        self.base_client.raise_bet("table 1", "uuid", 42)
+        post_mock.assert_called_once_with(
+            'http://localhost:55555/table/table 1/actions/raise?uuid=uuid',
+            json={'amount': 42}
+        )

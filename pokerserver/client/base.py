@@ -103,9 +103,34 @@ class BaseClient:
             self.log('{}'.format(error.response.status_code))
             raise
 
+    def fold(self, table_name, uuid):
+        url = self.build_url('/table/{}/actions/fold?uuid={}'.format(table_name, uuid))
+        self.post(url)
+
+    def check(self, table_name, uuid):
+        url = self.build_url('/table/{}/actions/check?uuid={}'.format(table_name, uuid))
+        self.post(url)
+
+    def call(self, table_name, uuid):
+        url = self.build_url('/table/{}/actions/call?uuid={}'.format(table_name, uuid))
+        self.post(url)
+
+    def raise_bet(self, table_name, uuid, amount):
+        self.post(self.build_url('/table/{}/actions/raise?uuid={}'.format(table_name, uuid)), json={'amount': amount})
+
+    def post(self, url, **kwargs):
+        self.log("POST {}... ".format(url), new_line=False)
+        try:
+            response = post(url, **kwargs)
+            response.raise_for_status()
+            self.log('{}'.format(response.status_code))
+        except HTTPError as error:
+            self.log('{}'.format(error.response.status_code))
+            raise
+
     def fetch(self, url, as_json=True):
         url = self.build_url(url)
-        self.log("Fetching from {}... ".format(url), new_line=False)
+        self.log("GET {}... ".format(url), new_line=False)
         try:
             response = get(url)
             response.raise_for_status()

@@ -22,7 +22,7 @@ class CliClient(BaseClient):
                 self.load_table_and_players()
                 self.print_table_info()
                 self.print_player_info()
-                self.read_and_send_command()
+                self.read_and_execute_command()
         except EOFError:
             print()
 
@@ -74,25 +74,17 @@ class CliClient(BaseClient):
         else:
             return []
 
-    def read_and_send_command(self):
-        command = None
+    def read_and_execute_command(self):
         while True:
             try:
                 command_text = input('{}> '.format(self.table.current_player))
-                command = Command.parse(command_text)
+                uuid = self.uuids[self.table.current_player]
+                self.execute_command(command_text, uuid)
                 break
             except ValueError:
                 print('Invalid command. Enter one of fold, call, check, raise <amount>')
-
-        uuid = self.uuids[self.table.current_player]
-        try:
-            if command.argument_name is None:
-                self.fetch('/table/{}/{}?uuid={}'.format(self.table.name, command.name, uuid))
-            else:
-                self.fetch('/table/{}/{}?uuid={}&{}={}'.format(self.table.name, command.name, uuid,
-                                                               command.argument_name, command.argument))
-        except HTTPError as exc:
-            print(exc)
+            except HTTPError as exc:
+                print(exc)
 
     @property
     def players(self):
@@ -110,27 +102,15 @@ class CliClient(BaseClient):
             parts.append('{}{}: {}, {}, {}'.format(player.name, current, player.balance, player.bet, player.cards))
         print('  |  '.join(parts))
 
-
-class Command:
-    def __init__(self, name, argument=None):
-        if name not in ['fold', 'call', 'check', 'raise']:
-            raise ValueError('Invalid command')
-        self.name = name
-        self.argument = argument
-
-    @property
-    def argument_name(self):
-        return 'amount' if self.name == 'raise' else None
-
-    @classmethod
-    def parse(cls, string):
+    def execute_command(self, string, uuid):
         try:
             parts = string.split()
             name = parts[0]
+            if name not in ['fold', 'call', 'check', 'raise']:
+                raise ValueError('Invalid command')
             if name == 'raise':
-                argument = int(parts[1])
+                self.raise_bet(self.table.name, uuid, int(parts[1]))
             else:
-                argument = None
-            return cls(name, argument)
+                getattr(self, name)(self.table.name, uuid)
         except IndexError:
             raise ValueError('Missing part')
