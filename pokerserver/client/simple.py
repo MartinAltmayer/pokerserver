@@ -1,6 +1,6 @@
 from http import HTTPStatus
 from random import choice
-import time
+from time import sleep
 
 from requests import HTTPError
 
@@ -23,7 +23,7 @@ class SimpleClient(BaseClient):
             table = self.fetch_table(table_info.name)
             if table.current_player == self.player_name:
                 self.make_turn(table, position)
-            time.sleep(POLL_INTERVAL_SECONDS)
+            sleep(POLL_INTERVAL_SECONDS)
 
     def make_turn(self, table, position):  # pylint: disable=unused-argument
         self.log("It's my turn")
