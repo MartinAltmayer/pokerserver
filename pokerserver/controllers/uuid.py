@@ -10,7 +10,7 @@ from .base import BaseController, HTTPError
 
 
 class UUIDController(BaseController):
-    route = '/uuid'
+    route = r'/uuid/?'
 
     async def get(self):
         player_name = self._get_player_name()

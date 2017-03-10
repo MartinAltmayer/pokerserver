@@ -3,11 +3,11 @@ from http import HTTPStatus
 from pokerserver.models import InvalidTurnError, PositionOccupiedError, Table, TableNotFoundError
 from .base import BaseController, HTTPError, authenticated
 
-TABLE_NAME_PATTERN = "([^/]+)"
+TABLE_NAME_PATTERN = r'([^/]+)'
 
 
 class TableController(BaseController):
-    route = '/table/' + TABLE_NAME_PATTERN
+    route = r'/table/' + TABLE_NAME_PATTERN + r'/?'
 
     async def get(self, name):  # pylint: disable=arguments-differ
         try:
@@ -18,7 +18,7 @@ class TableController(BaseController):
 
 
 class JoinController(BaseController):
-    route = '/table/' + TABLE_NAME_PATTERN + '/actions/join'
+    route = r'/table/' + TABLE_NAME_PATTERN + r'/actions/join/?'
 
     @authenticated
     async def post(self, table_name):  # pylint: disable=arguments-differ
@@ -41,7 +41,7 @@ class JoinController(BaseController):
 
 
 class FoldController(BaseController):
-    route = '/table/' + TABLE_NAME_PATTERN + '/actions/fold'
+    route = r'/table/' + TABLE_NAME_PATTERN + r'/actions/fold/?'
 
     @authenticated
     async def post(self, table_name):  # pylint: disable=arguments-differ
@@ -53,7 +53,7 @@ class FoldController(BaseController):
 
 
 class CallController(BaseController):
-    route = '/table/' + TABLE_NAME_PATTERN + '/actions/call'
+    route = r'/table/' + TABLE_NAME_PATTERN + r'/actions/call/?'
 
     @authenticated
     async def post(self, table_name):  # pylint: disable=arguments-differ
@@ -65,7 +65,7 @@ class CallController(BaseController):
 
 
 class CheckController(BaseController):
-    route = '/table/' + TABLE_NAME_PATTERN + '/actions/check'
+    route = r'/table/' + TABLE_NAME_PATTERN + r'/actions/check/?'
 
     @authenticated
     async def post(self, table_name):  # pylint: disable=arguments-differ
@@ -77,7 +77,7 @@ class CheckController(BaseController):
 
 
 class RaiseController(BaseController):
-    route = '/table/' + TABLE_NAME_PATTERN + '/actions/raise'
+    route = r'/table/' + TABLE_NAME_PATTERN + r'/actions/raise/?'
 
     @authenticated
     async def post(self, table_name):  # pylint: disable=arguments-differ

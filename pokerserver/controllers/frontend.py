@@ -18,7 +18,7 @@ class FrontendBaseController(RequestHandler):
 
 
 class IndexController(FrontendBaseController):
-    route = r'/gui/' + TABLE_NAME_PATTERN
+    route = r'/gui/' + TABLE_NAME_PATTERN + '/?'
 
     async def get(self, table_name):
         data_url = 'http://{}/fedata/{}'.format(self.request.host, quote(table_name))
@@ -39,7 +39,7 @@ HTML = """<!doctype html>
 
 
 class FrontendDataController(FrontendBaseController):
-    route = r'/fedata/' + TABLE_NAME_PATTERN
+    route = r'/fedata/' + TABLE_NAME_PATTERN + '/?'
 
     async def get(self, table_name):
         try:
@@ -67,7 +67,7 @@ class FrontendDataController(FrontendBaseController):
 
 
 class DevCookieController(RequestHandler):
-    route = r'/devcookie'
+    route = r'/devcookie/?'
 
     async def get(self):
         provided_password = self.get_argument('password', '')
