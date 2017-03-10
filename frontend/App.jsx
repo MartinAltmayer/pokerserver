@@ -13,7 +13,7 @@ class App extends React.Component {
 
   componentDidMount() {
     this.fetchData();
-    // setInterval(this.fetchData.bind(this), 1000);
+    setInterval(this.fetchData.bind(this), 1000);
   }
 
   fetchData() {
