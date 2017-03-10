@@ -259,6 +259,21 @@ class TestFullMatch(IntegrationHttpTestCase):
         await self._assert_round_and_pots(Round.PREFLOP, [3])
         await self._assert_balances_and_bets([8, 8, 15, 6], [0, 0, 1, 2])
 
+    @gen_test
+    async def test_big_blind_should_not_make_another_turn_after_raise(self):
+        await self.async_setup()
+
+        await self._assert_special_players(dealer='Player0', current_player='Player3')
+        await self._assert_round_and_pots(Round.PREFLOP, [3])
+        await self._assert_balances_and_bets([10, 9, 8, 10], [0, 1, 2, 0])
+
+        await self._everyone_calls(player_order=[3, 0, 1])
+        await self._player_raises(2)
+        await self._everyone_calls(player_order=[3, 0, 1])
+
+        await self._assert_round_and_pots(Round.FLOP, [12])
+        await self._assert_balances_and_bets([7, 7, 7, 7], [0, 0, 0, 0])
+
     async def _player_raises(self, index):
         await self.post_with_uuid(
             '/table/{}/actions/raise'.format(self.table.name),
@@ -267,16 +282,8 @@ class TestFullMatch(IntegrationHttpTestCase):
         )
 
     async def _everyone_calls_and_big_blind_checks(self, player_order, balances):
-        for index in player_order[:-1]:
-            await self.post_with_uuid(
-                '/table/{}/actions/call'.format(self.table.name),
-                self.get_uuid(self.player_data[index])
-            )
-        await self.post_with_uuid(
-            '/table/{}/actions/check'.format(self.table.name),
-            self.get_uuid(self.player_data[player_order[-1]])
-        )
-
+        await self._everyone_calls(player_order[:-1])
+        await self._everyone_checks(player_order[-1:])
         await self._assert_round_and_pots(Round.FLOP, [8])
         await self._assert_balances_and_bets(balances, [0, 0, 0, 0])
 
@@ -297,6 +304,13 @@ class TestFullMatch(IntegrationHttpTestCase):
         for index in player_order:
             await self.post_with_uuid(
                 '/table/{}/actions/check'.format(self.table.name),
+                self.get_uuid(self.player_data[index])
+            )
+
+    async def _everyone_calls(self, player_order):
+        for index in player_order:
+            await self.post_with_uuid(
+                '/table/{}/actions/call'.format(self.table.name),
                 self.get_uuid(self.player_data[index])
             )
 
