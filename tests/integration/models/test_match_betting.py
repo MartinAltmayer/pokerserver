@@ -25,15 +25,21 @@ class BettingTestCase(IntegrationTestCase, PotChecker):
             await self.table.set_current_player(self.players[3 % len(self.players)], 'sometoken')
         self.match = Match(self.table)
 
+    async def assert_current_player(self, player_name):
+        table = await Table.load_by_name(self.table.name)
+        self.assertEqual(player_name, table.current_player.name)
+
 
 class TestFold(BettingTestCase):
     @gen_test
     async def test_fold_invalid_player(self):
         await self.async_setup()
+        await self.assert_current_player('John3')
         await self.assert_pots(self.table.name)
         with self.assertRaises(NotYourTurnError):
             await self.match.fold(self.players[1].name)
         await self.assert_pots(self.table.name)
+        await self.assert_current_player('John3')
 
     @gen_test
     async def test_fold_sets_state_to_folded(self):
@@ -47,9 +53,9 @@ class TestFold(BettingTestCase):
     @gen_test
     async def test_fold_changes_current_player(self):
         await self.async_setup()
+        await self.assert_current_player('John3')
         await self.match.fold(self.players[3].name)
-        table = await Table.load_by_name(self.table.name)
-        self.assertEqual(self.players[0].name, table.current_player.name)
+        await self.assert_current_player('John0')
 
     @gen_test
     async def test_fold_keeps_pots(self):
@@ -62,22 +68,26 @@ class TestFold(BettingTestCase):
 class TestCall(BettingTestCase):
     @gen_test
     async def test_call_invalid_player(self):
-        await self.async_setup()
-        await self.assert_pots(self.table.name)
+        await self.async_setup(bets=[0, 1, 2, 0])
+        await self.assert_current_player('John3')
+        await self.assert_pots(self.table.name, amounts=[3])
         with self.assertRaises(NotYourTurnError):
             await self.match.call(self.players[1].name)
 
-        await self.assert_pots(self.table.name)
+        await self.assert_pots(self.table.name, amounts=[3])
+        await self.assert_current_player('John3')
 
     @gen_test
     async def test_call_changes_current_player(self):
         await self.async_setup(bets=[0, 1, 2, 0])
+        await self.assert_current_player('John3')
         await self.assert_pots(self.table.name, amounts=[3])
         await self.match.call(self.players[3].name)
         table = await Table.load_by_name(self.table.name)
         self.assertEqual(self.players[0].name, table.current_player.name)
 
         await self.assert_pots(self.table.name, amounts=[5])
+        await self.assert_current_player('John0')
 
     @gen_test
     async def test_call_sufficient_balance(self):
@@ -94,6 +104,7 @@ class TestCall(BettingTestCase):
     @gen_test
     async def test_call_insufficient_balance(self):
         await self.async_setup(balances=[0, 1, 2, 10], bets=[3, 15, 0, 3])
+        await self.assert_current_player('John3')
         await self.assert_pots(self.table.name, amounts=[21])
         await self.match.call(self.players[3].name)
         player = await Player.load_by_name(self.players[3].name)
@@ -101,32 +112,39 @@ class TestCall(BettingTestCase):
         self.assertEqual(0, player.balance)
         self.assertEqual(PlayerState.ALL_IN, player.state)
         await self.assert_pots(self.table.name, amounts=[29, 2])
+        await self.assert_current_player('John0')
 
     @gen_test
     async def test_call_without_bet(self):
         await self.async_setup()
+        await self.assert_current_player('John3')
         await self.assert_pots(self.table.name)
-        with self.assertRaises(NotYourTurnError):
+        with self.assertRaises(InvalidTurnError):
             await self.match.call(self.players[0].name)
         await self.assert_pots(self.table.name)
+        await self.assert_current_player('John3')
 
     @gen_test
     async def test_call_without_higher_bet(self):
         await self.async_setup(balances=[10, 10, 10, 10], bets=[5, 5, 4, 4])
+        await self.assert_current_player('John3')
         await self.assert_pots(self.table.name, amounts=[18])
         with self.assertRaises(InvalidTurnError):
             await self.match.call(self.players[0].name)
         await self.assert_pots(self.table.name, amounts=[18])
+        await self.assert_current_player('John3')
 
     @gen_test
     async def test_call_heads_up(self):
         await self.async_setup(balances=[1, 0], bets=[1, 2])
+        await self.assert_current_player('John0')
         await self.assert_pots(self.table.name, amounts=[3])
         await self.match.call(self.players[0].name)
         player = await Player.load_by_name(self.players[0].name)
         self.assertEqual(2, player.bet)
         self.assertEqual(0, player.balance)
         await self.assert_pots(self.table.name, amounts=[4])
+        await self.assert_current_player('John1')
 
     @patch('pokerserver.models.match.Match.next_round', side_effect=return_done_future())
     @gen_test
@@ -144,11 +162,13 @@ class TestCall(BettingTestCase):
 
     @gen_test
     async def test_call_invalid_player_heads_up(self):
-        await self.async_setup(balances=[2, 2], bets=[0, 0])
-        await self.assert_pots(self.table.name)
+        await self.async_setup(balances=[2, 2], bets=[1, 0])
+        await self.assert_current_player('John0')
+        await self.assert_pots(self.table.name, amounts=[1])
         with self.assertRaises(NotYourTurnError):
             await self.match.call(self.players[1].name)
-        await self.assert_pots(self.table.name)
+        await self.assert_pots(self.table.name, amounts=[1])
+        await self.assert_current_player('John0')
 
     @gen_test
     async def test_call_increases_pot(self):
@@ -164,26 +184,30 @@ class TestCheck(BettingTestCase):
     @gen_test
     async def test_check_invalid_player(self):
         await self.async_setup()
+        await self.assert_current_player('John3')
         await self.assert_pots(self.table.name)
         with self.assertRaises(NotYourTurnError):
             await self.match.check(self.players[2].name)
         await self.assert_pots(self.table.name)
+        await self.assert_current_player('John3')
 
     @gen_test
     async def test_check_changes_current_player(self):
         await self.async_setup(bets=[0, 0, 0, 0])
+        await self.assert_current_player('John3')
         await self.assert_pots(self.table.name)
         await self.match.check(self.players[3].name)
-        table = await Table.load_by_name(self.table.name)
-        self.assertEqual(self.players[0].name, table.current_player.name)
+        await self.assert_current_player('John0')
 
     @gen_test
     async def test_check_after_bet(self):
         await self.async_setup(bets=(1, 2, 1, 0))
+        await self.assert_current_player('John3')
         await self.assert_pots(self.table.name, amounts=[4])
         with self.assertRaises(InvalidTurnError):
             await self.match.check(self.players[3].name)
         await self.assert_pots(self.table.name, amounts=[4])
+        await self.assert_current_player('John3')
 
     @gen_test
     async def test_check(self):
@@ -198,61 +222,73 @@ class TestCheck(BettingTestCase):
     @gen_test
     async def test_check_heads_up(self):
         await self.async_setup(balances=[2, 2], bets=[0, 0])
+        await self.assert_current_player('John0')
         await self.assert_pots(self.table.name)
         await self.match.check(self.players[0].name)
         player = await Player.load_by_name(self.players[0].name)
         self.assertEqual(0, player.bet)
         self.assertEqual(2, player.balance)
         await self.assert_pots(self.table.name)
+        await self.assert_current_player('John1')
 
     @gen_test
     async def test_check_invalid_player_heads_up(self):
         await self.async_setup(balances=[2, 2], bets=[0, 0])
+        await self.assert_current_player('John0')
         await self.assert_pots(self.table.name)
         with self.assertRaises(NotYourTurnError):
             await self.match.check(self.players[1].name)
         await self.assert_pots(self.table.name)
+        await self.assert_current_player('John0')
 
 
 class TestRaise(BettingTestCase):
     @gen_test
     async def test_raise_invalid_player(self):
         await self.async_setup()
+        await self.assert_current_player('John3')
         await self.assert_pots(self.table.name)
         with self.assertRaises(NotYourTurnError):
             await self.match.raise_bet(self.players[1].name, 1)
         await self.assert_pots(self.table.name)
+        await self.assert_current_player('John3')
 
     @gen_test
     async def test_raise_amount_too_low(self):
         await self.async_setup(bets=[2, 5, 0, 0])
+        await self.assert_current_player('John3')
         await self.assert_pots(self.table.name, amounts=[7])
         with self.assertRaises(InvalidBetError):
             await self.match.raise_bet(self.players[3].name, 2)
         await self.assert_pots(self.table.name, amounts=[7])
+        await self.assert_current_player('John3')
 
     @gen_test
     async def test_raise_negative(self):
         await self.async_setup()
+        await self.assert_current_player('John3')
         await self.assert_pots(self.table.name)
         with self.assertRaises(InvalidBetError):
             await self.match.raise_bet(self.players[3].name, -1)
         await self.assert_pots(self.table.name)
+        await self.assert_current_player('John3')
 
     @gen_test
     async def test_raise_insufficient_balance(self):
         await self.async_setup(balances=[9, 0, 0, 0])
+        await self.assert_current_player('John3')
         await self.assert_pots(self.table.name)
         with self.assertRaises(InsufficientBalanceError):
             await self.match.raise_bet(self.players[3].name, 10)
         await self.assert_pots(self.table.name)
+        await self.assert_current_player('John3')
 
     @gen_test
     async def test_raise_changes_current_player(self):
         await self.async_setup(balances=[10, 0, 0], bets=[0, 0, 0])
+        await self.assert_current_player('John0')
         await self.match.raise_bet(self.players[0].name, 1)
-        table = await Table.load_by_name(self.table.name)
-        self.assertEqual(self.players[1].name, table.current_player.name)
+        await self.assert_current_player('John1')
 
     @gen_test
     async def test_raise(self):
@@ -279,20 +315,24 @@ class TestRaise(BettingTestCase):
     @gen_test
     async def test_raise_heads_up(self):
         await self.async_setup(balances=[10, 0], bets=[0, 0])
+        await self.assert_current_player('John0')
         await self.assert_pots(self.table.name)
         await self.match.raise_bet(self.players[0].name, 9)
         player = await Player.load_by_name(self.players[0].name)
         self.assertEqual(9, player.bet)
         self.assertEqual(1, player.balance)
         await self.assert_pots(self.table.name, amounts=[9])
+        await self.assert_current_player('John1')
 
     @gen_test
     async def test_raise_invalid_player_heads_up(self):
         await self.async_setup(balances=[2, 2], bets=[0, 0])
+        await self.assert_current_player('John0')
         await self.assert_pots(self.table.name)
         with self.assertRaises(NotYourTurnError):
             await self.match.raise_bet(self.players[1].name, 1)
         await self.assert_pots(self.table.name)
+        await self.assert_current_player('John0')
 
     @gen_test
     async def test_raise_increases_pot(self):

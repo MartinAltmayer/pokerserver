@@ -1,7 +1,6 @@
 from enum import Enum
-import json
-from urllib.error import HTTPError
-from urllib.request import urlopen
+
+from requests import HTTPError, get, post
 
 
 class TableInfo:
@@ -34,6 +33,7 @@ class Table:
         self.round = kwargs.get('round')
         self.pots = [Pot(**pot_dict) for pot_dict in kwargs.get('pots', [])]
         self.open_cards = kwargs.get('open_cards')
+        self.is_closed = kwargs.get('is_closed')
 
 
 class Pot:
@@ -92,32 +92,59 @@ class BaseClient:
         else:
             raise RuntimeError('No free table')
 
-    def join_table(self, table_info, player_name, position, uuid):
-        self.fetch(
-            '/table/{}/join?player_name={}&position={}&uuid={}'.format(
-                table_info.name,
-                player_name,
-                position,
-                uuid
-            )
-        )
-
-    def fetch(self, url, as_json=True):
-        url = 'http://{}:{}{}'.format(self.host, self.port, url)
-        self.log("Fetching from {}... ".format(url), new_line=False)
+    def join_table(self, table_info, position, uuid):
         try:
-            response = urlopen(url)
-            self.log('{}'.format(response.code))
+            response = post(
+                self.build_url('/table/{}/actions/join?uuid={}'.format(table_info.name, uuid)),
+                json={'position': position}
+            )
+            response.raise_for_status()
+            self.log('{}'.format(response.status_code))
         except HTTPError as error:
-            self.log('{}'.format(error.code))
+            self.log('{}'.format(error.response.status_code))
             raise
 
-        data = response.read()
-        if not data:
-            return None
-        data = data.decode('utf-8')
+    def fold(self, table_name, uuid):
+        url = self.build_url('/table/{}/actions/fold?uuid={}'.format(table_name, uuid))
+        self.post(url)
 
-        return json.loads(data) if as_json else data
+    def check(self, table_name, uuid):
+        url = self.build_url('/table/{}/actions/check?uuid={}'.format(table_name, uuid))
+        self.post(url)
+
+    def call(self, table_name, uuid):
+        url = self.build_url('/table/{}/actions/call?uuid={}'.format(table_name, uuid))
+        self.post(url)
+
+    def raise_bet(self, table_name, uuid, amount):
+        self.post(self.build_url('/table/{}/actions/raise?uuid={}'.format(table_name, uuid)), json={'amount': amount})
+
+    def post(self, url, **kwargs):
+        self.log("POST {}... ".format(url), new_line=False)
+        try:
+            response = post(url, **kwargs)
+            response.raise_for_status()
+            self.log('{}'.format(response.status_code))
+        except HTTPError as error:
+            self.log('{}'.format(error.response.status_code))
+            raise
+
+    def fetch(self, url, as_json=True):
+        url = self.build_url(url)
+        self.log("GET {}... ".format(url), new_line=False)
+        try:
+            response = get(url)
+            response.raise_for_status()
+            self.log('{}'.format(response.status_code))
+        except HTTPError as error:
+            self.log('{}'.format(error.response.status_code))
+            raise
+
+        return response.json() if as_json else response.text
+
+    def build_url(self, url):
+        url = 'http://{}:{}{}'.format(self.host, self.port, url)
+        return url
 
     def log(self, message, new_line=True):  # pylint: disable=no-self-use
         print(message, end='\n' if new_line else '')

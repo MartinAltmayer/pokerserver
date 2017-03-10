@@ -5,6 +5,7 @@ import logging
 from uuid import UUID
 
 from tornado import httputil
+from tornado.escape import json_decode
 from tornado.web import HTTPError as TornadoHTTPError, MissingArgumentError, RequestHandler
 
 from pokerserver.database import UUIDsRelation
@@ -57,6 +58,9 @@ class BaseController(RequestHandler):
             raise HTTPError(HTTPStatus.NOT_FOUND, 'Table not found')
         turn_delay = self.settings.get('args').turn_delay if self.settings.get('args') else 0
         return Match(table, turn_delay)
+
+    def get_body(self):
+        return json_decode(self.request.body)
 
 
 def authenticated(method):

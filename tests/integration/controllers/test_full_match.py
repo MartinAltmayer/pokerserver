@@ -54,18 +54,19 @@ class TestFullMatch(IntegrationHttpTestCase):
             uuids[player['name']] = response.body.decode('ascii')
         return uuids
 
+    def get_uuid(self, player):
+        return self.uuids[player['name']]
+
     async def join_table(self):
         # Make Player0 the first dealer
         with patch('random.choice', side_effect=lambda players: players[0]) as choice_mock:
             for player in self.player_data:
-                await self.fetch_with_uuid(
-                    '/table/{}/join?position={}'.format(self.table.name, player['position']), player)
+                await self.post_with_uuid(
+                    '/table/{}/actions/join'.format(self.table.name),
+                    self.get_uuid(player),
+                    body={'position': player['position']}
+                )
         self.assertEqual(1, choice_mock.call_count)
-
-    async def fetch_with_uuid(self, url, player):
-        uuid = self.uuids[player['name']]
-        separator = '&' if '?' in url else '?'
-        return await self.fetch_async(url + separator + 'uuid=' + uuid)
 
     @gen_test
     async def test_all_call_and_check(self):
@@ -259,12 +260,22 @@ class TestFullMatch(IntegrationHttpTestCase):
         await self._assert_balances_and_bets([8, 8, 15, 6], [0, 0, 1, 2])
 
     async def _player_raises(self, index):
-        await self.fetch_with_uuid('/table/{}/raise?amount=1'.format(self.table.name), self.player_data[index])
+        await self.post_with_uuid(
+            '/table/{}/actions/raise'.format(self.table.name),
+            self.get_uuid(self.player_data[index]),
+            body={'amount': 1}
+        )
 
     async def _everyone_calls_and_big_blind_checks(self, player_order, balances):
         for index in player_order[:-1]:
-            await self.fetch_with_uuid('/table/{}/call'.format(self.table.name), self.player_data[index])
-        await self.fetch_with_uuid('/table/{}/check'.format(self.table.name), self.player_data[player_order[-1]])
+            await self.post_with_uuid(
+                '/table/{}/actions/call'.format(self.table.name),
+                self.get_uuid(self.player_data[index])
+            )
+        await self.post_with_uuid(
+            '/table/{}/actions/check'.format(self.table.name),
+            self.get_uuid(self.player_data[player_order[-1]])
+        )
 
         await self._assert_round_and_pots(Round.FLOP, [8])
         await self._assert_balances_and_bets(balances, [0, 0, 0, 0])
@@ -284,12 +295,18 @@ class TestFullMatch(IntegrationHttpTestCase):
 
     async def _everyone_checks(self, player_order):
         for index in player_order:
-            await self.fetch_with_uuid('/table/{}/check'.format(self.table.name), self.player_data[index])
+            await self.post_with_uuid(
+                '/table/{}/actions/check'.format(self.table.name),
+                self.get_uuid(self.player_data[index])
+            )
 
     async def _everyone_folds(self, player_order):
         for index in player_order:
             print(index)
-            await self.fetch_with_uuid('/table/{}/fold'.format(self.table.name), self.player_data[index])
+            await self.post_with_uuid(
+                '/table/{}/actions/fold'.format(self.table.name),
+                self.get_uuid(self.player_data[index])
+            )
 
     async def _assert_special_players(self, dealer=None, current_player=None):
         table = await TablesRelation.load_table_by_id(self.table.table_id)
