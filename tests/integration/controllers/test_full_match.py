@@ -274,11 +274,40 @@ class TestFullMatch(IntegrationHttpTestCase):
         await self._assert_round_and_pots(Round.FLOP, [12])
         await self._assert_balances_and_bets([7, 7, 7, 7], [0, 0, 0, 0])
 
-    async def _player_raises(self, index):
+    @gen_test
+    async def test_under_the_gun_should_not_make_another_turn_after_raise(self):
+        await self.async_setup()
+
+        await self._assert_special_players(dealer='Player0', current_player='Player3')
+        await self._assert_round_and_pots(Round.PREFLOP, [3])
+        await self._assert_balances_and_bets([10, 9, 8, 10], [0, 1, 2, 0])
+
+        await self._player_raises(3, amount=3)
+        await self._everyone_calls(player_order=[0, 1, 2])
+
+        await self._assert_round_and_pots(Round.FLOP, [12])
+        await self._assert_balances_and_bets([7, 7, 7, 7], [0, 0, 0, 0])
+
+    @gen_test
+    async def test_small_blind_should_not_make_another_turn_after_raise(self):
+        await self.async_setup()
+
+        await self._assert_special_players(dealer='Player0', current_player='Player3')
+        await self._assert_round_and_pots(Round.PREFLOP, [3])
+        await self._assert_balances_and_bets([10, 9, 8, 10], [0, 1, 2, 0])
+
+        await self._everyone_calls(player_order=[3, 0])
+        await self._player_raises(1, amount=2)
+        await self._everyone_calls(player_order=[2, 3, 0])
+
+        await self._assert_round_and_pots(Round.FLOP, [12])
+        await self._assert_balances_and_bets([7, 7, 7, 7], [0, 0, 0, 0])
+
+    async def _player_raises(self, index, amount=1):
         await self.post_with_uuid(
             '/table/{}/actions/raise'.format(self.table.name),
             self.get_uuid(self.player_data[index]),
-            body={'amount': 1}
+            body={'amount': amount}
         )
 
     async def _everyone_calls_and_big_blind_checks(self, player_order, balances):
