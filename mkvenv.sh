@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 
-VIRTUAL_ENVIRONMENT=pokerserver
+VIRTUAL_ENVIRONMENT=${1:-pokerserver}
 
 # virtualenvwrapper.sh has unbound variables. Thus set -eux would break this script.
 set -ex

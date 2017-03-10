@@ -1,50 +1,50 @@
 {
-  "name": "Pokerserver",
-  "version": "1.0.0",
-  "description": "Pokerserver for a Python workshop at TNG",
-  "main": "app.js",
-  "repository": "https://github.com/MartinAltmayer/pokerserver.git",
-  "author": "Martin Altmayer, Andreas Malecki",
-  "license": "GPL-3.0",
-  "devDependencies": {
-    "babel-loader": "^6.3.2",
-    "babel-preset-latest": "^6.22.0",
-    "babel-preset-react": "^6.23.0",
-    "del": "^2.2.2",
-    "eslint": "^3.16.1",
-    "eslint-config-airbnb": "^14.1.0",
-    "eslint-plugin-import": "^2.2.0",
-    "eslint-plugin-jsx-a11y": "^4.0.0",
-    "eslint-plugin-react": "^6.10.0",
-    "gulp": "^3.9.1",
-    "gulp-babel": "^6.1.2",
-    "gulp-eslint": "^3.0.1",
-    "webpack-stream": "^3.2.0"
-  },
-  "babel": {
-    "presets": [
-      "latest",
-      "react"
-    ]
-  },
-  "eslintConfig": {
-    "extends": "airbnb",
-    "plugins": [
-      "import"
-    ],
-    "env": {
-      "browser": true
+    "name": "Pokerserver",
+    "version": "1.0.0",
+    "description": "Pokerserver for a Python workshop at TNG",
+    "main": "app.js",
+    "repository": "https://github.com/MartinAltmayer/pokerserver.git",
+    "author": "Martin Altmayer, Andreas Malecki",
+    "license": "GPL-3.0",
+    "devDependencies": {
+        "babel-loader": "^6.3.2",
+        "babel-preset-latest": "^6.22.0",
+        "babel-preset-react": "^6.23.0",
+        "del": "^2.2.2",
+        "eslint": "^3.16.1",
+        "eslint-config-airbnb": "^14.1.0",
+        "eslint-plugin-import": "^2.2.0",
+        "eslint-plugin-jsx-a11y": "^4.0.0",
+        "eslint-plugin-react": "^6.10.0",
+        "gulp": "^3.9.1",
+        "gulp-babel": "^6.1.2",
+        "gulp-eslint": "^3.0.1",
+        "webpack-stream": "^3.2.0"
     },
-    "rules": {
-      "comma-dangle": 0,
-      "class-methods-use-this": 0,
-      "no-plusplus": 0,
-      "no-mixed-operators": 0
+    "babel": {
+        "presets": [
+            "latest",
+            "react"
+        ]
+    },
+    "eslintConfig": {
+        "extends": "airbnb",
+        "plugins": [
+            "import"
+        ],
+        "env": {
+            "browser": true
+        },
+        "rules": {
+            "comma-dangle": 0,
+            "class-methods-use-this": 0,
+            "no-plusplus": 0,
+            "no-mixed-operators": 0
+        }
+    },
+    "dependencies": {
+        "babel-polyfill": "^6.23.0",
+        "react": "^15.4.2",
+        "react-dom": "^15.4.2"
     }
-  },
-  "dependencies": {
-    "babel-polyfill": "^6.23.0",
-    "react": "^15.4.2",
-    "react-dom": "^15.4.2"
-  }
 }

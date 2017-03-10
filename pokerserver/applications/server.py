@@ -3,12 +3,14 @@ from asyncio import get_event_loop, sleep
 import logging
 from logging.config import dictConfig
 import os
+from os.path import abspath, dirname, join
 import sys
 
 from tornado.ioloop import IOLoop
 from tornado.platform.asyncio import AsyncIOMainLoop
 from tornado.web import Application
 
+import pokerserver
 from pokerserver.configuration import LOGGING, ServerConfig
 from pokerserver.controllers import HANDLERS
 from pokerserver.database import Database, TableConfig
@@ -20,9 +22,10 @@ ENSURE_TABLES_INTERVAL_SECONDS = 10
 
 
 def make_app(args):
+    static_path = join(dirname(abspath(pokerserver.__file__)), 'static')
     return Application(
         HANDLERS,
-        static_path='dist',
+        static_path=static_path,
         autoreload=True,
         args=args
     )

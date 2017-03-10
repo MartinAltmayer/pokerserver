@@ -2,6 +2,11 @@
 
 [![Build Status](https://travis-ci.org/MartinAltmayer/pokerserver.png)](https://travis-ci.org/MartinAltmayer/pokerserver)
 
+## Building the Frontend
+
+    npm install
+    gulp build
+
 ## PIP Package Installation
 
     python setup.py install

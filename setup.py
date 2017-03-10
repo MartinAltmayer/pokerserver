@@ -25,6 +25,7 @@ setup(
             'pokercli=pokerserver.applications.poker_cli:main',
         ]
     },
+    include_package_data=True,
     install_requires=requirements,
     test_suite='nose.collector'
 )

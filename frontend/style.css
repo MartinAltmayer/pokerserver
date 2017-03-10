@@ -1,44 +1,44 @@
 body {
-  background-color: #EEEEEE;
+    background-color: #EEEEEE;
 }
 
 .player-list {
-  display: flex;
+    display: flex;
 }
 
 .player-widget {
-  min-width: 170px;
-  min-height: 170px;
-  border: 1px solid #AAAAAA;
-  border-radius: 5px;
-  background-color: white;
-  padding: 20px;
-  margin: 20px;
+    min-width: 170px;
+    min-height: 170px;
+    border: 1px solid #AAAAAA;
+    border-radius: 5px;
+    background-color: white;
+    padding: 20px;
+    margin: 20px;
 }
 
 .player-widget--current {
-  border: 1px solid #cc0000;
-  background-color: #ffe9e9;
+    border: 1px solid #cc0000;
+    background-color: #ffe9e9;
 }
 
 .player-name {
-  font-weight: bold;
-  margin-bottom: 10px;
+    font-weight: bold;
+    margin-bottom: 10px;
 }
 
 .player-cards {
-  display: flex;
+    display: flex;
 }
 
 .card--small {
-  margin: 0 3px;
+    margin: 0 3px;
 }
 
 .card--large {
-  margin: 0 10px;
+    margin: 0 10px;
 }
 
 .open-cards {
-  text-align: center;
-  min-height: 236px;
+    text-align: center;
+    min-height: 236px;
 }
