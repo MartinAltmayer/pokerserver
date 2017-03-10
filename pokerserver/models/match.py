@@ -182,7 +182,7 @@ class Match:  # pylint: disable=too-many-public-methods
             return None
 
         next_player = self.table.player_left_of(current_player, active_players)
-        if self._may_not_make_another_turn(next_player, current_player):
+        if not self._may_make_another_turn(next_player, current_player):
             return None
         return next_player
 
@@ -294,23 +294,30 @@ class Match:  # pylint: disable=too-many-public-methods
     def _get_highest_bet(self):
         return max([0] + [p.bet for p in self.table.players if p.bet is not None])
 
-    def _may_not_make_another_turn(self, player, current_player):
-        highest_bet = player.bet == self._get_highest_bet()
-        has_made_turn = self._has_made_turn(player, current_player)
-        big_blind_preflop_at_later_turn = self._is_big_blind_preflop_at_later_turn(player)
-        return highest_bet and (has_made_turn or big_blind_preflop_at_later_turn)
+    def _may_make_another_turn(self, player, current_player):
+        has_highest_bet = player.bet == self._get_highest_bet()
+        if not has_highest_bet:
+            return True
+        elif player.bet > self._get_initial_bet(player):
+            return False
+        else:
+            start_player = self.find_start_player()
+            has_made_turn = player.position in self.table.player_positions_between(
+                start_player.position, current_player.position)
+            return not has_made_turn
 
-    def _has_made_turn(self, player, current_player):
-        start_player = self.find_start_player()
-        return player.position in self.table.player_positions_between(
-            start_player.position, current_player.position)
+    def _get_initial_bet(self, player):
+        if self.table.round is not Round.PREFLOP:
+            return 0
 
-    def _is_big_blind_preflop_at_later_turn(self, player):
-        _, big_blind = self.find_blind_players()
-        is_preflop = self.table.round == Round.PREFLOP
-        is_big_blind = player.position == big_blind.position
-        has_bet_before = player.bet > self.table.config.big_blind
-        return is_preflop and is_big_blind and has_bet_before
+        small_blind_player, big_blind_player = self.find_blind_players()
+
+        if player.position == small_blind_player.position:
+            return self.table.config.small_blind
+        elif player.position == big_blind_player.position:
+            return self.table.config.big_blind
+        else:
+            return 0
 
     @staticmethod
     def log(player_or_name, message):

@@ -22,7 +22,7 @@ class IndexController(FrontendBaseController):
 
     async def get(self, table_name):
         try:
-            table = await Table.load_by_name(table_name)
+            await Table.load_by_name(table_name)
         except TableNotFoundError:
             raise HTTPError(HTTPStatus.NOT_FOUND)
 
