@@ -8,7 +8,17 @@ from pokerserver.models import Table, TableNotFoundError
 TABLE_NAME_PATTERN = r'(.+)'
 
 
-class IndexController(RequestHandler):
+class FrontendBaseController(RequestHandler):
+    def prepare(self):
+        actual_password = self.application.settings['args'].password
+        if actual_password:
+            provided_password = self.get_cookie('devcookie', '')
+            print("PROV", provided_password)
+            if actual_password != provided_password:
+                raise HTTPError(HTTPStatus.UNAUTHORIZED)
+
+
+class IndexController(FrontendBaseController):
     route = r'/gui/' + TABLE_NAME_PATTERN
 
     async def get(self, table_name):
@@ -29,7 +39,7 @@ HTML = """<!doctype html>
 </html>"""
 
 
-class FrontendDataController(RequestHandler):
+class FrontendDataController(FrontendBaseController):
     route = r'/fedata/' + TABLE_NAME_PATTERN
 
     async def get(self, table_name):
@@ -58,7 +68,7 @@ class FrontendDataController(RequestHandler):
 
 
 class DevCookieController(RequestHandler):
-    route =r'/devcookie'
+    route = r'/devcookie'
 
     async def get(self):
         provided_password = self.get_argument('password', '')
@@ -69,5 +79,5 @@ class DevCookieController(RequestHandler):
         if provided_password != actual_password:
             raise HTTPError(HTTPStatus.BAD_REQUEST)
 
-        self.set_cookie('devcookie', actual_password)
+        self.set_cookie('devcookie', actual_password, httponly=True)
         self.set_status(HTTPStatus.NO_CONTENT)

@@ -17,7 +17,7 @@ class App extends React.Component {
   }
 
   fetchData() {
-    fetch(window.DATA_URL)
+    fetch(window.DATA_URL, { credentials: 'same-origin' })
       .then(response => response.json())
       .then(json => this.setState(json));
   }
