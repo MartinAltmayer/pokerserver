@@ -100,8 +100,8 @@ class TestFullMatch(IntegrationHttpTestCase):
         await self._assert_round_and_pots(Round.PREFLOP, [3])
         await self._assert_balances_and_bets([34, 1, 0, 2], [0, 1, 2, 0])
 
-        await self._everyone_calls_and_big_blind_checks(player_order=[3, 0, 1, 2], balances=[32, 0, 0, 0])
-        await self._everyone_checks_three_times(player_order=[1, 2, 3, 0], balances=[32, 0, 0, 0])
+        await self._everyone_calls(player_order=[3, 0, 1])
+        await self._everyone_checks(player_order=[2])
 
         table = await Table.load_by_name(self.table.name)
         self.assertTrue(table.is_closed)
@@ -258,6 +258,64 @@ class TestFullMatch(IntegrationHttpTestCase):
 
         await self._assert_round_and_pots(Round.PREFLOP, [3])
         await self._assert_balances_and_bets([8, 8, 15, 6], [0, 0, 1, 2])
+
+    @gen_test
+    async def test_showdown_from_preflop_with_all_players_all_in(self):
+        await self.async_setup()
+
+        await self._assert_special_players(dealer='Player0', current_player='Player3')
+        await self._assert_round_and_pots(Round.PREFLOP, [3])
+        await self._assert_balances_and_bets([10, 9, 8, 10], [0, 1, 2, 0])
+
+        # Play second hand with Player2 all in
+        await self._player_raises(3, amount=10)
+        await self._everyone_calls(player_order=[0, 1])
+        await self._assert_balances_and_bets([0, 0, 8, 0], [10, 10, 2, 10])
+        await self._everyone_calls(player_order=[2])
+
+        table = await Table.load_by_name(self.table.name)
+        self.assertTrue(table.is_closed)
+
+        stats = await Statistics.load()
+        self.assertEqual({
+            'Player0': {'matches': 1, 'buy_in': 10, 'gain': 40},
+            'Player1': {'matches': 1, 'buy_in': 10, 'gain': 0},
+            'Player2': {'matches': 1, 'buy_in': 10, 'gain': 0},
+            'Player3': {'matches': 1, 'buy_in': 10, 'gain': 0}
+        }, {statistics.player_name: statistics.to_dict() for statistics in stats.player_statistics})
+
+    @gen_test
+    async def test_showdown_from_preflop_with_one_player_all_in(self):
+        await self.async_setup()
+
+        await self._assert_special_players(dealer='Player0', current_player='Player3')
+        await self._assert_round_and_pots(Round.PREFLOP, [3])
+        await self._assert_balances_and_bets([10, 9, 8, 10], [0, 1, 2, 0])
+
+        # Play one hand to get different balances
+        await self._everyone_folds(player_order=[3])
+        await self._everyone_calls(player_order=[0])
+        await self._everyone_folds(player_order=[1])
+        await self._everyone_checks(player_order=[2])
+        await self._assert_round_and_pots(Round.FLOP, [5])
+        await self._everyone_checks(player_order=[2, 0])
+        await self._assert_round_and_pots(Round.TURN, [5])
+        await self._everyone_checks(player_order=[2, 0])
+        await self._assert_round_and_pots(Round.RIVER, [5])
+        await self._everyone_checks(player_order=[2, 0])
+
+        await self._assert_round_and_pots(Round.PREFLOP, [3])
+        await self._assert_balances_and_bets([13, 9, 7, 8], [0, 0, 1, 2])
+
+        # Play second hand with Player2 all in
+        await self._everyone_folds(player_order=[0, 1])
+        await self._assert_balances_and_bets([13, 9, 7, 8], [0, 0, 1, 2])
+        await self._player_raises(2, amount=7)
+        await self._assert_balances_and_bets([13, 9, 0, 8], [0, 0, 8, 2])
+        await self._everyone_calls(player_order=[3])
+
+        await self._assert_round_and_pots(Round.PREFLOP, [3])
+        await self._assert_balances_and_bets([12, 7, 18], [1, 2, 0])
 
     @gen_test
     async def test_big_blind_should_not_make_another_turn_after_raise(self):

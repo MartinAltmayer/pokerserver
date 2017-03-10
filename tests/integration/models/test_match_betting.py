@@ -17,7 +17,8 @@ class BettingTestCase(IntegrationTestCase, PotChecker):
             for index, (balance, bet) in enumerate(zip(balances, bets))
         ]
         self.table = await create_table(players=self.players,
-                                        pots=[{'bets': {(index + 1): bet for index, bet in enumerate(bets)}}])
+                                        pots=[{'bets': {(index + 1): bet for index, bet in enumerate(bets)}}],
+                                        remaining_deck=['2c'] * 52)
         await self.table.set_dealer(self.players[0])
         if len(bets) == 2:
             await self.table.set_current_player(self.players[0], 'sometoken')
@@ -136,27 +137,27 @@ class TestCall(BettingTestCase):
 
     @gen_test
     async def test_call_heads_up(self):
-        await self.async_setup(balances=[1, 0], bets=[1, 2])
+        await self.async_setup(balances=[9, 8], bets=[1, 2])
         await self.assert_current_player('John0')
         await self.assert_pots(self.table.name, amounts=[3])
         await self.match.call(self.players[0].name)
         player = await Player.load_by_name(self.players[0].name)
         self.assertEqual(2, player.bet)
-        self.assertEqual(0, player.balance)
+        self.assertEqual(8, player.balance)
         await self.assert_pots(self.table.name, amounts=[4])
         await self.assert_current_player('John1')
 
     @patch('pokerserver.models.match.Match.next_round', side_effect=return_done_future())
     @gen_test
     async def test_call_heads_up_big_blind(self, next_round_mock):
-        await self.async_setup(balances=[1, 0], bets=[1, 2])
+        await self.async_setup(balances=[9, 8], bets=[1, 2])
         await self.assert_pots(self.table.name, amounts=[3])
         await self.match.call(self.players[0].name)
         await self.match.check(self.players[1].name)
 
         player = await Player.load_by_name(self.players[1].name)
         self.assertEqual(2, player.bet)
-        self.assertEqual(0, player.balance)
+        self.assertEqual(8, player.balance)
         await self.assert_pots(self.table.name, amounts=[4])
         next_round_mock.assert_called_once_with()
 

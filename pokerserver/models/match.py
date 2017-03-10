@@ -122,19 +122,37 @@ class Match:  # pylint: disable=too-many-public-methods
         await self.set_player_active(under_the_gun)
 
     def find_blind_players(self):
-        if len(self.table.players) == 2:
+        """Returns blind players independent of the progress of a match.
+
+        Only players that are sitting out are ignored.
+        """
+        active_players = [player for player in self.table.players if player.state is not PlayerState.SITTING_OUT]
+        if len(active_players) == 2:
             small_blind = self.table.dealer
-            big_blind = self.table.player_left_of(small_blind)
+            big_blind = self.table.player_left_of(small_blind, player_filter=active_players)
         else:
-            small_blind = self.table.player_left_of(self.table.dealer)
-            big_blind = self.table.player_left_of(small_blind)
+            small_blind = self.table.player_left_of(self.table.dealer, player_filter=active_players)
+            big_blind = self.table.player_left_of(small_blind, player_filter=active_players)
         return small_blind, big_blind
 
     def find_start_player(self):
+        """Find first player from small blind on that is playing (not sitting out)."""
         small_blind, big_blind = self.find_blind_players()
         if len(self.table.players) == 2:
             return small_blind if self.table.round == Round.PREFLOP else big_blind
         return self.table.player_left_of(big_blind) if self.table.round == Round.PREFLOP else small_blind
+
+    def find_start_player_postflop(self):
+        """Find first player from small blind on that is still playing (not folded, all in or sitting out)."""
+        small_blind, big_blind = self.find_blind_players()
+        active_players = [player for player in self.table.players if player.state is PlayerState.PLAYING]
+        if len(active_players) == 2:
+            start_player = small_blind if self.table.round == Round.PREFLOP else big_blind
+        else:
+            start_player = self.table.player_left_of(big_blind) if self.table.round == Round.PREFLOP else small_blind
+        if start_player.state is not PlayerState.PLAYING:
+            start_player = self.table.player_left_of(start_player, player_filter=active_players)
+        return start_player
 
     async def pay_blinds(self, small_blind_player, big_blind_player):
         assert small_blind_player in self.table.players
@@ -192,9 +210,17 @@ class Match:  # pylint: disable=too-many-public-methods
 
     async def next_round(self):
         await self.reset_bets()
-        only_one_player_remaining = len(self.table.active_players()) == 1
+        active_players = [player for player in self.table.players if player.state is PlayerState.PLAYING]
+        all_in_players = [player for player in self.table.players if player.state is PlayerState.ALL_IN]
 
-        if only_one_player_remaining:
+        if len(active_players) < 2:
+            if all_in_players:
+                if self.table.round is Round.PREFLOP:
+                    await self.table.draw_cards(3)
+                if self.table.round is Round.FLOP:
+                    await self.table.draw_cards(1)
+                if self.table.round is Round.TURN:
+                    await self.table.draw_cards(1)
             await self.finish_hand()
             return
 
@@ -206,7 +232,7 @@ class Match:  # pylint: disable=too-many-public-methods
             await self.finish_hand()
             return
 
-        next_player = self.find_start_player()
+        next_player = self.find_start_player_postflop()
         self.log(next_player, 'Starts new round')
         await self.set_player_active(next_player)
 
