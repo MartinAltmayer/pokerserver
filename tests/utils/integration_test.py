@@ -82,9 +82,12 @@ class IntegrationHttpTestCase(IntegrationTestCase, AsyncHTTPTestCase):
         return result
 
     async def post_with_uuid(self, url, uuid, body=None, **kwargs):
-        body = json.dumps(body or {})
         separator = '&' if '?' in url else '?'
-        return await self.fetch_async('{}{}uuid={}'.format(url, separator, uuid), body=body, method='POST', **kwargs)
+        return await self.post('{}{}uuid={}'.format(url, separator, uuid), body=body, **kwargs)
+
+    async def post(self, url, body=None, **kwargs):
+        body = json.dumps(body or {})
+        return await self.fetch_async(url, body=body, method='POST', **kwargs)
 
 
 async def create_table(table_id=1, name='Table', min_player_count=2, max_player_count=10, small_blind=1, big_blind=2,

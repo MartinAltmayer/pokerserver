@@ -4,7 +4,7 @@ from pokerserver.models import Statistics
 
 
 class StatisticsController(RequestHandler):
-    route = r'/statistics'
+    route = r'/statistics/?'
 
     async def get(self):
         statistics = await Statistics.load()

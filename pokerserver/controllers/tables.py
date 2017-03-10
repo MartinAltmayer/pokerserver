@@ -4,7 +4,7 @@ from pokerserver.models import Table
 
 
 class TablesController(RequestHandler):
-    route = r'/tables'
+    route = r'/tables/?'
 
     async def get(self):
         tables = await Table.load_all()
