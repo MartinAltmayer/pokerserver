@@ -13,7 +13,6 @@ class FrontendBaseController(RequestHandler):
         actual_password = self.application.settings['args'].password
         if actual_password:
             provided_password = self.get_cookie('devcookie', '')
-            print("PROV", provided_password)
             if actual_password != provided_password:
                 raise HTTPError(HTTPStatus.UNAUTHORIZED)
 
