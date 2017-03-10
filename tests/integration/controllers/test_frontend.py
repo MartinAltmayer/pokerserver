@@ -47,6 +47,16 @@ class TestFrontendDataController(IntegrationHttpTestCase):
         self.assertEqual(response.code, HTTPStatus.UNAUTHORIZED.value)
 
     @gen_test
+    async def test_get_no_table(self):
+        await self.async_setup()
+        response = await self.fetch_async(
+            '/fedata/Table1234',
+            headers={'Cookie': 'devcookie=secret'},
+            raise_error=False
+        )
+        self.assertEqual(response.code, HTTPStatus.NOT_FOUND.value)
+
+    @gen_test
     async def test_get_authorized(self):
         await self.async_setup()
         response = await self.fetch_async('/fedata/Table1', headers={'Cookie': 'devcookie=secret'})
@@ -84,6 +94,16 @@ class TestIndexController(IntegrationHttpTestCase):
         await self.async_setup()
         response = await self.fetch_async('/gui/Table1', raise_error=False)
         self.assertEqual(response.code, HTTPStatus.UNAUTHORIZED.value)
+
+    @gen_test
+    async def test_get_no_table(self):
+        await self.async_setup()
+        response = await self.fetch_async(
+            '/gui/Table1234',
+            headers={'Cookie': 'devcookie=secret'},
+            raise_error=False
+        )
+        self.assertEqual(response.code, HTTPStatus.NOT_FOUND.value)
 
     @gen_test
     async def test_get_authorized(self):

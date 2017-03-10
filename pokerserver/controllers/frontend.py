@@ -21,6 +21,11 @@ class IndexController(FrontendBaseController):
     route = r'/gui/' + TABLE_NAME_PATTERN
 
     async def get(self, table_name):
+        try:
+            table = await Table.load_by_name(table_name)
+        except TableNotFoundError:
+            raise HTTPError(HTTPStatus.NOT_FOUND)
+
         data_url = 'http://{}/fedata/{}'.format(self.request.host, quote(table_name))
         self.write(HTML.format(data_url=data_url))
 
