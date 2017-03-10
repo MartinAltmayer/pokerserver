@@ -50,7 +50,7 @@ class TestFullMatch(IntegrationHttpTestCase):
     async def fetch_uuids(self):
         uuids = {}
         for player in self.player_data:
-            response = await self.fetch_async('/uuid?player_name={}'.format(player['name']))
+            response = await self.post('/uuid', body={'player_name': player['name']})
             uuids[player['name']] = response.body.decode('ascii')
         return uuids
 
