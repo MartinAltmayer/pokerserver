@@ -55,3 +55,19 @@ class FrontendDataController(RequestHandler):
             'folded': player.state is PlayerState.FOLDED,
             'cards': player.cards
         }
+
+
+class DevCookieController(RequestHandler):
+    route =r'/devcookie'
+
+    async def get(self):
+        provided_password = self.get_argument('password', '')
+        actual_password = self.application.settings['args'].password
+        if not actual_password:
+            raise HTTPError(HTTPStatus.NOT_FOUND)
+
+        if provided_password != actual_password:
+            raise HTTPError(HTTPStatus.BAD_REQUEST)
+
+        self.set_cookie('devcookie', actual_password)
+        self.set_status(HTTPStatus.NO_CONTENT)
