@@ -7,13 +7,17 @@ function renderCard(card) {
 
 const PlayerWidget = props => (
     <div className={`player-widget ${props.current ? 'player-widget--current' : ''}`}>
-        <div className="player-name">{props.position}: {props.name}</div>
+        <div className="player-name">
+            {props.position}: {props.state === 'playing' ? props.name : '(' + props.name + ')'}
+        </div>
         <div className="player-cards">{props.cards.map(renderCard)}</div>
         <ul className="player-info">
             <li>Balance: {props.balance}</li>
             <li>Bet: {props.bet}</li>
             {props.dealer ? <li>Dealer</li> : null}
-            {props.folded ? <li>Folded</li> : null}
+            {props.state === 'folded' ? <li>Folded</li> : null}
+            {props.state === 'all in' ? <li>All In</li> : null}
+            {props.state === 'sitting out' ? <li>Sitting Out</li> : null}
         </ul>
     </div>
 );

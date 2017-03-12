@@ -72,7 +72,7 @@ class TestFrontendDataController(IntegrationHttpTestCase):
                     'cards': player.cards,
                     'current': False,
                     'dealer': False,
-                    'folded': False,
+                    'state': 'playing',
                     'name': player.name,
                     'position': player.position
                 } for player in self.players

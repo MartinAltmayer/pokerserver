@@ -2,7 +2,6 @@ from http import HTTPStatus
 from urllib.parse import quote
 from tornado.web import RequestHandler, HTTPError
 
-from pokerserver.database import PlayerState
 from pokerserver.models import Table, TableNotFoundError
 
 TABLE_NAME_PATTERN = r'(.+)'
@@ -66,7 +65,7 @@ class FrontendDataController(FrontendBaseController):
             'bet': player.bet,
             'dealer': player is table.dealer,
             'current': player is table.current_player,
-            'folded': player.state is PlayerState.FOLDED,
+            'state': player.state.value,
             'cards': player.cards
         }
 
