@@ -7,7 +7,7 @@ from pokerserver.client import BaseClient
 
 
 class CliClient(BaseClient):
-    WAIT_FOR_TURN_TIMEOUT_SECONDS = 1
+    INTERVAL = 1
 
     def __init__(self, host, port, player_count):
         super().__init__(host, port)
@@ -22,13 +22,17 @@ class CliClient(BaseClient):
         self.find_table_and_join()
         try:
             while True:
-                self.load_table_and_players()
-                self.print_table_info()
-                self.print_player_info()
-                if self.uuids.get(self.table.current_player) is None:
-                    sleep(self.WAIT_FOR_TURN_TIMEOUT_SECONDS)
-                    continue
-                self.read_and_execute_command()
+                table = self.load_table_and_players()
+
+                if table != self.table:
+                    self.table = table
+                    self.print_table_info()
+                    self.print_player_info()
+
+                if self.table.current_player in self.player_names:
+                    self.read_and_execute_command()
+                else:
+                    sleep(self.INTERVAL)
         except EOFError:
             print()
 
@@ -59,20 +63,21 @@ class CliClient(BaseClient):
     def find_suitable_table(self):
         tables = self.fetch_tables()
         for table in tables:
-            if not table.players and table.min_player_count <= len(self.player_names) <= table.max_player_count:
+            if len(table.players) + len(self.player_names) <= table.max_player_count:
                 return table
         else:
             raise RuntimeError('No suitable table')
 
     def load_table_and_players(self):
-        self.table = self.fetch_table(self.table_name)
+        table = self.fetch_table(self.table_name)
         # Load the same table separately for each player to get the cards.
         # Insert the cards in the table above.
-        for player in self.players:
+        for player in table.players:
             uuid = self.uuids.get(player.name)
             if uuid is not None:
                 table_viewed_by_player = self.fetch_table(self.table_name, uuid)
                 player.cards = self.find_player_cards(table_viewed_by_player, player)
+        return table
 
     @staticmethod
     def find_player_cards(table, player):
@@ -104,8 +109,11 @@ class CliClient(BaseClient):
     def print_player_info(self):
         parts = []
         for player in self.players:
-            current = ' (*)' if player.name == self.table.current_player else ''
-            parts.append('{}{}: {}, {}, {}'.format(player.name, current, player.balance, player.bet, player.cards))
+            current = ' [*]' if player.name == self.table.current_player else ''
+            if player.name in self.player_names:
+                parts.append('{}{}: {}, {}, {}'.format(player.name, current, player.balance, player.bet, player.cards))
+            else:
+                parts.append('({}){}: {}, {}'.format(player.name, current, player.balance, player.bet))
         print('  |  '.join(parts))
 
     def execute_command(self, string, uuid):

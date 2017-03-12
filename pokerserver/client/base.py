@@ -35,6 +35,12 @@ class Table:
         self.open_cards = kwargs.get('open_cards')
         self.is_closed = kwargs.get('is_closed')
 
+    def __eq__(self, other):
+        return isinstance(other, Table) and self.__dict__ == other.__dict__
+
+    def __ne__(self, other):
+        return not isinstance(other, Table) or self.__dict__ != other.__dict__
+
 
 class Pot:
     def __init__(self, bets=None):
@@ -43,6 +49,12 @@ class Pot:
     @property
     def amount(self):
         return sum(self.bets.values(), 0)
+
+    def __eq__(self, other):
+        return self.bets == other.bets
+
+    def __ne__(self, other):
+        return self.bets != other.bets
 
 
 class Player:
@@ -55,6 +67,12 @@ class Player:
         self.cards = cards
         self.state = PlayerState(state)
         self.table_id = int(table_id)
+
+    def __eq__(self, other):
+        return isinstance(other, Player) and self.__dict__ == other.__dict__
+
+    def __ne__(self, other):
+        return not isinstance(other, Player) or self.__dict__ != other.__dict__
 
 
 class PlayerState(Enum):
