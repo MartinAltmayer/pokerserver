@@ -1,7 +1,4 @@
-from http import HTTPStatus
 from time import sleep
-
-from requests import HTTPError
 
 from pokerserver.client import BaseClient, RequestError
 

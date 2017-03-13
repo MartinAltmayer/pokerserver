@@ -122,7 +122,7 @@ class BaseClient:
 
     def join_table(self, table_info, position, uuid):
         self.post(
-            '/table/{}/actions/join?uuid={}'.format(table_info.name, uuid)  ,
+            '/table/{}/actions/join?uuid={}'.format(table_info.name, uuid),
             json={'position': position}
         )
 
