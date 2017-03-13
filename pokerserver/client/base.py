@@ -1,6 +1,7 @@
 from enum import Enum
 
-from requests import HTTPError, get, post, ConnectionError
+import requests
+from requests import HTTPError, get, post
 
 
 class RequestError(BaseException):
@@ -93,8 +94,11 @@ class BaseClient:
         self.log_requests = log_requests
 
     def receive_uuid(self, player_name):
-        response = self.post('/uuid', json={'player_name': player_name})
-        return response.text
+        try:
+            response = self.post('/uuid', json={'player_name': player_name})
+            return response.text
+        except RequestError:
+            return None
 
     def fetch_table(self, name, uuid=None):
         if uuid:
@@ -117,16 +121,10 @@ class BaseClient:
             raise RuntimeError('No free table')
 
     def join_table(self, table_info, position, uuid):
-        try:
-            response = post(
-                self.build_url('/table/{}/actions/join?uuid={}'.format(table_info.name, uuid)),
-                json={'position': position}
-            )
-            response.raise_for_status()
-            self.log('{}'.format(response.status_code))
-        except HTTPError as error:
-            self.log('{}'.format(error.response.status_code))
-            raise
+        self.post(
+            '/table/{}/actions/join?uuid={}'.format(table_info.name, uuid)  ,
+            json={'position': position}
+        )
 
     def fold(self, table_name, uuid):
         url = '/table/{}/actions/fold?uuid={}'.format(table_name, uuid)
@@ -145,27 +143,34 @@ class BaseClient:
 
     def post(self, url, **kwargs):
         url = self.build_url(url)
-        self.log("POST {}... ".format(url), new_line=False)
+        if self.log_requests:
+            self.log("POST {}... ".format(url), new_line=False)
         try:
             response = post(url, **kwargs)
             response.raise_for_status()
-            self.log('{}'.format(response.status_code))
+            if self.log_requests:
+                self.log('{}'.format(response.status_code))
         except HTTPError as error:
             self.log('{}'.format(error.response.status_code))
-            raise
+            raise RequestError
+        except requests.ConnectionError:
+            self.log('ConnectionError')
+            raise RequestError
         return response
 
     def fetch(self, url, as_json=True):
         url = self.build_url(url)
-        self.log("GET {}... ".format(url), new_line=False)
+        if self.log_requests:
+            self.log("GET {}... ".format(url), new_line=False)
         try:
             response = get(url)
             response.raise_for_status()
-            self.log('{}'.format(response.status_code))
+            if self.log_requests:
+                self.log('{}'.format(response.status_code))
         except HTTPError as error:
             self.log('{}'.format(error.response.status_code))
             raise RequestError
-        except ConnectionError:
+        except requests.ConnectionError:
             self.log('ConnectionError')
             raise RequestError
 
@@ -176,5 +181,4 @@ class BaseClient:
         return url
 
     def log(self, message, new_line=True):  # pylint: disable=no-self-use
-        if self.log_requests:
-            print(message, end='\n' if new_line else '')
+        print(message, end='\n' if new_line else '')

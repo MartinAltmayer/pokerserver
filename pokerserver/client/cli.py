@@ -47,13 +47,9 @@ class CliClient(BaseClient):
         while len(self.player_names) < number:
             index += 1
             name = 'Player{}'.format(index)
-            try:
-                uuid = self.receive_uuid(name)
-            except HTTPError as exc:
-                if exc.response.status_code == HTTPStatus.BAD_REQUEST.value:
-                    continue  # player exists
-                else:
-                    raise
+            uuid = self.receive_uuid(name)
+            if uuid is None:
+                continue  # player exists
 
             self.player_names.append(name)
             self.uuids[name] = uuid

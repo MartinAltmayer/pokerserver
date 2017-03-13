@@ -381,6 +381,42 @@ class TestFullMatch(IntegrationHttpTestCase):
         await self._assert_round_and_pots(Round.TURN, [12])
         await self._assert_balances_and_bets([7, 7, 7, 7], [0, 0, 0, 0])
 
+    @gen_test
+    async def test_bug_all_in_player_must_not_make_turn(self):
+        await self.async_setup()
+
+        # Play one hand to get different balances
+        await self._everyone_folds(player_order=[3])
+        await self._everyone_calls(player_order=[0])
+        await self._everyone_folds(player_order=[1])
+        await self._everyone_checks(player_order=[2])
+        await self._assert_round_and_pots(Round.FLOP, [5])
+        await self._everyone_checks(player_order=[2, 0])
+        await self._assert_round_and_pots(Round.TURN, [5])
+        await self._everyone_checks(player_order=[2, 0])
+        await self._assert_round_and_pots(Round.RIVER, [5])
+        await self._everyone_checks(player_order=[2, 0])
+
+        # Skip to flop
+        await self._assert_special_players(dealer='Player1', current_player='Player0')
+        await self._assert_round_and_pots(Round.PREFLOP, [3])
+        await self._assert_balances_and_bets([13, 9, 7, 8], [0, 0, 1, 2])
+        await self._everyone_calls(player_order=[0, 1, 2])
+        await  self._player_checks(3)
+        await self._assert_round_and_pots(Round.FLOP, [8])
+        await self._assert_balances_and_bets([11, 7, 6, 8], [0, 0, 0, 0])
+
+        await self._player_raises(2, amount=6)
+        await self._everyone_calls([3])
+        await self._player_raises(0, amount=8)
+        await self._everyone_calls([1])
+
+        players = await PlayersRelation.load_by_table_id(self.table.table_id)
+        for player in players:
+            if player['name'] == 'Player2':
+                self.assertEqual('all in', player['state'].value)
+        await self._assert_special_players(current_player='Player3')
+
     async def _player_raises(self, index, amount=1):
         await self.post_with_uuid(
             '/table/{}/actions/raise'.format(self.table.name),
