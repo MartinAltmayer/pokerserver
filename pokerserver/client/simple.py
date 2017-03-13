@@ -37,10 +37,20 @@ class SimpleClient(BaseClient):
         actions = {
             'fold': lambda: self.fold(table.name, self.uuid),
             'call': lambda: self.call(table.name, self.uuid),
-            'raise': lambda: self.raise_bet(table.name, self.uuid, 3 * self.maximum_bet(table, position))
+            'raise': lambda: self.raise_bet(table.name, self.uuid, self.get_max_raise(table, position))
         }
         action = choice(list(actions.keys()))
         actions[action]()
+
+    @classmethod
+    def get_max_raise(cls, table, position):
+        balance = cls.get_balance(table, position)
+        maximum_bet = cls.maximum_bet(table, position)
+        return min(balance, 3 * maximum_bet)
+
+    @classmethod
+    def get_balance(cls, table, position):
+        return next((player.balance for player in table.players if player.position == position))
 
     @classmethod
     def can_check(cls, table, position):
