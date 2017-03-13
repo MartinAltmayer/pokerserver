@@ -3,14 +3,14 @@ from time import sleep
 
 from requests import HTTPError
 
-from pokerserver.client import BaseClient
+from pokerserver.client import BaseClient, RequestError
 
 
 class CliClient(BaseClient):
     INTERVAL = 1
 
-    def __init__(self, host, port, player_count):
-        super().__init__(host, port)
+    def __init__(self, host, port, player_count, log_requests=False):
+        super().__init__(host, port, log_requests=log_requests)
         self.player_count = player_count
         self.player_names = []
         self.table_name = None
@@ -22,7 +22,11 @@ class CliClient(BaseClient):
         self.find_table_and_join()
         try:
             while True:
-                table = self.load_table_and_players()
+                try:
+                    table = self.load_table_and_players()
+                except RequestError:
+                    sleep(1)
+                    continue
 
                 if table != self.table:
                     self.table = table
@@ -94,8 +98,6 @@ class CliClient(BaseClient):
             self.execute_command(command_text, uuid)
         except ValueError:
             print('Invalid command. Enter one of fold, call, check, raise <amount>')
-        except HTTPError as exc:
-            print(exc)
 
     @property
     def players(self):
@@ -122,9 +124,12 @@ class CliClient(BaseClient):
             name = parts[0]
             if name not in ['fold', 'call', 'check', 'raise']:
                 raise ValueError('Invalid command')
-            if name == 'raise':
-                self.raise_bet(self.table.name, uuid, int(parts[1]))
-            else:
-                getattr(self, name)(self.table.name, uuid)
+            try:
+                if name == 'raise':
+                    self.raise_bet(self.table.name, uuid, int(parts[1]))
+                else:
+                    getattr(self, name)(self.table.name, uuid)
+            except RequestError:
+                pass  # let's poll until the server works again
         except IndexError:
             raise ValueError('Missing part')

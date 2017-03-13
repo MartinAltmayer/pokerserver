@@ -1,6 +1,10 @@
 from enum import Enum
 
-from requests import HTTPError, get, post
+from requests import HTTPError, get, post, ConnectionError
+
+
+class RequestError(BaseException):
+    pass
 
 
 class TableInfo:
@@ -83,9 +87,10 @@ class PlayerState(Enum):
 
 
 class BaseClient:
-    def __init__(self, host, port):
+    def __init__(self, host, port, log_requests=False):
         self.host = host
         self.port = port
+        self.log_requests = log_requests
 
     def receive_uuid(self, player_name):
         response = self.post('/uuid', json={'player_name': player_name})
@@ -159,7 +164,10 @@ class BaseClient:
             self.log('{}'.format(response.status_code))
         except HTTPError as error:
             self.log('{}'.format(error.response.status_code))
-            raise
+            raise RequestError
+        except ConnectionError:
+            self.log('ConnectionError')
+            raise RequestError
 
         return response.json() if as_json else response.text
 
@@ -168,4 +176,5 @@ class BaseClient:
         return url
 
     def log(self, message, new_line=True):  # pylint: disable=no-self-use
-        print(message, end='\n' if new_line else '')
+        if self.log_requests:
+            print(message, end='\n' if new_line else '')
