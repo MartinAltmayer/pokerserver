@@ -4,9 +4,33 @@ from unittest.mock import Mock, call, patch
 from nose.tools import assert_raises
 from tornado.testing import AsyncTestCase, gen_test
 
-from pokerserver.database import PlayerState, TableConfig
+from pokerserver.database import PlayerState, TableConfig, TableState
 from pokerserver.models import Match, Player, Table
 from tests.utils import return_done_future
+
+
+@patch('pokerserver.models.player.Player.sit_down', side_effect=return_done_future())
+@patch('pokerserver.models.player.Player.load_by_name', side_effect=return_done_future(Mock()))
+@patch('pokerserver.database.tables.TablesRelation.add_joined_player', side_effect=return_done_future())
+@patch('pokerserver.models.match.Match.start', side_effect=return_done_future())
+class TestJoin(AsyncTestCase):
+    def setUp(self):
+        super().setUp()
+        self.players = [Mock(position=1)]
+        self.config = Mock(min_player_count=2, max_player_count=4, big_blind=2, small_blind=1, start_balance=10)
+        self.table = Table(1, 'table', self.config, players=self.players)
+        self.match = Match(self.table)
+
+    @gen_test
+    async def test_join_starts_game_if_not_running(self, start_mock, *_):
+        await self.match.join('horst', 2)
+        start_mock.assert_called_once_with()
+
+    @gen_test
+    async def test_join_does_not_restart_running_games(self, start_mock, *_):
+        self.table.state = TableState.RUNNING_GAME
+        await self.match.join('horst', 2)
+        start_mock.assert_not_called()
 
 
 class TestPayments(AsyncTestCase):

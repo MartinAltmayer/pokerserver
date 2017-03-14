@@ -1,11 +1,13 @@
+import random
+
 from asyncio import get_event_loop, sleep
 from asyncio.tasks import gather
 import logging
-import random
 from uuid import uuid4
 
 from pokerserver.configuration import ServerConfig
 from pokerserver.database import DuplicateKeyError, PlayerState
+from pokerserver.database import TableState
 from .card import get_all_cards
 from .player import Player
 from .ranking import determine_winning_players
@@ -102,10 +104,11 @@ class Match:  # pylint: disable=too-many-public-methods
 
         self.log(player_name, 'Joined table {} at {}'.format(self.table.name, position))
 
-        if len(self.table.players) == self.table.config.min_player_count:
+        if self.table.is_waiting_for_players and len(self.table.players) == self.table.config.min_player_count:
             await self.start()
 
     async def start(self, dealer=None):
+        await self.table.set_state(TableState.RUNNING_GAME)
         if dealer is None:
             dealer = random.choice(self.table.players)
         await self.table.reset()

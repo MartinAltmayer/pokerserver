@@ -38,7 +38,7 @@ class TestTableController(IntegrationHttpTestCase):
             'can_join': False,
             'current_player': None,
             'dealer': None,
-            'is_closed': False,
+            'state': 'waiting for players',
             'round': 'preflop',
             'open_cards': [],
             'players': [{
@@ -83,7 +83,7 @@ class TestTableController(IntegrationHttpTestCase):
             'can_join': True,
             'current_player': None,
             'dealer': None,
-            'is_closed': False,
+            'state': 'waiting for players',
             'round': 'preflop',
             'open_cards': [],
             'players': [{
@@ -128,7 +128,7 @@ class TestTableController(IntegrationHttpTestCase):
             'can_join': True,
             'current_player': None,
             'dealer': None,
-            'is_closed': False,
+            'state': 'waiting for players',
             'round': 'preflop',
             'open_cards': [],
             'players': [{

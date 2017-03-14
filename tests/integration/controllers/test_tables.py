@@ -8,6 +8,7 @@ from tornado.web import Application
 
 from pokerserver.controllers import HANDLERS
 from pokerserver.database import PlayerState, PlayersRelation, TableConfig, TablesRelation
+from pokerserver.database import TableState
 from tests.utils import IntegrationHttpTestCase
 
 
@@ -22,11 +23,11 @@ class TestTablesController(IntegrationHttpTestCase):
         config2 = TableConfig(8, 15, 1, 2, 10)
         await TablesRelation.create_table(
             table_1_id, 'table1', config1, ['2s', '3s', '4s'], [], [{'bets': {}}],
-            "frodo", None, "pippin", False, ''
+            "frodo", None, "pippin", TableState.RUNNING_GAME, ''
         )
         await TablesRelation.create_table(
             table_2_id, 'table2', config2, ['7c', '8s', '9h'], [], [{'bets': {}}],
-            "gandalf", None, "bilbo", False, ''
+            "gandalf", None, "bilbo", TableState.RUNNING_GAME, ''
         )
         timestamp = datetime.now()
         await PlayersRelation.add_player(table_1_id, 1, "frodo", 10, ['Ac', 'Ad'], 0, timestamp, PlayerState.PLAYING)

@@ -10,6 +10,7 @@ from tornado.web import Application
 
 from pokerserver.configuration import ServerConfig
 from pokerserver.controllers import HANDLERS
+from pokerserver.database import TableState
 from pokerserver.database import create_relations, Database, PlayersRelation, TablesRelation, TableConfig
 from pokerserver.models import Table, Pot
 
@@ -92,7 +93,8 @@ class IntegrationHttpTestCase(IntegrationTestCase, AsyncHTTPTestCase):
 
 async def create_table(table_id=1, name='Table', min_player_count=2, max_player_count=10, small_blind=1, big_blind=2,
                        start_balance=10, remaining_deck=None, open_cards=None, pots=None, current_player=None,
-                       current_player_token=None, dealer=None, is_closed=False, joined_players=None, players=None):
+                       current_player_token=None, dealer=None, state=TableState.WAITING_FOR_PLAYERS,
+                       joined_players=None, players=None):
     # pylint: disable=too-many-locals, too-many-arguments
     remaining_deck = remaining_deck or []
     open_cards = open_cards or []
@@ -107,7 +109,7 @@ async def create_table(table_id=1, name='Table', min_player_count=2, max_player_
         current_player=current_player,
         current_player_token=current_player_token,
         dealer=dealer,
-        is_closed=is_closed,
+        state=state,
         joined_players=joined_players
     )
     for player in players or []:

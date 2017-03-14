@@ -38,13 +38,23 @@ class Table:
         self.round = kwargs.get('round')
         self.pots = [Pot(**pot_dict) for pot_dict in kwargs.get('pots', [])]
         self.open_cards = kwargs.get('open_cards')
-        self.is_closed = kwargs.get('is_closed')
+        self.state = TableState(kwargs.get('state', 'closed'))
 
     def __eq__(self, other):
         return isinstance(other, Table) and self.__dict__ == other.__dict__
 
     def __ne__(self, other):
         return not isinstance(other, Table) or self.__dict__ != other.__dict__
+
+    @property
+    def is_closed(self):
+        return self.state is TableState.CLOSED
+
+
+class TableState(Enum):
+    WAITING_FOR_PLAYERS = 'waiting for players'
+    RUNNING_GAME = 'running game'
+    CLOSED = 'closed'
 
 
 class Pot:
