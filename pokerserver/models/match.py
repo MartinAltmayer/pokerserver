@@ -199,10 +199,19 @@ class Match:  # pylint: disable=too-many-public-methods
             player for player in self.table.players
             if player.state not in [PlayerState.FOLDED, PlayerState.SITTING_OUT]
         ]
+
         if len(active_players) <= 1:
             return None
 
-        next_player = self.table.player_left_of(current_player, active_players)
+        active_players_not_all_in = [
+            player for player in active_players
+            if player.position == current_player.position or player.state is not PlayerState.ALL_IN
+        ]
+
+        if len(active_players_not_all_in) == 1 and active_players_not_all_in[0].position == current_player.position:
+            return None
+
+        next_player = self.table.player_left_of(current_player, active_players_not_all_in)
         if not self._may_make_another_turn(next_player, current_player):
             return None
         return next_player

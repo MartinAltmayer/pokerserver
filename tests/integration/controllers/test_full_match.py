@@ -1,5 +1,4 @@
 from unittest.mock import patch
-from unittest import skip
 
 from tornado.testing import gen_test
 
@@ -102,7 +101,6 @@ class TestFullMatch(IntegrationHttpTestCase):
         await self._assert_balances_and_bets([34, 1, 0, 2], [0, 1, 2, 0])
 
         await self._everyone_calls(player_order=[3, 0, 1])
-        await self._everyone_checks(player_order=[2])
 
         table = await Table.load_by_name(self.table.name)
         self.assertTrue(table.is_closed)
@@ -268,7 +266,6 @@ class TestFullMatch(IntegrationHttpTestCase):
         await self._assert_round_and_pots(Round.PREFLOP, [3])
         await self._assert_balances_and_bets([10, 9, 8, 10], [0, 1, 2, 0])
 
-        # Play second hand with Player2 all in
         await self._player_raises(3, amount=10)
         await self._everyone_calls(player_order=[0, 1])
         await self._assert_balances_and_bets([0, 0, 8, 0], [10, 10, 2, 10])
@@ -382,7 +379,6 @@ class TestFullMatch(IntegrationHttpTestCase):
         await self._assert_round_and_pots(Round.TURN, [12])
         await self._assert_balances_and_bets([7, 7, 7, 7], [0, 0, 0, 0])
 
-    @skip
     @gen_test
     async def test_bug_all_in_player_must_not_make_turn(self):
         await self.async_setup()
@@ -404,7 +400,7 @@ class TestFullMatch(IntegrationHttpTestCase):
         await self._assert_round_and_pots(Round.PREFLOP, [3])
         await self._assert_balances_and_bets([13, 9, 7, 8], [0, 0, 1, 2])
         await self._everyone_calls(player_order=[0, 1, 2])
-        await  self._player_checks(3)
+        await self._player_checks(3)
         await self._assert_round_and_pots(Round.FLOP, [8])
         await self._assert_balances_and_bets([11, 7, 6, 8], [0, 0, 0, 0])
 

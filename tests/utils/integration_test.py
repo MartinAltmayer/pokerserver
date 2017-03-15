@@ -1,18 +1,20 @@
 import asyncio
 import json
+import logging
 import os
 import tempfile
 from unittest.mock import Mock
 
 from tornado.platform.asyncio import AsyncIOLoop
-from tornado.testing import AsyncTestCase, AsyncHTTPTestCase
+from tornado.testing import AsyncHTTPTestCase, AsyncTestCase
 from tornado.web import Application
 
 from pokerserver.configuration import ServerConfig
 from pokerserver.controllers import HANDLERS
-from pokerserver.database import TableState
-from pokerserver.database import create_relations, Database, PlayersRelation, TablesRelation, TableConfig
-from pokerserver.models import Table, Pot
+from pokerserver.database import Database, PlayersRelation, TableConfig, TableState, TablesRelation, create_relations
+from pokerserver.models import Pot, Table
+
+LOG = logging.getLogger(__name__)
 
 
 class IntegrationTestCase(AsyncTestCase):
@@ -79,8 +81,12 @@ class IntegrationHttpTestCase(IntegrationTestCase, AsyncHTTPTestCase):
         return Application(HANDLERS, args=self.args)
 
     async def fetch_async(self, path, **kwargs):
-        result = await self.http_client.fetch(self.get_url(path), **kwargs)
-        return result
+        try:
+            result = await self.http_client.fetch(self.get_url(path), **kwargs)
+            return result
+        except Exception:
+            LOG.exception('Exception in fetch_async')
+            raise
 
     async def post_with_uuid(self, url, uuid, body=None, **kwargs):
         separator = '&' if '?' in url else '?'
