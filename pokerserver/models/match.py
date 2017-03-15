@@ -209,6 +209,9 @@ class Match:  # pylint: disable=too-many-public-methods
             if player.position == current_player.position or player.state is not PlayerState.ALL_IN
         ]
 
+        if not active_players_not_all_in:
+            return None
+
         if len(active_players_not_all_in) == 1 and active_players_not_all_in[0].position == current_player.position:
             return None
 

@@ -283,6 +283,23 @@ class TestFullMatch(IntegrationHttpTestCase):
         }, {statistics.player_name: statistics.to_dict() for statistics in stats.player_statistics})
 
     @gen_test
+    async def test_showdown_from_preflop_after_fold_with_remaining_players_all_in(self):
+        await self.async_setup()
+
+        await self._assert_special_players(dealer='Player0', current_player='Player3')
+        await self._assert_round_and_pots(Round.PREFLOP, [3])
+        await self._assert_balances_and_bets([10, 9, 8, 10], [0, 1, 2, 0])
+
+        await self._everyone_calls(player_order=[3, 0])
+        await self._player_raises(1, amount=9)
+        await self._everyone_calls(player_order=[2, 3])
+        await self._assert_balances_and_bets([8, 0, 0, 0], [2, 10, 10, 10])
+        await self._everyone_folds(player_order=[0])
+
+        await self._assert_round_and_pots(Round.PREFLOP, [3])
+        await self._assert_balances_and_bets([6, 31], [2, 1])
+
+    @gen_test
     async def test_showdown_from_preflop_with_one_player_all_in(self):
         await self.async_setup()
 

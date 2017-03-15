@@ -74,7 +74,7 @@ class IntegrationTestCase(AsyncTestCase):
 
 class IntegrationHttpTestCase(IntegrationTestCase, AsyncHTTPTestCase):
     def setUp(self):
-        self.args = Mock(turn_delay=None)
+        self.args = Mock(turn_delay=None, showdown_timeout=None)
         super().setUp()
 
     def get_app(self):
