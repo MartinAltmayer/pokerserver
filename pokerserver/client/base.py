@@ -9,11 +9,16 @@ class RequestError(BaseException):
 
 
 class TableInfo:
-    def __init__(self, name, min_player_count, max_player_count, players):
+    def __init__(self, name, min_player_count, max_player_count, players, state):
         self.name = name
         self.min_player_count = min_player_count
         self.max_player_count = max_player_count
         self.players = {int(position): name for position, name in players.items()}
+        self.state = TableState(state)
+
+    @property
+    def is_closed(self):
+        return self.state is TableState.CLOSED
 
     def is_free_for(self, player_name):
         return len(self.players) < self.max_player_count and player_name not in self.players.values()
@@ -124,6 +129,8 @@ class BaseClient:
     @staticmethod
     def find_free_table(table_infos, *player_names):
         for table in table_infos:
+            if table.is_closed:
+                continue
             if (len(table.find_free_positions()) >= len(player_names) and
                     all(table.is_free_for(name) for name in player_names)):
                 return table
