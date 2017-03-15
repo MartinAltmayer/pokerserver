@@ -80,8 +80,9 @@ def main():
                         help='Waiting time before the next player becomes active in seconds.')
     parser.add_argument('--timeout', default=0, type=float,
                         help='Interval during which a client has to send a reply in seconds. Use 0 to disable.')
-    parser.add_argument('--turn-interval', default=2, type=float, help='Time each turn takes in seconds.')
     parser.add_argument('--password', default='', type=str, help='Password to protect the frontend.')
+    parser.add_argument('--showdown-timeout', default=None, type=float,
+                        help='Waiting time in seconds before the next hand starts after a showdown.')
     args = parser.parse_args()
 
     LOG.debug('Starting server...')

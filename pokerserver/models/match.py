@@ -38,9 +38,10 @@ class InvalidBetError(InvalidTurnError):
 
 
 class Match:  # pylint: disable=too-many-public-methods
-    def __init__(self, table, turn_delay=None):
+    def __init__(self, table, turn_delay=None, showdown_timeout=None):
         self.table = table
         self.turn_delay = turn_delay
+        self.showdown_timeout = showdown_timeout
 
     async def check_and_unset_current_player(self, player_name):
         is_current_player = await self.table.check_and_unset_current_player(player_name)
@@ -251,6 +252,8 @@ class Match:  # pylint: disable=too-many-public-methods
     async def finish_hand(self):
         old_dealer = self.table.dealer
         await self.distribute_pots()
+        if self.showdown_timeout:
+            await sleep(self.showdown_timeout)
         await self.table.reset()
 
         dealer = self.table.player_left_of(old_dealer)
