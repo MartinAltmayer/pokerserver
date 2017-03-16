@@ -21,6 +21,9 @@ class SimpleClient(BaseClient):
 
         while True:
             table = self.fetch_table(table_info.name)
+            if self.player_name not in [player.name for player in table.players]:
+                self.log('I am no longer at this table.')
+                break
             if table.is_closed:
                 self.log('Table was closed.')
                 break
