@@ -9,7 +9,7 @@ from pokerserver.client import BaseClient, TableInfo
 class TestTableInfo(TestCase):
     def setUp(self):
         players = {str(i): 'player {}'.format(i) for i in range(1, 5)}
-        self.table_info = TableInfo('table 1', 2, 6, players)
+        self.table_info = TableInfo('table 1', 2, 6, players, 'waiting for players')
 
     def test_is_free_for(self):
         assert_true(self.table_info.is_free_for('yoda'))
@@ -75,7 +75,8 @@ class TestBaseClient(TestCase):
                     'name': 'table 1',
                     'min_player_count': 3,
                     'max_player_count': 42,
-                    'players': {}
+                    'players': {},
+                    'state': 'running game'
                 }
             ]
         }
@@ -86,13 +87,13 @@ class TestBaseClient(TestCase):
 
     def test_find_free_table(self):  # pylint: disable=no-self-use
         tables = [
-            TableInfo('table 1', 1, 3, {1: 'lynn', 2: 'brian'})
+            TableInfo('table 1', 1, 3, {1: 'lynn', 2: 'brian'}, 'waiting for players')
         ]
         BaseClient.find_free_table(tables, ['alf', 'willy', 'kate'])
 
     @patch('pokerserver.client.base.post')
     def test_join_table(self, post_mock):
-        self.base_client.join_table(TableInfo("table 1", 1, 3, {}), 42, "uuid")
+        self.base_client.join_table(TableInfo("table 1", 1, 3, {}, 'waiting for players'), 42, "uuid")
         post_mock.assert_called_once_with(
             'http://localhost:55555/table/table 1/actions/join?uuid=uuid',
             json={'position': 42}

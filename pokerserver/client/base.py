@@ -9,7 +9,7 @@ class RequestError(BaseException):
 
 
 class TableInfo:
-    def __init__(self, name, min_player_count, max_player_count, players, state):
+    def __init__(self, name, min_player_count, max_player_count, players, state):  # pylint: disable=too-many-arguments
         self.name = name
         self.min_player_count = min_player_count
         self.max_player_count = max_player_count

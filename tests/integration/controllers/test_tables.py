@@ -49,11 +49,13 @@ class TestTablesController(IntegrationHttpTestCase):
                 'name': 'table1',
                 'min_player_count': 4,
                 'max_player_count': 9,
-                'players': {'1': 'frodo', '2': 'pippin'}
+                'players': {'1': 'frodo', '2': 'pippin'},
+                'state': 'running game'
             }, {
                 'name': 'table2',
                 'min_player_count': 8,
                 'max_player_count': 15,
-                'players': {'1': 'gandalf', '2': 'bilbo'}
+                'players': {'1': 'gandalf', '2': 'bilbo'},
+                'state': 'running game'
             }
         ])
