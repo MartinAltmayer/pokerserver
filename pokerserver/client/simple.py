@@ -66,7 +66,7 @@ class SimpleClient(BaseClient):
         balance = cls.get_balance(table, position)
         my_bet = next(player.bet for player in table.players if player.position == position)
         maximum_bet = cls.maximum_bet(table, position)
-        return balance + my_bet >= maximum_bet
+        return balance + my_bet > maximum_bet
 
     @staticmethod
     def maximum_bet(table, position):
