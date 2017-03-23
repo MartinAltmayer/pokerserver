@@ -32,18 +32,18 @@ class TestBaseClient(TestCase):
         self.response = Mock(status_code=200, json=Mock(return_value={'response': 'ok'}), text='{ "response": "ok" }')
         self.base_client = BaseClient('localhost', 55555)
 
-    @patch('pokerserver.client.base.get')
+    @patch('pokerserver.client.base.Session.get')
     def test_fetch(self, get_mock):
         get_mock.return_value = self.response
         assert_equal('{ "response": "ok" }', self.base_client.fetch("/test_url", as_json=False))
 
-    @patch('pokerserver.client.base.get')
+    @patch('pokerserver.client.base.Session.get')
     def test_fetch_as_json(self, urlopen_mock):
         urlopen_mock.return_value = self.response
         assert_equal({'response': 'ok'}, self.base_client.fetch("/test_url", as_json=True))
         urlopen_mock.assert_called_once_with('http://localhost:55555/test_url')
 
-    @patch('pokerserver.client.base.get')
+    @patch('pokerserver.client.base.Session.get')
     def test_fetch_table(self, get_mock):
         self.response.json.return_value = {
             'players': [],
@@ -67,7 +67,7 @@ class TestBaseClient(TestCase):
         assert_equal('preflop', table.round)
         get_mock.assert_called_once_with('http://localhost:55555/table/table 1')
 
-    @patch('pokerserver.client.base.get')
+    @patch('pokerserver.client.base.Session.get')
     def test_fetch_tables(self, get_mock):
         self.response.json.return_value = {
             'tables': [
@@ -91,7 +91,7 @@ class TestBaseClient(TestCase):
         ]
         BaseClient.find_free_table(tables, ['alf', 'willy', 'kate'])
 
-    @patch('pokerserver.client.base.post')
+    @patch('pokerserver.client.base.Session.post')
     def test_join_table(self, post_mock):
         self.base_client.join_table(TableInfo("table 1", 1, 3, {}, 'waiting for players'), 42, "uuid")
         post_mock.assert_called_once_with(
@@ -99,22 +99,22 @@ class TestBaseClient(TestCase):
             json={'position': 42}
         )
 
-    @patch('pokerserver.client.base.post')
+    @patch('pokerserver.client.base.Session.post')
     def test_fold(self, post_mock):
         self.base_client.fold("table 1", "uuid")
         post_mock.assert_called_once_with('http://localhost:55555/table/table 1/actions/fold?uuid=uuid')
 
-    @patch('pokerserver.client.base.post')
+    @patch('pokerserver.client.base.Session.post')
     def test_check(self, post_mock):
         self.base_client.check("table 1", "uuid")
         post_mock.assert_called_once_with('http://localhost:55555/table/table 1/actions/check?uuid=uuid')
 
-    @patch('pokerserver.client.base.post')
+    @patch('pokerserver.client.base.Session.post')
     def test_call(self, post_mock):
         self.base_client.call("table 1", "uuid")
         post_mock.assert_called_once_with('http://localhost:55555/table/table 1/actions/call?uuid=uuid')
 
-    @patch('pokerserver.client.base.post')
+    @patch('pokerserver.client.base.Session.post')
     def test_raise_bet(self, post_mock):
         self.base_client.raise_bet("table 1", "uuid", 42)
         post_mock.assert_called_once_with(

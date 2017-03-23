@@ -1,7 +1,8 @@
 from enum import Enum
 
 import requests
-from requests import HTTPError, get, post
+from requests import HTTPError, Session
+from requests.adapters import HTTPAdapter
 
 
 class RequestError(BaseException):
@@ -107,6 +108,8 @@ class BaseClient:
         self.host = host
         self.port = port
         self.log_requests = log_requests
+        self.session = Session()
+        self.session.mount('http://', HTTPAdapter(max_retries=3))
 
     def receive_uuid(self, player_name):
         try:
@@ -132,7 +135,7 @@ class BaseClient:
             if table.is_closed:
                 continue
             if (len(table.find_free_positions()) >= len(player_names) and
-                    all(table.is_free_for(name) for name in player_names)):
+                all(table.is_free_for(name) for name in player_names)):
                 return table
         else:
             raise RuntimeError('No free table')
@@ -163,7 +166,7 @@ class BaseClient:
         if self.log_requests:
             self.log("POST {}... ".format(url), new_line=False)
         try:
-            response = post(url, **kwargs)
+            response = self.session.post(url, **kwargs)
             response.raise_for_status()
             if self.log_requests:
                 self.log('{}'.format(response.status_code))
@@ -180,7 +183,7 @@ class BaseClient:
         if self.log_requests:
             self.log("GET {}... ".format(url), new_line=False)
         try:
-            response = get(url)
+            response = self.session.get(url)
             response.raise_for_status()
             if self.log_requests:
                 self.log('{}'.format(response.status_code))
