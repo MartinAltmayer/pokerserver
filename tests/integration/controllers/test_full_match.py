@@ -316,7 +316,7 @@ class TestFullMatch(IntegrationHttpTestCase):
         await self._everyone_calls(player_order=[3])
 
         await self._assert_round_and_pots(Round.PREFLOP, [3])
-        await self._assert_balances_and_bets([12, 7, 18], [1, 2, 0])
+        await self._assert_balances_and_bets([11, 9, 8, 9], [2, 0, 0, 1])
 
     @gen_test
     async def test_big_blind_should_not_make_another_turn_after_raise(self):

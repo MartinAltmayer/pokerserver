@@ -5,14 +5,21 @@ from .card import parse_card, MAX_RANK, MIN_RANK
 
 
 def find_high_card(cards):
-    return sorted([card.rank for card in cards], reverse=True)[:5]
+    return _find_high_card(cards, 5)
+
+
+def _find_high_card(cards, number):
+    return sorted([card.rank for card in cards], reverse=True)[:number]
 
 
 def find_n_of_a_kind(n, cards):
     counter = Counter(card.rank for card in cards)
     _, count = counter.most_common(1)[0]
     if count >= n:
-        return sort_counter(counter)
+        rank = sort_counter(counter)[0]
+        remaining_cards = [card for card in cards if card.rank != rank]
+        return [rank] + _find_high_card(remaining_cards, 5 - n)
+
     return None
 
 
@@ -20,7 +27,10 @@ def find_two_pairs(cards):
     counter = Counter(card.rank for card in cards)
     _, (_, count2) = counter.most_common(2)
     if count2 >= 2:
-        return sort_counter(counter)
+        rank1, rank2 = sort_counter(counter)[:2]
+        remaining_cards = [card for card in cards if card.rank not in (rank1, rank2)]
+        return [rank1, rank2] + _find_high_card(remaining_cards, 1)
+
     return None
 
 
@@ -71,7 +81,8 @@ def sort_counter(counter):
         card_count += count
         if card_count >= 5:
             return [r for r, _ in ranks_and_counts[:i + 1]]
-    assert False
+
+    return [r for r, _ in ranks_and_counts]
 
 
 RANKING_FUNCTIONS = [
