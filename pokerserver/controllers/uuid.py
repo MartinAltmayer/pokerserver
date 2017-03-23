@@ -11,6 +11,15 @@ class UUIDController(BaseController):
     route = r'/uuid/?'
 
     async def post(self):
+        """Endpoint for registering a client.
+        ---
+        description: Register a client.
+        responses:
+            200:
+                description: Successful operation.
+            400:
+                description: The player is already registered.
+        """
         player_name = self._get_player_name()
         uuid = mod_uuid.uuid4()
         try:

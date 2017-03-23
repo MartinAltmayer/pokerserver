@@ -20,6 +20,15 @@ class IndexController(FrontendBaseController):
     route = r'/gui/' + TABLE_NAME_PATTERN + '/?'
 
     async def get(self, table_name):
+        """Web frontend for a certain table.
+        ---
+        description: Returns the webpage for a certain table.
+        responses:
+            200:
+                description: Table was found.
+            404:
+                description: Table was not found.
+        """
         try:
             await Table.load_by_name(table_name)
         except TableNotFoundError:
@@ -46,6 +55,13 @@ class FrontendDataController(FrontendBaseController):
     route = r'/fedata/' + TABLE_NAME_PATTERN + '/?'
 
     async def get(self, table_name):
+        """Frontend endpoint
+        ---
+        description: returns full player and card information that usually is invisible to clients
+        responses:
+            200:
+                description: cards and player state
+        """
         try:
             table = await Table.load_by_name(table_name)
         except TableNotFoundError:
@@ -74,6 +90,13 @@ class DevCookieController(RequestHandler):
     route = r'/devcookie/?'
 
     async def get(self):
+        """Password-protected endpoint to set developer cookie.
+        ---
+        description: Sets a cookie that allows to access the frontend.
+        responses:
+            204:
+                description: Successfully set the cookie.
+        """
         provided_password = self.get_argument('password', '')
         actual_password = self.application.settings['args'].password
         if not actual_password:

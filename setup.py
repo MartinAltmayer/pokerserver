@@ -4,7 +4,8 @@ from pokerserver.version import NAME, VERSION
 
 requirements = [
     'tornado>=4.3',
-    'requests>=2.13.0'
+    'requests>=2.13.0',
+    'apispec>=0.20.0'
 ]
 
 setup(

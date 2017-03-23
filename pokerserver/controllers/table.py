@@ -10,6 +10,15 @@ class TableController(BaseController):
     route = r'/table/' + TABLE_NAME_PATTERN + r'/?'
 
     async def get(self, name):  # pylint: disable=arguments-differ
+        """Endpoint for information about a table.
+        ---
+        description: Returns a table's state.
+        responses:
+            200:
+                description: Successful operation.
+            404:
+                description: The table was not found.
+        """
         try:
             table = await Table.load_by_name(name)
             self.write(table.to_dict(self.player_name))
@@ -22,6 +31,17 @@ class JoinController(BaseController):
 
     @authenticated
     async def post(self, table_name):  # pylint: disable=arguments-differ
+        """Endpoint for joining a table.
+        ---
+        description: Join a table.
+        responses:
+            200:
+                description: Successful operation.
+            400:
+                description: Missing or invalid parameters.
+            409:
+                description: The position was already occupied.
+        """
         position = self._get_position()
         match = await self.load_match(table_name)
         try:
@@ -45,6 +65,15 @@ class FoldController(BaseController):
 
     @authenticated
     async def post(self, table_name):  # pylint: disable=arguments-differ
+        """Endpoint for folding.
+        ---
+        description: Fold action.
+        responses:
+            200:
+                description: Successful operation.
+            400:
+                description: Missing or invalid parameters.
+        """
         match = await self.load_match(table_name)
         try:
             await match.fold(self.player_name)
@@ -57,6 +86,15 @@ class CallController(BaseController):
 
     @authenticated
     async def post(self, table_name):  # pylint: disable=arguments-differ
+        """Endpoint for calling.
+        ---
+        description: Call action.
+        responses:
+            200:
+                description: Successful operation.
+            400:
+                description: Missing or invalid parameters.
+        """
         match = await self.load_match(table_name)
         try:
             await match.call(self.player_name)
@@ -69,6 +107,15 @@ class CheckController(BaseController):
 
     @authenticated
     async def post(self, table_name):  # pylint: disable=arguments-differ
+        """Endpoint for checking.
+        ---
+        description: Check action.
+        responses:
+            200:
+                description: Successful operation.
+            400:
+                description: Missing or invalid parameters.
+        """
         match = await self.load_match(table_name)
         try:
             await match.check(self.player_name)
@@ -81,6 +128,15 @@ class RaiseController(BaseController):
 
     @authenticated
     async def post(self, table_name):  # pylint: disable=arguments-differ
+        """Endpoint for raising.
+        ---
+        description: Raise action.
+        responses:
+            200:
+                description: Successful operation.
+            400:
+                description: Missing or invalid parameters.
+        """
         match = await self.load_match(table_name)
         amount = self._get_amount()
         try:
