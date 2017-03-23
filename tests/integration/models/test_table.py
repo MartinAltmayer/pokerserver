@@ -3,6 +3,7 @@ from unittest.mock import Mock, call, patch
 from tornado.testing import AsyncTestCase, gen_test
 
 from pokerserver.database import TableConfig
+from pokerserver.database import TableState
 from pokerserver.models import Player, Table
 from tests.utils import IntegrationTestCase, create_table, return_done_future
 
@@ -40,7 +41,7 @@ class TestTable(AsyncTestCase):
                 'pots': [{'bets': {1: 1000, 2: 1000, 5: 1000}}],
                 'current_player': 'Arthur',
                 'dealer': 'Percival',
-                'is_closed': False
+                'state': 'waiting for players'
             }
             for table_id, name in enumerate(existing_table_names)
         ]
@@ -52,12 +53,12 @@ class TestTable(AsyncTestCase):
             call(
                 table_id=3, name='Table2', config=config, remaining_deck=[], open_cards=[],
                 pots=[{'bets': {}}], current_player=None, current_player_token=None, dealer=None,
-                is_closed=False, joined_players=None
+                state=TableState.WAITING_FOR_PLAYERS, joined_players=None
             ),
             call(
                 table_id=4, name='Table4', config=config, remaining_deck=[], open_cards=[],
                 pots=[{'bets': {}}], current_player=None, current_player_token=None, dealer=None,
-                is_closed=False, joined_players=None
+                state=TableState.WAITING_FOR_PLAYERS, joined_players=None
             )
         ])
 

@@ -1,11 +1,13 @@
+import random
+
 from asyncio import get_event_loop, sleep
 from asyncio.tasks import gather
 import logging
-import random
 from uuid import uuid4
 
 from pokerserver.configuration import ServerConfig
 from pokerserver.database import DuplicateKeyError, PlayerState
+from pokerserver.database import TableState
 from .card import get_all_cards
 from .player import Player
 from .ranking import determine_winning_players
@@ -36,9 +38,10 @@ class InvalidBetError(InvalidTurnError):
 
 
 class Match:  # pylint: disable=too-many-public-methods
-    def __init__(self, table, turn_delay=None):
+    def __init__(self, table, turn_delay=None, showdown_timeout=None):
         self.table = table
         self.turn_delay = turn_delay
+        self.showdown_timeout = showdown_timeout
 
     async def check_and_unset_current_player(self, player_name):
         is_current_player = await self.table.check_and_unset_current_player(player_name)
@@ -102,10 +105,11 @@ class Match:  # pylint: disable=too-many-public-methods
 
         self.log(player_name, 'Joined table {} at {}'.format(self.table.name, position))
 
-        if len(self.table.players) == self.table.config.min_player_count:
+        if self.table.is_waiting_for_players and len(self.table.players) == self.table.config.min_player_count:
             await self.start()
 
     async def start(self, dealer=None):
+        await self.table.set_state(TableState.RUNNING_GAME)
         if dealer is None:
             dealer = random.choice(self.table.players)
         await self.table.reset()
@@ -196,10 +200,22 @@ class Match:  # pylint: disable=too-many-public-methods
             player for player in self.table.players
             if player.state not in [PlayerState.FOLDED, PlayerState.SITTING_OUT]
         ]
+
         if len(active_players) <= 1:
             return None
 
-        next_player = self.table.player_left_of(current_player, active_players)
+        active_players_not_all_in = [
+            player for player in active_players
+            if player.position == current_player.position or player.state is not PlayerState.ALL_IN
+        ]
+
+        if not active_players_not_all_in:
+            return None
+
+        if len(active_players_not_all_in) == 1 and active_players_not_all_in[0].position == current_player.position:
+            return None
+
+        next_player = self.table.player_left_of(current_player, active_players_not_all_in)
         if not self._may_make_another_turn(next_player, current_player):
             return None
         return next_player
@@ -239,6 +255,8 @@ class Match:  # pylint: disable=too-many-public-methods
     async def finish_hand(self):
         old_dealer = self.table.dealer
         await self.distribute_pots()
+        if self.showdown_timeout:
+            await sleep(self.showdown_timeout)
         await self.table.reset()
 
         dealer = self.table.player_left_of(old_dealer)

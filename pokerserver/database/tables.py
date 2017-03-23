@@ -1,11 +1,19 @@
 from collections import namedtuple
+from enum import Enum, unique
 
 from .database import Database
 from .relation import Relation
-from .utils import from_card_list, make_card_list, to_pot_list_string, from_pot_list_string
+from .utils import from_card_list, from_pot_list_string, make_card_list, to_pot_list_string
 
 TableConfig = namedtuple(
     'TableConfig', ['min_player_count', 'max_player_count', 'small_blind', 'big_blind', 'start_balance'])
+
+
+@unique
+class TableState(Enum):
+    WAITING_FOR_PLAYERS = 'waiting for players'
+    RUNNING_GAME = 'running game'
+    CLOSED = 'closed'
 
 
 class TablesRelation(Relation):
@@ -25,7 +33,7 @@ class TablesRelation(Relation):
         'current_player',
         'current_player_token',
         'dealer',
-        'is_closed',
+        'state',
         'joined_players'
     ]
 
@@ -44,7 +52,7 @@ class TablesRelation(Relation):
             current_player VARCHAR,
             current_player_token VARCHAR,
             dealer VARCHAR,
-            is_closed BOOLEAN NOT NULL,
+            state VARCHAR NOT NULL,
             joined_players VARCHAR
         )
     """
@@ -124,8 +132,8 @@ class TablesRelation(Relation):
         UPDATE tables SET joined_players = joined_players || ' ' || ? WHERE table_id = ?
     """
 
-    CLOSE_TABLE_QUERY = """
-        UPDATE tables SET is_closed = 1 WHERE table_id = ?
+    SET_STATE_QUERY = """
+        UPDATE tables SET state = ? WHERE table_id = ?
     """
 
     @classmethod
@@ -165,13 +173,13 @@ class TablesRelation(Relation):
         data['open_cards'] = from_card_list(data['open_cards'])
         data['pots'] = from_pot_list_string(data['pots'])
         data['joined_players'] = data['joined_players'].split()
-        data['is_closed'] = bool(data['is_closed'])
+        data['state'] = TableState(data['state'])
         return data
 
     # pylint: disable=too-many-arguments, too-many-locals
     @classmethod
     async def create_table(cls, table_id, name, config, remaining_deck, open_cards, pots, current_player,
-                           current_player_token, dealer, is_closed, joined_players):
+                           current_player_token, dealer, state, joined_players):
         db = Database.instance()
         remaining_deck = make_card_list(remaining_deck)
         open_cards = make_card_list(open_cards)
@@ -180,7 +188,7 @@ class TablesRelation(Relation):
         await db.execute(
             cls.INSERT_QUERY, table_id, name, config.min_player_count, config.max_player_count, remaining_deck,
             config.small_blind, config.big_blind, config.start_balance, open_cards, pots, current_player,
-            current_player_token, dealer, is_closed, joined_players
+            current_player_token, dealer, state.value, joined_players
         )
 
     @classmethod
@@ -227,5 +235,5 @@ class TablesRelation(Relation):
         await Database.instance().execute(cls.ADD_JOINED_PLAYER_QUERY, player_name, table_id)
 
     @classmethod
-    async def close_table(cls, table_id):
-        await Database.instance().execute(cls.CLOSE_TABLE_QUERY, table_id)
+    async def set_state(cls, table_id, state):
+        await Database.instance().execute(cls.SET_STATE_QUERY, state.value, table_id)

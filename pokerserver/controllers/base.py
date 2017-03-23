@@ -57,7 +57,8 @@ class BaseController(RequestHandler):
         except TableNotFoundError:
             raise HTTPError(HTTPStatus.NOT_FOUND, 'Table not found')
         turn_delay = self.settings.get('args').turn_delay if self.settings.get('args') else 0
-        return Match(table, turn_delay)
+        showdown_timeout = self.settings.get('args').showdown_timeout if self.settings.get('args') else 0
+        return Match(table, turn_delay, showdown_timeout)
 
     def get_body(self):
         return json_decode(self.request.body)

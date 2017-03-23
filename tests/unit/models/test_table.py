@@ -5,6 +5,7 @@ from nose.tools import assert_equal
 from tornado.testing import AsyncTestCase, gen_test
 
 from pokerserver.database import PlayerState, TableConfig
+from pokerserver.database import TableState
 from pokerserver.models import Player, Pot, Table
 from tests.utils import return_done_future
 
@@ -35,7 +36,7 @@ class TestTable(AsyncTestCase):
             'can_join': True,
             'current_player': None,
             'dealer': None,
-            'is_closed': False,
+            'state': TableState.WAITING_FOR_PLAYERS.value,
             'round': 'preflop',
             'open_cards': [],
             'players': [{}, {}, {}],
@@ -54,7 +55,7 @@ class TestTable(AsyncTestCase):
             'can_join': True,
             'current_player': None,
             'dealer': None,
-            'is_closed': False,
+            'state': TableState.WAITING_FOR_PLAYERS.value,
             'round': 'preflop',
             'open_cards': [],
             'players': [{}, {}, {}],
@@ -74,7 +75,7 @@ class TestTable(AsyncTestCase):
             'can_join': True,
             'current_player': None,
             'dealer': None,
-            'is_closed': False,
+            'state': TableState.WAITING_FOR_PLAYERS.value,
             'round': 'preflop',
             'open_cards': [],
             'players': [
@@ -105,7 +106,7 @@ class TestTable(AsyncTestCase):
             'can_join': False,
             'current_player': None,
             'dealer': None,
-            'is_closed': False,
+            'state': TableState.WAITING_FOR_PLAYERS.value,
             'round': 'preflop',
             'open_cards': [],
             'players': [
@@ -136,7 +137,7 @@ class TestTable(AsyncTestCase):
             'can_join': False,
             'current_player': None,
             'dealer': None,
-            'is_closed': False,
+            'state': TableState.WAITING_FOR_PLAYERS.value,
             'round': 'preflop',
             'open_cards': [],
             'players': [
@@ -167,7 +168,7 @@ class TestTable(AsyncTestCase):
             'can_join': False,
             'current_player': None,
             'dealer': None,
-            'is_closed': False,
+            'state': TableState.WAITING_FOR_PLAYERS.value,
             'round': 'preflop',
             'open_cards': [],
             'players': [

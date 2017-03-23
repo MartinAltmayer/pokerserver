@@ -1,17 +1,20 @@
 import asyncio
 import json
+import logging
 import os
 import tempfile
 from unittest.mock import Mock
 
 from tornado.platform.asyncio import AsyncIOLoop
-from tornado.testing import AsyncTestCase, AsyncHTTPTestCase
+from tornado.testing import AsyncHTTPTestCase, AsyncTestCase
 from tornado.web import Application
 
 from pokerserver.configuration import ServerConfig
 from pokerserver.controllers import HANDLERS
-from pokerserver.database import create_relations, Database, PlayersRelation, TablesRelation, TableConfig
-from pokerserver.models import Table, Pot
+from pokerserver.database import Database, PlayersRelation, TableConfig, TableState, TablesRelation, create_relations
+from pokerserver.models import Pot, Table
+
+LOG = logging.getLogger(__name__)
 
 
 class IntegrationTestCase(AsyncTestCase):
@@ -71,15 +74,19 @@ class IntegrationTestCase(AsyncTestCase):
 
 class IntegrationHttpTestCase(IntegrationTestCase, AsyncHTTPTestCase):
     def setUp(self):
-        self.args = Mock(turn_delay=None)
+        self.args = Mock(turn_delay=None, showdown_timeout=None)
         super().setUp()
 
     def get_app(self):
         return Application(HANDLERS, args=self.args)
 
     async def fetch_async(self, path, **kwargs):
-        result = await self.http_client.fetch(self.get_url(path), **kwargs)
-        return result
+        try:
+            result = await self.http_client.fetch(self.get_url(path), **kwargs)
+            return result
+        except Exception:
+            LOG.exception('Exception in fetch_async')
+            raise
 
     async def post_with_uuid(self, url, uuid, body=None, **kwargs):
         separator = '&' if '?' in url else '?'
@@ -92,7 +99,8 @@ class IntegrationHttpTestCase(IntegrationTestCase, AsyncHTTPTestCase):
 
 async def create_table(table_id=1, name='Table', min_player_count=2, max_player_count=10, small_blind=1, big_blind=2,
                        start_balance=10, remaining_deck=None, open_cards=None, pots=None, current_player=None,
-                       current_player_token=None, dealer=None, is_closed=False, joined_players=None, players=None):
+                       current_player_token=None, dealer=None, state=TableState.WAITING_FOR_PLAYERS,
+                       joined_players=None, players=None):
     # pylint: disable=too-many-locals, too-many-arguments
     remaining_deck = remaining_deck or []
     open_cards = open_cards or []
@@ -107,7 +115,7 @@ async def create_table(table_id=1, name='Table', min_player_count=2, max_player_
         current_player=current_player,
         current_player_token=current_player_token,
         dealer=dealer,
-        is_closed=is_closed,
+        state=state,
         joined_players=joined_players
     )
     for player in players or []:

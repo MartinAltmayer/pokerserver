@@ -1,8 +1,7 @@
 from asyncio.tasks import gather
-
 from tornado.testing import gen_test
 
-from pokerserver.database import TableConfig, TablesRelation
+from pokerserver.database import TableConfig, TableState, TablesRelation
 from tests.utils import IntegrationTestCase
 
 TABLES = [
@@ -16,7 +15,7 @@ TABLES = [
         'current_player': 'a',
         'current_player_token': None,
         'dealer': 'b',
-        'is_closed': False,
+        'state': TableState.RUNNING_GAME,
         'joined_players': ['a', 'b', 'c', 'd']
     }, {
         'table_id': 2,
@@ -28,7 +27,7 @@ TABLES = [
         'current_player': 'e',
         'current_player_token': None,
         'dealer': 'f',
-        'is_closed': False,
+        'state': TableState.RUNNING_GAME,
         'joined_players': ['e', 'f', 'g', 'h']
     }, {
         'table_id': 3,
@@ -40,7 +39,7 @@ TABLES = [
         'current_player': None,
         'current_player_token': None,
         'dealer': None,
-        'is_closed': False,
+        'state': TableState.RUNNING_GAME,
         'joined_players': []
     }
 ]
@@ -51,7 +50,7 @@ class TestTablesRelation(IntegrationTestCase):
     async def test_create_table(self):
         config = TableConfig(4, 30, 12, 24, 10)
         await TablesRelation.create_table(42, 'Game of Thrones', config, ['2s', 'Jc', '4h'], [],
-                                          [{'bets': {}}], "Eddard", "123", "John", False, '')
+                                          [{'bets': {}}], "Eddard", "123", "John", TableState.RUNNING_GAME, '')
         tables = await TablesRelation.load_all()
         self.assertEqual(
             tables,
@@ -65,7 +64,7 @@ class TestTablesRelation(IntegrationTestCase):
                 'current_player': 'Eddard',
                 'current_player_token': "123",
                 'dealer': 'John',
-                'is_closed': False,
+                'state': TableState.RUNNING_GAME,
                 'joined_players': []
             }]
         )
@@ -203,8 +202,8 @@ class TestCheckAndUnsetCurrentPlayer(IntegrationTestCase):
         self.assertEqual({True, False}, set(results))
 
     @gen_test
-    async def test_close_table(self):
+    async def test_set_state(self):
         table_id = await self.async_setup()
-        await TablesRelation.close_table(table_id)
+        await TablesRelation.set_state(table_id, TableState.CLOSED)
         table = await TablesRelation.load_table_by_id(table_id)
-        self.assertTrue(table['is_closed'])
+        self.assertEqual(TableState.CLOSED, table['state'])

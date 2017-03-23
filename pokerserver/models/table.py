@@ -1,7 +1,8 @@
-from asyncio import gather
 from enum import Enum, unique
 
-from pokerserver.database import PlayerState, PlayersRelation, TablesRelation
+from asyncio import gather
+
+from pokerserver.database import PlayerState, PlayersRelation, TableState, TablesRelation
 from .player import Player
 
 
@@ -22,7 +23,7 @@ class Table:
     # pylint: disable=too-many-arguments, too-many-locals, unused-argument
     def __init__(self, table_id, name, config, players=None, remaining_deck=None,
                  open_cards=None, pots=None, current_player=None, current_player_token=None,
-                 dealer=None, is_closed=False, joined_players=None):
+                 dealer=None, state=TableState.WAITING_FOR_PLAYERS, joined_players=None):
         self.table_id = table_id
         self.name = name
         self.config = config
@@ -32,7 +33,7 @@ class Table:
         self.pots = [Pot(**pot) for pot in pots] if pots else [Pot()]
         self.current_player = current_player
         self.dealer = dealer
-        self.is_closed = is_closed
+        self.state = state
         self.joined_players = joined_players or []
 
     @classmethod
@@ -70,7 +71,7 @@ class Table:
             await TablesRelation.create_table(
                 table_id=table_id, name=table_name, config=table_config, remaining_deck=[], open_cards=[],
                 pots=[Pot().to_dict()], current_player=None, current_player_token=None, dealer=None,
-                is_closed=False, joined_players=None
+                state=TableState.WAITING_FOR_PLAYERS, joined_players=None
             )
 
     def to_dict(self, player_name):
@@ -89,7 +90,7 @@ class Table:
             'pots': [pot.to_dict() for pot in self.pots],
             'current_player': self.current_player.name if self.current_player else None,
             'dealer': self.dealer.name if self.dealer else None,
-            'is_closed': self.is_closed,
+            'state': self.state.value,
             'can_join': can_join
         }
 
@@ -100,7 +101,8 @@ class Table:
             'name': self.name,
             'min_player_count': self.config.min_player_count,
             'max_player_count': self.config.max_player_count,
-            'players': {player.position: player.name for player in self.players}
+            'players': {player.position: player.name for player in self.players},
+            'state': self.state.value
         }
 
     @property
@@ -271,10 +273,24 @@ class Table:
         await self.set_dealer(None)
         await gather(*[player.reset() for player in self.players])
 
+    async def start_game(self):
+        await self.set_state(TableState.RUNNING_GAME)
+
     async def close(self):
+        await self.set_state(TableState.CLOSED)
         await gather(*[self.remove_player(player) for player in self.players.copy()])
-        self.is_closed = True
-        await TablesRelation.close_table(self.table_id)
+
+    async def set_state(self, state):
+        self.state = state
+        await TablesRelation.set_state(self.table_id, self.state)
+
+    @property
+    def is_closed(self):
+        return self.state is TableState.CLOSED
+
+    @property
+    def is_waiting_for_players(self):
+        return self.state is TableState.WAITING_FOR_PLAYERS
 
     @classmethod
     async def ensure_free_tables(cls, number, table_config):

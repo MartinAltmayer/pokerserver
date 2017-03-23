@@ -2,7 +2,7 @@ from asyncio.tasks import gather
 
 from tornado.testing import gen_test
 
-from pokerserver.database import Database, PlayerState, TableConfig, TablesRelation
+from pokerserver.database import Database, PlayerState, TableConfig, TableState, TablesRelation
 from pokerserver.models import (Match, PositionOccupiedError, Table)
 from tests.utils import IntegrationTestCase
 
@@ -48,7 +48,7 @@ class TestJoin(IntegrationTestCase):
     @gen_test
     async def test_join_closed(self):
         await self.async_setup()
-        await Database.instance().execute("UPDATE tables SET is_closed = 1 WHERE table_id = ?", self.table.table_id)
+        await Database.instance().execute("UPDATE tables SET state = 'closed' WHERE table_id = ?", self.table.table_id)
         await self.load_match_and_table()
 
         with self.assertRaises(ValueError):
@@ -99,6 +99,7 @@ class TestJoin(IntegrationTestCase):
         await self.match.join(self.player_name, 1)
 
         await self.load_match_and_table()
+        self.assertEqual(TableState.WAITING_FOR_PLAYERS, self.table.state)
         self.assertIsNone(self.table.dealer)
         self.assertEqual(PlayerState.SITTING_OUT, self.table.players[0].state)
 
@@ -106,6 +107,7 @@ class TestJoin(IntegrationTestCase):
 
         await self.load_match_and_table()
         self.assertIsNotNone(self.table.dealer)
+        self.assertEqual(TableState.RUNNING_GAME, self.table.state)
         self.assertEqual(PlayerState.PLAYING, self.table.players[0].state)
         self.assertEqual(PlayerState.PLAYING, self.table.players[1].state)
 

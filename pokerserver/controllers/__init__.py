@@ -1,5 +1,7 @@
+from pokerserver.api import API_SPECIFICATION
+from .api import ApiController, ApiDocsController
 from .base import BaseController
-from .frontend import FrontendDataController, IndexController, DevCookieController
+from .frontend import DevCookieController, FrontendDataController, IndexController
 from .info import InfoController
 from .statistics import StatisticsController
 from .table import CallController, CheckController, FoldController, JoinController, RaiseController, TableController
@@ -19,7 +21,12 @@ _CONTROLLERS = [
     CheckController,
     RaiseController,
     StatisticsController,
-    UUIDController
+    UUIDController,
+    ApiController,
+    ApiDocsController
 ]
 
 HANDLERS = [(controller.route, controller) for controller in _CONTROLLERS]
+
+for handler in HANDLERS:
+    API_SPECIFICATION.add_path(urlspec=handler)

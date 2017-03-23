@@ -1,7 +1,7 @@
 from enum import Enum
 
-import requests
-from requests import HTTPError, get, post
+from requests import HTTPError, Session, ConnectionError as RequestsConnectionError
+from requests.adapters import HTTPAdapter
 
 
 class RequestError(BaseException):
@@ -9,11 +9,16 @@ class RequestError(BaseException):
 
 
 class TableInfo:
-    def __init__(self, name, min_player_count, max_player_count, players):
+    def __init__(self, name, min_player_count, max_player_count, players, state):  # pylint: disable=too-many-arguments
         self.name = name
         self.min_player_count = min_player_count
         self.max_player_count = max_player_count
         self.players = {int(position): name for position, name in players.items()}
+        self.state = TableState(state)
+
+    @property
+    def is_closed(self):
+        return self.state is TableState.CLOSED
 
     def is_free_for(self, player_name):
         return len(self.players) < self.max_player_count and player_name not in self.players.values()
@@ -38,13 +43,23 @@ class Table:
         self.round = kwargs.get('round')
         self.pots = [Pot(**pot_dict) for pot_dict in kwargs.get('pots', [])]
         self.open_cards = kwargs.get('open_cards')
-        self.is_closed = kwargs.get('is_closed')
+        self.state = TableState(kwargs.get('state', 'closed'))
 
     def __eq__(self, other):
         return isinstance(other, Table) and self.__dict__ == other.__dict__
 
     def __ne__(self, other):
         return not isinstance(other, Table) or self.__dict__ != other.__dict__
+
+    @property
+    def is_closed(self):
+        return self.state is TableState.CLOSED
+
+
+class TableState(Enum):
+    WAITING_FOR_PLAYERS = 'waiting for players'
+    RUNNING_GAME = 'running game'
+    CLOSED = 'closed'
 
 
 class Pot:
@@ -92,6 +107,8 @@ class BaseClient:
         self.host = host
         self.port = port
         self.log_requests = log_requests
+        self.session = Session()
+        self.session.mount('http://', HTTPAdapter(max_retries=3))
 
     def receive_uuid(self, player_name):
         try:
@@ -114,6 +131,8 @@ class BaseClient:
     @staticmethod
     def find_free_table(table_infos, *player_names):
         for table in table_infos:
+            if table.is_closed:
+                continue
             if (len(table.find_free_positions()) >= len(player_names) and
                     all(table.is_free_for(name) for name in player_names)):
                 return table
@@ -146,14 +165,14 @@ class BaseClient:
         if self.log_requests:
             self.log("POST {}... ".format(url), new_line=False)
         try:
-            response = post(url, **kwargs)
+            response = self.session.post(url, **kwargs)
             response.raise_for_status()
             if self.log_requests:
                 self.log('{}'.format(response.status_code))
         except HTTPError as error:
             self.log('{}'.format(error.response.status_code))
             raise RequestError
-        except requests.ConnectionError:
+        except RequestsConnectionError:
             self.log('ConnectionError')
             raise RequestError
         return response
@@ -163,14 +182,14 @@ class BaseClient:
         if self.log_requests:
             self.log("GET {}... ".format(url), new_line=False)
         try:
-            response = get(url)
+            response = self.session.get(url)
             response.raise_for_status()
             if self.log_requests:
                 self.log('{}'.format(response.status_code))
         except HTTPError as error:
             self.log('{}'.format(error.response.status_code))
             raise RequestError
-        except requests.ConnectionError:
+        except RequestsConnectionError:
             self.log('ConnectionError')
             raise RequestError
 
