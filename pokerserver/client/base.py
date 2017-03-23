@@ -1,7 +1,6 @@
 from enum import Enum
 
-import requests
-from requests import HTTPError, Session
+from requests import HTTPError, Session, ConnectionError as RequestsConnectionError
 from requests.adapters import HTTPAdapter
 
 
@@ -135,7 +134,7 @@ class BaseClient:
             if table.is_closed:
                 continue
             if (len(table.find_free_positions()) >= len(player_names) and
-                all(table.is_free_for(name) for name in player_names)):
+                    all(table.is_free_for(name) for name in player_names)):
                 return table
         else:
             raise RuntimeError('No free table')
@@ -173,7 +172,7 @@ class BaseClient:
         except HTTPError as error:
             self.log('{}'.format(error.response.status_code))
             raise RequestError
-        except requests.ConnectionError:
+        except RequestsConnectionError:
             self.log('ConnectionError')
             raise RequestError
         return response
@@ -190,7 +189,7 @@ class BaseClient:
         except HTTPError as error:
             self.log('{}'.format(error.response.status_code))
             raise RequestError
-        except requests.ConnectionError:
+        except RequestsConnectionError:
             self.log('ConnectionError')
             raise RequestError
 
