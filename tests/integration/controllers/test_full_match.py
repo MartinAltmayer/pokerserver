@@ -297,7 +297,7 @@ class TestFullMatch(IntegrationHttpTestCase):
         await self._everyone_folds(player_order=[0])
 
         await self._assert_round_and_pots(Round.PREFLOP, [3])
-        await self._assert_balances_and_bets([6, 31], [2, 1])
+        await self._assert_balances_and_bets([8, 12, 9, 8], [0, 0, 1, 2])
 
     @gen_test
     async def test_showdown_from_preflop_with_one_player_all_in(self):
