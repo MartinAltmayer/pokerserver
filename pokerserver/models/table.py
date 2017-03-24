@@ -278,6 +278,9 @@ class Table:
 
     async def close(self):
         await self.set_state(TableState.CLOSED)
+        await self.set_dealer(None)
+        if self.current_player:
+            await self.check_and_unset_current_player(self.current_player.name)
         await gather(*[self.remove_player(player) for player in self.players.copy()])
 
     async def set_state(self, state):
