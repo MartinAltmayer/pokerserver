@@ -69,7 +69,8 @@ class FrontendDataController(FrontendBaseController):
 
         self.write({
             'players': [self.write_player(table, player) for player in table.players],
-            'openCards': table.open_cards
+            'openCards': table.open_cards,
+            'pot': sum(pot.amount for pot in table.pots)
         })
 
     @staticmethod

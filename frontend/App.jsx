@@ -64,9 +64,18 @@ class App extends React.Component {
         );
     }
 
+    renderPot() {
+        return (
+            <div>
+                Pot: {this.state.pot}
+            </div>
+        );
+    }
+
     render() {
         return (
             <div>
+                {this.renderPot()}
                 {this.renderPlayerList([1, 2, 3, 4])}
                 {this.renderOpenCards()}
                 {this.renderPlayerList([8, 7, 6, 5])}

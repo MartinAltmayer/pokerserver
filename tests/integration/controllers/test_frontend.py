@@ -77,7 +77,8 @@ class TestFrontendDataController(IntegrationHttpTestCase):
                     'position': player.position
                 } for player in self.players
             ],
-            'openCards': []
+            'openCards': [],
+            'pot': 0
         }
         self.assertEqual(expected_data, data)
 
