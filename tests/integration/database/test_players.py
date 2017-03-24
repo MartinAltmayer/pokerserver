@@ -83,7 +83,7 @@ class TestPlayersRelation(IntegrationTestCase):
         player_data = self.PLAYER_DATA[0]
         await PlayersRelation.add_player(**player_data)
         new_balance = player_data['balance'] + 100
-        await PlayersRelation.set_balance(player_data['name'], new_balance)
+        await PlayersRelation.set_balance(player_data['name'], player_data['table_id'], new_balance)
 
         player = await PlayersRelation.load_by_name(player_data['name'])
         self.assertEqual(new_balance, player['balance'])
@@ -93,7 +93,7 @@ class TestPlayersRelation(IntegrationTestCase):
         player_data = self.PLAYER_DATA[0]
         await PlayersRelation.add_player(**player_data)
         new_bet = player_data['bet'] + 100
-        await PlayersRelation.set_bet(player_data['name'], new_bet)
+        await PlayersRelation.set_bet(player_data['name'], player_data['table_id'], new_bet)
 
         player = await PlayersRelation.load_by_name(player_data['name'])
         self.assertEqual(new_bet, player['bet'])
@@ -104,7 +104,7 @@ class TestPlayersRelation(IntegrationTestCase):
         await PlayersRelation.add_player(**player_data)
         new_balance = player_data['balance'] + 100
         new_bet = player_data['bet'] + 20
-        await PlayersRelation.set_balance_and_bet(player_data['name'], new_balance, new_bet)
+        await PlayersRelation.set_balance_and_bet(player_data['name'], player_data['table_id'], new_balance, new_bet)
 
         player = await PlayersRelation.load_by_name(player_data['name'])
         self.assertEqual(new_balance, player['balance'])
@@ -116,7 +116,7 @@ class TestPlayersRelation(IntegrationTestCase):
         await PlayersRelation.add_player(**player_data)
         cards = ['As', '2h']
         assert cards != player_data['cards']
-        await PlayersRelation.set_cards(player_data['name'], cards)
+        await PlayersRelation.set_cards(player_data['name'], player_data['table_id'], cards)
 
         player = await PlayersRelation.load_by_name(player_data['name'])
         self.assertEqual(cards, player['cards'])
@@ -127,7 +127,7 @@ class TestPlayersRelation(IntegrationTestCase):
         await PlayersRelation.add_player(**player_data)
         self.assertEqual(player_data['state'], PlayerState.PLAYING)
 
-        await PlayersRelation.set_state(player_data['name'], PlayerState.FOLDED)
+        await PlayersRelation.set_state(player_data['name'], player_data['table_id'], PlayerState.FOLDED)
 
         player = await PlayersRelation.load_by_name(player_data['name'])
         self.assertEqual(player['state'], PlayerState.FOLDED)

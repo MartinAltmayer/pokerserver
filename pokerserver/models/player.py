@@ -77,7 +77,7 @@ class Player:
 
     async def set_bet(self, bet):
         self.bet = bet
-        await PlayersRelation.set_bet(self.name, self.bet)
+        await PlayersRelation.set_bet(self.name, self.table_id, self.bet)
 
     async def reset(self):
         await self.set_bet(0)
@@ -85,7 +85,7 @@ class Player:
 
     async def increase_bet(self, amount):
         assert amount > 0, 'Need to increase bet by more than 0.'
-        await PlayersRelation.set_balance_and_bet(self.name, self.balance - amount, self.bet + amount)
+        await PlayersRelation.set_balance_and_bet(self.name, self.table_id, self.balance - amount, self.bet + amount)
         self.balance -= amount
         self.bet += amount
         if self.balance == 0:
@@ -94,11 +94,11 @@ class Player:
     async def increase_balance(self, increase):
         assert increase >= 0, 'the balance increase must not be negative'
         self.balance += increase
-        await PlayersRelation.set_balance(self.name, self.balance)
+        await PlayersRelation.set_balance(self.name, self.table_id, self.balance)
 
     async def set_cards(self, cards):
         assert len(cards) <= 2
-        await PlayersRelation.set_cards(self.name, cards)
+        await PlayersRelation.set_cards(self.name, self.table_id, cards)
         self.cards = cards
 
     async def fold(self):
@@ -115,7 +115,7 @@ class Player:
 
     async def set_state(self, state):
         self.state = state
-        await PlayersRelation.set_state(self.name, self.state)
+        await PlayersRelation.set_state(self.name, self.table_id, self.state)
 
     def __repr__(self):
         return '<Player {}>'.format(self.name)

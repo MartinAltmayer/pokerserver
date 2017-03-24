@@ -72,31 +72,31 @@ class PlayersRelation(Relation):
     SET_BALANCE_QUERY = """
         UPDATE players
         SET balance = ?
-        WHERE name = ?
+        WHERE name = ? AND table_id = ?
     """
 
     SET_BET_QUERY = """
         UPDATE players
         SET bet = ?
-        WHERE name = ?
+        WHERE name = ? AND table_id = ?
     """
 
     SET_BALANCE_AND_BET_QUERY = """
         UPDATE players
         SET balance = ?, bet = ?
-        WHERE name = ?
+        WHERE name = ? AND table_id = ?
     """
 
     SET_CARDS_QUERY = """
         UPDATE players
         SET cards = ?
-        WHERE name = ?
+        WHERE name = ? AND table_id = ?
     """
 
     SET_STATE_QUERY = """
         UPDATE players
         SET state = ?
-        WHERE name = ?
+        WHERE name = ? AND table_id = ?
     """
 
     @classmethod
@@ -148,27 +148,27 @@ class PlayersRelation(Relation):
         await Database.instance().execute(cls.DELETE_QUERY, table_id, position)
 
     @classmethod
-    async def set_balance(cls, name, balance):
-        await Database.instance().execute(cls.SET_BALANCE_QUERY, balance, name)
+    async def set_balance(cls, name, table_id, balance):
+        await Database.instance().execute(cls.SET_BALANCE_QUERY, balance, name, table_id)
 
     @classmethod
-    async def set_bet(cls, name, bet):
-        await Database.instance().execute(cls.SET_BET_QUERY, bet, name)
+    async def set_bet(cls, name, table_id, bet):
+        await Database.instance().execute(cls.SET_BET_QUERY, bet, name, table_id)
 
     @classmethod
-    async def set_balance_and_bet(cls, name, balance, bet):
+    async def set_balance_and_bet(cls, name, table_id, balance, bet):
         assert balance is not None
         assert bet is not None
-        await Database.instance().execute(cls.SET_BALANCE_AND_BET_QUERY, balance, bet, name)
+        await Database.instance().execute(cls.SET_BALANCE_AND_BET_QUERY, balance, bet, name, table_id)
 
     @classmethod
-    async def set_cards(cls, name, cards):
+    async def set_cards(cls, name, table_id, cards):
         cards = make_card_list(cards)
-        await Database.instance().execute(cls.SET_CARDS_QUERY, cards, name)
+        await Database.instance().execute(cls.SET_CARDS_QUERY, cards, name, table_id)
 
     @classmethod
-    async def set_state(cls, name, state):
-        await Database.instance().execute(cls.SET_STATE_QUERY, state.value, name)
+    async def set_state(cls, name, table_id, state):
+        await Database.instance().execute(cls.SET_STATE_QUERY, state.value, name, table_id)
 
 
 @unique
